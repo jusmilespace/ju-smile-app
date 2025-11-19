@@ -83,18 +83,13 @@ type Settings = {
   exerciseMinutesGoal?: number;
   startDate?: string;
   targetDate?: string;
-  gender?: 'male' | 'female';
-  age?: number;
-  heightCm?: number;
-  bmr?: number;
-  calorieDeficit?: number;
 };
 
 type Tab = 'today' | 'records' | 'settings';
 type RecordSubTab = 'food' | 'exercise';
 
 // ======== 常數 & 工具 ========
-// 簡易可客製字體大小的下拉選單（避免原生 <select> 無法控制選單字體大小）
+// 可客製字體大小的下拉，且互斥展開（選了值/打開時會關閉其他）
 type BigOption = { value: string; label: string };
 const BigSelect: React.FC<{
   options: BigOption[];
@@ -104,24 +99,43 @@ const BigSelect: React.FC<{
   width?: number | string;
 }> = ({ options, value, onChange, placeholder, width }) => {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const idRef = useRef<string>(Math.random().toString(36).slice(2));
+
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
-      if (!ref.current) return;
-      if (!ref.current.contains(e.target as Node)) setOpen(false);
+      if (!rootRef.current) return;
+      if (!rootRef.current.contains(e.target as Node)) setOpen(false);
     }
     document.addEventListener('click', onDocClick);
     return () => document.removeEventListener('click', onDocClick);
   }, []);
-  const current = options.find(o => o.value === value);
+
+  useEffect(() => {
+    function onAnyOpen(ev: Event) {
+      const detail = (ev as CustomEvent<any>).detail;
+      if (detail !== idRef.current) setOpen(false);
+    }
+    document.addEventListener('bigselect:open', onAnyOpen as EventListener);
+    return () =>
+      document.removeEventListener('bigselect:open', onAnyOpen as EventListener);
+  }, []);
+
+  const current = options.find((o) => o.value === value);
+
   return (
-    <div ref={ref} style={{ position: 'relative', width: width ?? '100%' }}>
+    <div ref={rootRef} style={{ position: 'relative', width: width ?? '100%' }}>
       <button
         type="button"
-        onClick={() => setOpen(o => !o)}
+        onClick={() => {
+          document.dispatchEvent(
+            new CustomEvent('bigselect:open', { detail: idRef.current })
+          );
+          setOpen((o) => !o);
+        }}
         style={{
           width: '100%',
-          fontSize: 13,
+          fontSize: 20,
           padding: '10px 12px',
           borderRadius: 10,
           border: '1px solid #ddd',
@@ -132,11 +146,12 @@ const BigSelect: React.FC<{
         {current ? current.label : (placeholder ?? '請選擇')}
         <span style={{ float: 'right' }}>▾</span>
       </button>
-      {open && (
+
+      {open ? (
         <div
           style={{
             position: 'absolute',
-            zIndex: 20,
+            zIndex: 1000,
             top: '100%',
             left: 0,
             right: 0,
@@ -154,11 +169,14 @@ const BigSelect: React.FC<{
               key={opt.value}
               onClick={() => {
                 onChange(opt.value);
+                document.dispatchEvent(
+                  new CustomEvent('bigselect:open', { detail: idRef.current })
+                );
                 setOpen(false);
               }}
               style={{
                 padding: '12px 14px',
-                fontSize: 13,
+                fontSize: 20,
                 cursor: 'pointer',
                 background: opt.value === value ? '#eef6ff' : '#fff',
               }}
@@ -167,28 +185,10 @@ const BigSelect: React.FC<{
             </div>
           ))}
         </div>
-      )}
+      ) : null}
     </div>
   );
 };
-
-// 計算 BMR（Mifflin-St Jeor）
-function computeBMR(
-  gender: 'male' | 'female' | undefined,
-  weightKg?: number,
-  heightCm?: number,
-  age?: number
-): number | undefined {
-  const w = Number(weightKg || 0);
-  const h = Number(heightCm || 0);
-  const a = Number(age || 0);
-  if (!gender || !w || !h || !a) return undefined;
-  const raw =
-    gender === 'male'
-      ? 10 * w + 6.25 * h - 5 * a + 5
-      : 10 * w + 6.25 * h - 5 * a - 161;
-  return Math.round(raw);
-}
 
 const STORAGE_KEYS = {
   SETTINGS: 'JU_SETTINGS',
@@ -369,19 +369,6 @@ const App: React.FC = () => {
 
   const todayIntake = todayMeals.reduce((s, m) => s + (m.kcal || 0), 0);
   const todayBurn = todayExercises.reduce((s, e) => s + (e.kcal || 0), 0);
-
-const calorieDeficit = settings.calorieDeficit ?? undefined;
-const computedGoal = (function () {
-  const bmrV = computeBMR(
-    settings.gender,
-    todaySummary.weight ?? startWeight,
-    settings.heightCm,
-    settings.age
-  );
-  if (bmrV == null || calorieDeficit == null) return undefined;
-  const v = Math.round(bmrV + todayBurn - calorieDeficit);
-  return v > 0 ? v : 0;
-})();
   const todayExerciseMinutes = todayExercises.reduce(
     (s, e) => s + (e.minutes || 0),
     0
@@ -629,28 +616,38 @@ const startVisceralFat =
 const calorieGoal =
   settings.calorieGoal != null ? settings.calorieGoal : undefined;
 
-// 先算出今天的「淨熱量」= 攝取熱量 - 運動消耗 - BMR
-const todayWeightForBmr = todaySummary.weight ?? startWeight;
-const bmrValue =
-  computeBMR(settings.gender, todayWeightForBmr, settings.heightCm, settings.age) || 0;
-const netKcal = todayIntake - todayBurn - bmrValue;
+// 先算出今天的「淨熱量」= 攝取 - 消耗
+const netKcal = todayIntake - todayBurn;
 
 // 要顯示在畫面上的數字
-let netDisplayValue = Math.abs(Math.round(netKcal));
+let netDisplayValue = 0;
 let netStatusLabel = '';
 let netColor = '#444';
 
-if (netKcal > 0) {
-  netStatusLabel = '熱量超標';
-  netColor = '#d64545';
-} else if (netKcal < 0) {
-  netStatusLabel = '熱量赤字';
-  netColor = '#3b8c5a';
+// 有設定目標時：用「淨熱量 - 目標」判斷
+if (calorieGoal != null) {
+  const diff = netKcal - calorieGoal; // >0 超標, <0 赤字
+  netDisplayValue = Math.abs(Math.round(diff));
+
+  if (diff > 0) {
+    netStatusLabel = '超標';
+    netColor = '#d64545';
+  } else if (diff < 0) {
+    netStatusLabel = '赤字';
+    netColor = '#3b8c5a';
+  } else {
+    netStatusLabel = '達標';
+    netColor = '#3b8c5a';
+  }
 } else {
-  netStatusLabel = '熱量平衡';
-  netColor = '#3b8c5a';
+  // 沒設定目標時，就退回舊邏輯：和 0 比較
+  netDisplayValue = Math.abs(Math.round(netKcal));
+  const isDeficit = netKcal < 0;
+  netStatusLabel = isDeficit ? '赤字(相對運動)' : '盈餘';
+  netColor = isDeficit ? '#3b8c5a' : '#d64545';
 }
 
+ 
     const todayExerciseMinutes = todayExercises.reduce(
       (s, e) => s + (e.minutes || 0),
       0
@@ -820,7 +817,7 @@ if (netKcal > 0) {
             <div>
               <div className="label">目標攝取</div>
               <div className="value" style={{ fontWeight: 600 }}>
-                {computedGoal != null ? `${computedGoal} kcal` : '未設定'}
+                {calorieGoal != null ? `${calorieGoal} kcal` : '未設定'}
               </div>
             </div>
           </div>
@@ -1616,21 +1613,22 @@ function startEditExercise(e: ExerciseEntry) {
           </details>
 
           <div className="form-section">
-            
-<label>
-  餐別
-  <BigSelect
-    value={foodMealType}
-    onChange={(v) => setFoodMealType(v as any)}
-    options={[
-      { value: '早餐', label: '早餐' },
-      { value: '午餐', label: '午餐' },
-      { value: '晚餐', label: '晚餐' },
-      { value: '點心', label: '點心' },
-    ]}
-  />
-</label>
+            <label>
+              餐別
+              <select
+  value={foodMealType}
+  onChange={(e) =>
+    setFoodMealType(e.target.value as any)
+  }
+  style={{ fontSize: 16 }}
+>
 
+                <option value="早餐">早餐</option>
+                <option value="午餐">午餐</option>
+                <option value="晚餐">晚餐</option>
+                <option value="點心">點心</option>
+              </select>
+            </label>
 
             <label>
               食物名稱
@@ -1662,31 +1660,31 @@ function startEditExercise(e: ExerciseEntry) {
 
       {/* C：類別估算 / 其他類 / 自定義熱量：不管有沒有搜尋結果都可以用 */}
       <div className="type-fallback-card">
-        
-<label>
-  類別 / 估算模式
-  <BigSelect
-    value={fallbackType}
-    onChange={(v) => {
-      setFallbackType(v);
-      setFallbackServings('');
-      setFallbackQty('');
-      setFallbackProtPerServ('');
-      setFallbackCarbPerServ('');
-      setFallbackFatPerServ('');
-      setFallbackKcalPerServ('');
-    }}
-    options={
-      [{ value: '', label: '請選擇' }]
-        .concat(typeOptions.map(t => ({ value: String(t), label: String(t) })))
-        .concat([
-          { value: '其他類', label: '其他類' },
-          { value: '自定義熱量', label: '自定義熱量' },
-        ])
-    }
-  />
-</label>
-
+        <label>
+          類別 / 估算模式
+          <select
+            value={fallbackType}
+            onChange={(e) => {
+              setFallbackType(e.target.value);
+              setFallbackServings('');
+              setFallbackQty('');
+              setFallbackProtPerServ('');
+              setFallbackCarbPerServ('');
+              setFallbackFatPerServ('');
+              setFallbackKcalPerServ('');
+            }}
+            style={{ fontSize: 16 }}  // 👈 順便放大字
+          >
+            <option value="">請選擇</option>
+            {typeOptions.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+            <option value="其他類">其他類</option>
+            <option value="自定義熱量">自定義熱量</option>
+          </select>
+        </label>
 
         {/* C1：一般類型 */}
         {fallbackType &&
@@ -1742,9 +1740,9 @@ function startEditExercise(e: ExerciseEntry) {
                   onChange={(e) =>
                     setFallbackUnitLabel(e.target.value)
                   }
-                  style={{ fontSize: 12 }}   // 👈 字體
+                  style={{ fontSize: 16 }}   // 👈 字體
                 >
-                
+                  <option value="份">份</option>
                   <option value="個">個</option>
                   <option value="杯">杯</option>
                   <option value="碗">碗</option>
@@ -2300,105 +2298,8 @@ function startEditExercise(e: ExerciseEntry) {
       
     <div className="page page-settings" style={{ paddingBottom: '90px' }}>
 
-        
         <section className="card">
-          <h2>基本資料 & BMR</h2>
-          <div className="form-section">
-            <label>
-              性別
-              <select
-                value={localSettings.gender ?? ''}
-                onChange={(e) =>
-                  setLocalSettings((s) => ({
-                    ...s,
-                    gender: (e.target.value || undefined) as any,
-                  }))
-                }
-              >
-                <option value="">請選擇</option>
-                <option value="male">男性</option>
-                <option value="female">女性</option>
-              </select>
-            </label>
-
-            <label>
-              年齡
-              <input
-                type="number"
-                value={localSettings.age ?? ''}
-                onChange={(e) =>
-                  setLocalSettings((s) => ({
-                    ...s,
-                    age: e.target.value ? Number(e.target.value) : undefined,
-                  }))
-                }
-              />
-            </label>
-
-            <label>
-              身高 (cm)
-              <input
-                type="number"
-                value={localSettings.heightCm ?? ''}
-                onChange={(e) =>
-                  setLocalSettings((s) => ({
-                    ...s,
-                    heightCm: e.target.value ? Number(e.target.value) : undefined,
-                  }))
-                }
-              />
-            </label>
-
-            <button
-              onClick={() => {
-                const w = (getDay(todayLocal)?.weight) ?? startWeight ?? 0;
-                const b = computeBMR(
-                  localSettings.gender as any,
-                  w,
-                  localSettings.heightCm,
-                  localSettings.age
-                );
-                if (!b) {
-                  alert('請先輸入性別、年齡、身高，並在「今天」頁填入體重。');
-                  return;
-                }
-                setLocalSettings((s) => ({ ...s, bmr: b }));
-                alert(`已計算 BMR：約 ${b} kcal（體重以今日 ${w || 0} kg 計算）`);
-              }}
-            >
-              計算 BMR
-            </button>
-
-            <div className="hint">
-              目前 BMR：{localSettings.bmr != null ? `${localSettings.bmr} kcal` : '尚未計算'}
-            </div>
-          </div>
-
-          <div className="form-section">
-            <label>
-              預設的熱量赤字 (kcal)
-              <input
-                type="number"
-                value={localSettings.calorieDeficit ?? ''}
-                onChange={(e) =>
-                  setLocalSettings((s) => ({
-                    ...s,
-                    calorieDeficit: e.target.value ? Number(e.target.value) : undefined,
-                  }))
-                }
-                placeholder="建議 300~500"
-              />
-            </label>
-
-            <div className="hint">
-              目標攝取熱量 = BMR + 今日運動消耗 - 預設的熱量赤字
-              <br />
-              減掉 <b>1 公斤的體脂肪</b>，大約需要消耗 <b>7,700 大卡</b> 的熱量。建議將 TDEE 減去 <b>300~500 大卡</b>（溫和減重）。
-            </div>
-          </div>
-        </section>
-<section className="card">
-          <h2>我的目標</h2>
+npm run dev          <h2>我的目標</h2>
           <div className="form-section">
             <label>
               減重起始日期
