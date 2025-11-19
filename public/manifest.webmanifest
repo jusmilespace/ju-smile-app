@@ -1,0 +1,20 @@
+{
+  "name": "Ju Smile App",
+  "short_name": "Ju Smile",
+  "start_url": "/ju-smile-app/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#97d0ba",
+  "icons": [
+    {
+      "src": "/ju-smile-app/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/ju-smile-app/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

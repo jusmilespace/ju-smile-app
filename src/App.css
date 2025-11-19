@@ -40,3 +40,7 @@
 .read-the-docs {
   color: #888;
 }
+
+.page {
+  padding-bottom: 90px; /* 統一幫所有頁面保留空間 */
+}
