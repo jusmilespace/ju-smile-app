@@ -2299,7 +2299,7 @@ function startEditExercise(e: ExerciseEntry) {
     <div className="page page-settings" style={{ paddingBottom: '90px' }}>
 
         <section className="card">
-npm run dev          <h2>我的目標</h2>
+          <h2>我的目標</h2>
           <div className="form-section">
             <label>
               減重起始日期
