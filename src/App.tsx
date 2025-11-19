@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import Papa from 'papaparse';
 import dayjs from 'dayjs';
+import BmrCalculator from './BmrCalculator';
 
 // ======== 型別定義 ========
 
@@ -85,7 +86,7 @@ type Settings = {
   targetDate?: string;
 };
 
-type Tab = 'today' | 'records' | 'settings';
+type Tab = 'today' | 'records' | 'settings' | 'plan';
 type RecordSubTab = 'food' | 'exercise';
 
 // ======== 常數 & 工具 ========
@@ -278,6 +279,16 @@ const App: React.FC = () => {
   const [exercises, setExercises] = useState<ExerciseEntry[]>(() =>
     loadJSON<ExerciseEntry[]>(STORAGE_KEYS.EXERCISES, [])
   );
+
+  // 預帶「目標攝取熱量」：若尚未設定，使用 Plan 頁面選取的目標攝取
+  useEffect(() => {
+    if (settings.calorieGoal == null) {
+      const planGoal = Number(localStorage.getItem('JU_PLAN_GOAL_KCAL') || '0') || 0;
+      if (planGoal > 0) {
+        setSettings((prev) => ({ ...prev, calorieGoal: planGoal }));
+      }
+    }
+  }, []);
 
   const [todayLocal, setTodayLocal] = useState(
     dayjs().format('YYYY-MM-DD')
@@ -613,39 +624,33 @@ const startVisceralFat =
       (s, e) => s + (e.kcal || 0),
       0
     );
-const calorieGoal =
-  settings.calorieGoal != null ? settings.calorieGoal : undefined;
+    // 目標攝取（優先用「我的」頁設定；否則帶 Plan 頁選的值）
+const calorieGoal: number | undefined =
+  settings.calorieGoal ??
+  (Number(localStorage.getItem('JU_PLAN_GOAL_KCAL') || '0') || undefined);
 
-// 先算出今天的「淨熱量」= 攝取 - 消耗
-const netKcal = todayIntake - todayBurn;
+// 讀取 Plan 頁面計算出的 BMR（沒有就視為 0）
+const planBmr = Number(localStorage.getItem('JU_PLAN_BMR') || '0') || 0;
 
-// 要顯示在畫面上的數字
-let netDisplayValue = 0;
+// 淨熱量 = 攝取 - 消耗 - BMR
+const net = todayIntake - todayBurn - planBmr;
+
+let netDisplayValue = Math.abs(Math.round(net));
 let netStatusLabel = '';
 let netColor = '#444';
 
-// 有設定目標時：用「淨熱量 - 目標」判斷
-if (calorieGoal != null) {
-  const diff = netKcal - calorieGoal; // >0 超標, <0 赤字
-  netDisplayValue = Math.abs(Math.round(diff));
-
-  if (diff > 0) {
-    netStatusLabel = '超標';
-    netColor = '#d64545';
-  } else if (diff < 0) {
-    netStatusLabel = '赤字';
-    netColor = '#3b8c5a';
-  } else {
-    netStatusLabel = '達標';
-    netColor = '#3b8c5a';
-  }
+if (net > 0) {
+  netStatusLabel = '熱量超標';
+  netColor = '#d64545';
+} else if (net < 0) {
+  netStatusLabel = '熱量赤字';
+  netColor = '#3b8c5a';
 } else {
-  // 沒設定目標時，就退回舊邏輯：和 0 比較
-  netDisplayValue = Math.abs(Math.round(netKcal));
-  const isDeficit = netKcal < 0;
-  netStatusLabel = isDeficit ? '赤字(相對運動)' : '盈餘';
-  netColor = isDeficit ? '#3b8c5a' : '#d64545';
+  netStatusLabel = '熱量平衡';
+  netColor = '#3b8c5a';
 }
+
+// 今日總運動時間
 
  
     const todayExerciseMinutes = todayExercises.reduce(
@@ -2343,7 +2348,7 @@ function startEditExercise(e: ExerciseEntry) {
               />
             </label>
             <label>
-              每日總熱量目標 (kcal)
+              目標攝取熱量 (kcal)
               <input
                 type="number"
                 value={localSettings.calorieGoal ?? ''}
@@ -2526,6 +2531,8 @@ function startEditExercise(e: ExerciseEntry) {
 
       {tab === 'settings' && <SettingsPage />}
 
+      {tab === 'plan' && <BmrCalculator />}
+
       <nav className="bottom-nav">
         <button
           className={tab === 'today' ? 'active' : ''}
@@ -2547,6 +2554,14 @@ function startEditExercise(e: ExerciseEntry) {
         >
           <div className="nav-icon">🦋</div>
           <div className="nav-label">我的</div>
+        </button>
+      
+        <button
+          className={tab === 'plan' ? 'active' : ''}
+          onClick={() => setTab('plan')}
+        >
+          <div className="nav-icon">📐</div>
+          <div className="nav-label">Plan</div>
         </button>
       </nav>
     </div>
