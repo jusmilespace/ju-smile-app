@@ -158,6 +158,9 @@ async function fetchCsv<T = any>(url: string): Promise<T[]> {
 
 const App: React.FC = () => {
   const [tab, setTab] = useState<Tab>('today');
+    const [recordDefaultMealType, setRecordDefaultMealType] =
+    useState<'早餐' | '午餐' | '晚餐' | '點心'>('早餐');
+
   const [recordTab, setRecordTab] = useState<RecordSubTab>('food');
 
   const [settings, setSettings] = useState<Settings>(() =>
@@ -414,37 +417,31 @@ const MacroRing: React.FC<{
   };
 
   const MealCard: React.FC<{
-    title: '早餐' | '午餐' | '晚餐' | '點心';
-    kcal: number;
-    protein: number;
-    carb: number;
-    fat: number;
-    onAdd: () => void;
-  }> = ({ title, kcal, protein, carb, fat, onAdd }) => {
-    return (
-      <div className="meal-card">
-        <div className="meal-header">
-          <div className="meal-title">{title}</div>
-          <div className="meal-kcal">{kcal} kcal</div>
-        </div>
-              <div className="meal-macros">
-        蛋白質 {round1(protein)} g · 碳水 {round1(carb)} g · 脂肪 {round1(fat)} g
+  title: '早餐' | '午餐' | '晚餐' | '點心';
+  kcal: number;
+  protein: number;
+  carb: number;
+  fat: number;
+  onAdd: () => void;
+}> = ({ title, kcal, protein, carb, fat, onAdd }) => {
+  return (
+    <div className="meal-card">
+      <div className="meal-header">
+        <div className="meal-title">{title}</div>
+        <div className="meal-kcal">{kcal} kcal</div>
+      </div>
+      <div className="meal-macros">
+        蛋白質 {round1(protein)} g · 碳水 {round1(carb)} g · 脂肪{' '}
+        {round1(fat)} g
       </div>
 
-        <div className="meal-actions">
-          <button onClick={onAdd}>新增</button>
-          <button
-            onClick={() => {
-              setTab('records');
-              setRecordTab('food');
-            }}
-          >
-            編輯
-          </button>
-        </div>
+      <div className="meal-actions">
+        <button onClick={onAdd}>新增</button>
       </div>
-    );
-  };
+    </div>
+  );
+};
+
 
   // ======== 今天頁 ========
 
@@ -781,52 +778,57 @@ const MacroRing: React.FC<{
           </div>
         </section>
 
-        <section className="card meals-card">
-          <MealCard
-            title="早餐"
-            kcal={breakfastKcal}
-            protein={breakfastProt}
-            carb={breakfastCarb}
-            fat={breakfastFat}
-            onAdd={() => {
-              setTab('records');
-              setRecordTab('food');
-            }}
-          />
-          <MealCard
-            title="午餐"
-            kcal={lunchKcal}
-            protein={lunchProt}
-            carb={lunchCarb}
-            fat={lunchFat}
-            onAdd={() => {
-              setTab('records');
-              setRecordTab('food');
-            }}
-          />
-          <MealCard
-            title="晚餐"
-            kcal={dinnerKcal}
-            protein={dinnerProt}
-            carb={dinnerCarb}
-            fat={dinnerFat}
-            onAdd={() => {
-              setTab('records');
-              setRecordTab('food');
-            }}
-          />
-          <MealCard
-            title="點心"
-            kcal={snackKcal}
-            protein={snackProt}
-            carb={snackCarb}
-            fat={snackFat}
-            onAdd={() => {
-              setTab('records');
-              setRecordTab('food');
-            }}
-          />
-        </section>
+              <section className="card meals-card">
+        <MealCard
+          title="早餐"
+          kcal={breakfastKcal}
+          protein={breakfastProt}
+          carb={breakfastCarb}
+          fat={breakfastFat}
+          onAdd={() => {
+            setRecordDefaultMealType('早餐');
+            setTab('records');
+            setRecordTab('food');
+          }}
+        />
+        <MealCard
+          title="午餐"
+          kcal={lunchKcal}
+          protein={lunchProt}
+          carb={lunchCarb}
+          fat={lunchFat}
+          onAdd={() => {
+            setRecordDefaultMealType('午餐');
+            setTab('records');
+            setRecordTab('food');
+          }}
+        />
+        <MealCard
+          title="晚餐"
+          kcal={dinnerKcal}
+          protein={dinnerProt}
+          carb={dinnerCarb}
+          fat={dinnerFat}
+          onAdd={() => {
+            setRecordDefaultMealType('晚餐');
+            setTab('records');
+            setRecordTab('food');
+          }}
+        />
+        <MealCard
+          title="點心"
+          kcal={snackKcal}
+          protein={snackProt}
+          carb={snackCarb}
+          fat={snackFat}
+          onAdd={() => {
+            setRecordDefaultMealType('點心');
+            setTab('records');
+            setRecordTab('food');
+          }}
+        />
+      </section>
+
 
         <section className="card">
           <div className="card-header">
@@ -969,24 +971,47 @@ const MacroRing: React.FC<{
 
   // ======== 記錄頁 ========
 
- const RecordsPage: React.FC<{
+const RecordsPage: React.FC<{
   recordTab: RecordSubTab;
   setRecordTab: (tab: RecordSubTab) => void;
-}> = ({ recordTab, setRecordTab }) => {
+  defaultMealType: '早餐' | '午餐' | '晚餐' | '點心';
+}> = ({ recordTab, setRecordTab, defaultMealType }) => {
+
   const [selectedDate, setSelectedDate] = useState(todayLocal);
 
   // 飲食表單
   const [foodMealType, setFoodMealType] =
     useState<'早餐' | '午餐' | '晚餐' | '點心'>('早餐');
-  const [foodName, setFoodName] = useState('');
-  const [manualFoodKcal, setManualFoodKcal] = useState('');
+    useEffect(() => {
+  setFoodMealType(defaultMealType);
+}, [defaultMealType]);
 
+  const [foodName, setFoodName] = useState('');
+
+  // A / B：Unit_Map、Food_DB
   const [selectedUnitFood, setSelectedUnitFood] =
     useState<UnitMapRow | null>(null);
   const [selectedFoodDbRow, setSelectedFoodDbRow] =
     useState<FoodDbRow | null>(null);
   const [unitQuantity, setUnitQuantity] = useState('1');
   const [foodAmountG, setFoodAmountG] = useState('');
+
+  // C：類別估算 / 其他類 / 自定義熱量
+  const [fallbackType, setFallbackType] = useState<string>('');
+  const [fallbackServings, setFallbackServings] = useState(''); // 幾份
+  const [fallbackQty, setFallbackQty] = useState(''); // 參考數量, 例如 2
+  const [fallbackUnitLabel, setFallbackUnitLabel] = useState('份'); // 參考單位, 例如 片、碗…
+
+  // C2：其他類 - 每份 P/C/F
+  const [fallbackProtPerServ, setFallbackProtPerServ] = useState('');
+  const [fallbackCarbPerServ, setFallbackCarbPerServ] = useState('');
+  const [fallbackFatPerServ, setFallbackFatPerServ] = useState('');
+
+  // C3：自定義熱量 - 每份 kcal
+  const [fallbackKcalPerServ, setFallbackKcalPerServ] = useState('');
+
+  const [manualFoodKcal, setManualFoodKcal] = useState(''); // 給你保留舊有「直接輸入總熱量」備用
+
   const [editingMealId, setEditingMealId] = useState<string | null>(null);
 
   // 運動表單
@@ -1036,31 +1061,25 @@ const MacroRing: React.FC<{
     );
     return { unitMatches, foodMatches };
   }, [foodName, unitMap, foodDb]);
+  const typeOptions = useMemo(
+    () => Array.from(new Set(typeTable.map((t) => t.Type))),
+    [typeTable]
+  );
 
   // 依照目前選項計算 kcal + P/C/F + 顯示用份量
-  const autoFoodInfo = useMemo(() => {
-    if (!selectedUnitFood && !selectedFoodDbRow) {
-      return {
-        kcal: 0,
-        protein: 0,
-        carb: 0,
-        fat: 0,
-        amountText: '',
-      };
-    }
+    const autoFoodInfo = useMemo(() => {
+    const zero = {
+      kcal: 0,
+      protein: 0,
+      carb: 0,
+      fat: 0,
+      amountText: '',
+    };
 
-    // Unit_Map：以「份」為基準
+    // === A. Unit_Map：以「份」為基準 ===
     if (selectedUnitFood) {
       const qty = Number(unitQuantity || '0');
-      if (!qty || isNaN(qty)) {
-        return {
-          kcal: 0,
-          protein: 0,
-          carb: 0,
-          fat: 0,
-          amountText: '',
-        };
-      }
+      if (!qty || isNaN(qty)) return zero;
 
       const perUnitServ =
         Number(selectedUnitFood.ServingsPerUnit || '0') || 0;
@@ -1071,40 +1090,15 @@ const MacroRing: React.FC<{
       let carbPerServ = 0;
       let fatPerServ = 0;
 
-      if (selectedUnitFood.Kcal_per_serv != null) {
-        kcalPerServ = Number(selectedUnitFood.Kcal_per_serv) || 0;
-      }
-      if (selectedUnitFood['Prot_per_serv (g)'] != null) {
-        protPerServ =
-          Number(selectedUnitFood['Prot_per_serv (g)']) || 0;
-      }
-      if (selectedUnitFood['Carb_per_serv (g)'] != null) {
-        carbPerServ =
-          Number(selectedUnitFood['Carb_per_serv (g)']) || 0;
-      }
-      if (selectedUnitFood['Fat_per_serv (g)'] != null) {
-        fatPerServ =
-          Number(selectedUnitFood['Fat_per_serv (g)']) || 0;
-      }
-
-      // 若 Unit_Map 沒有完整 P/C/F，就用 Type_Table 補
-      if (selectedUnitFood.Type) {
-        const typeRow = typeTable.find(
-          (t) => t.Type === selectedUnitFood.Type
-        );
+      const typeLabel = selectedUnitFood.Type?.trim();
+      if (typeLabel) {
+        const typeRow = typeTable.find((t) => t.Type === typeLabel);
         if (typeRow) {
-          if (!kcalPerServ) {
-            kcalPerServ = Number(typeRow.kcal || 0);
-          }
-          if (!protPerServ) {
-            protPerServ = Number(typeRow['protein (g)'] || 0);
-          }
-          if (!carbPerServ) {
-            carbPerServ = Number(typeRow['carb (g)'] || 0);
-          }
-          if (!fatPerServ) {
-            fatPerServ = Number(typeRow['fat (g)'] || 0);
-          }
+          kcalPerServ = Number(typeRow.kcal || 0) || 0;
+          protPerServ =
+            Number(typeRow['protein (g)'] || 0) || 0;
+          carbPerServ = Number(typeRow['carb (g)'] || 0) || 0;
+          fatPerServ = Number(typeRow['fat (g)'] || 0) || 0;
         }
       }
 
@@ -1122,33 +1116,28 @@ const MacroRing: React.FC<{
       };
     }
 
-    // Food_DB：每 100g
+    // === B. Food_DB：每 100g 精準資料 ===
     if (selectedFoodDbRow) {
       const g = Number(foodAmountG || '0');
-      if (!g || isNaN(g)) {
-        return {
-          kcal: 0,
-          protein: 0,
-          carb: 0,
-          fat: 0,
-          amountText: '',
-        };
-      }
+      if (!g || isNaN(g)) return zero;
 
-      const kcal100 = Number(selectedFoodDbRow.kcal || 0);
-      const prot100 = Number(selectedFoodDbRow['protein (g)'] || 0);
-      const carb100 = Number(selectedFoodDbRow['carb (g)'] || 0);
-      const fat100 = Number(selectedFoodDbRow['fat (g)'] || 0);
+      const kcal100 = Number(selectedFoodDbRow.kcal || 0) || 0;
+      const prot100 =
+        Number(selectedFoodDbRow['protein (g)'] || 0) || 0;
+      const carb100 =
+        Number(selectedFoodDbRow['carb (g)'] || 0) || 0;
+      const fat100 =
+        Number(selectedFoodDbRow['fat (g)'] || 0) || 0;
 
-      const perG = kcal100 / 100;
-      const perProtG = prot100 / 100;
-      const perCarbG = carb100 / 100;
-      const perFatG = fat100 / 100;
+      const kcal1g = kcal100 / 100;
+      const prot1g = prot100 / 100;
+      const carb1g = carb100 / 100;
+      const fat1g = fat100 / 100;
 
-      const kcal = Math.round(perG * g);
-      const protein = perProtG * g;
-      const carb = perCarbG * g;
-      const fat = perFatG * g;
+      const kcal = Math.round(g * kcal1g);
+      const protein = g * prot1g;
+      const carb = g * carb1g;
+      const fat = g * fat1g;
 
       return {
         kcal,
@@ -1159,27 +1148,101 @@ const MacroRing: React.FC<{
       };
     }
 
+    // === C. 類別估算 / 其他類 / 自定義熱量 ===
+    const name = foodName.trim();
+    if (!name || !fallbackType) return zero;
+
+    const servings = Number(fallbackServings || '0');
+    if (!servings || isNaN(servings)) return zero;
+
+    let kcalPerServ = 0;
+    let protPerServ = 0;
+    let carbPerServ = 0;
+    let fatPerServ = 0;
+    let amountText = '';
+
+    if (fallbackType === '其他類') {
+      const p =
+        Number(fallbackProtPerServ || '0') || 0;
+      const c =
+        Number(fallbackCarbPerServ || '0') || 0;
+      const f =
+        Number(fallbackFatPerServ || '0') || 0;
+
+      kcalPerServ = p * 4 + c * 4 + f * 9;
+      protPerServ = p;
+      carbPerServ = c;
+      fatPerServ = f;
+
+      if (fallbackQty.trim()) {
+        amountText = `${servings} 份 (${fallbackQty}${fallbackUnitLabel})`;
+      } else {
+        amountText = `${servings} 份`;
+      }
+    } else if (fallbackType === '自定義熱量') {
+      const kk =
+        Number(fallbackKcalPerServ || '0') || 0;
+      kcalPerServ = kk;
+      protPerServ = 0;
+      carbPerServ = 0;
+      fatPerServ = 0;
+      amountText = `${servings} 份`;
+    } else {
+      const typeRow = typeTable.find(
+        (t) => t.Type === fallbackType
+      );
+      if (!typeRow) return zero;
+
+      kcalPerServ = Number(typeRow.kcal || 0) || 0;
+      protPerServ =
+        Number(typeRow['protein (g)'] || 0) || 0;
+      carbPerServ =
+        Number(typeRow['carb (g)'] || 0) || 0;
+      fatPerServ =
+        Number(typeRow['fat (g)'] || 0) || 0;
+      amountText = `${servings} 份`;
+    }
+
+    const kcal = Math.round(servings * kcalPerServ);
+    const protein = servings * protPerServ;
+    const carb = servings * carbPerServ;
+    const fat = servings * fatPerServ;
+
     return {
-      kcal: 0,
-      protein: 0,
-      carb: 0,
-      fat: 0,
-      amountText: '',
+      kcal,
+      protein,
+      carb,
+      fat,
+      amountText,
     };
   }, [
     selectedUnitFood,
-    unitQuantity,
     selectedFoodDbRow,
+    unitQuantity,
     foodAmountG,
+    foodName,
+    fallbackType,
+    fallbackServings,
+    fallbackQty,
+    fallbackUnitLabel,
+    fallbackProtPerServ,
+    fallbackCarbPerServ,
+    fallbackFatPerServ,
+    fallbackKcalPerServ,
     typeTable,
   ]);
 
   const effectiveFoodKcal =
-    selectedUnitFood || selectedFoodDbRow
-      ? autoFoodInfo.kcal
-      : manualFoodKcal
-      ? Number(manualFoodKcal)
-      : 0;
+    selectedUnitFood ||
+    selectedFoodDbRow ||
+    fallbackType
+      ? autoFoodInfo.kcal || 0
+      : (() => {
+          const v = Number(manualFoodKcal || '0');
+          return isNaN(v) ? 0 : v;
+        })();
+
+      
 
   function saveMeal() {
     if (!foodName.trim()) {
@@ -1193,9 +1256,14 @@ const MacroRing: React.FC<{
     let fat = 0;
     let amountText = '';
 
-    if (selectedUnitFood || selectedFoodDbRow) {
+       const usingAuto =
+      !!selectedUnitFood ||
+      !!selectedFoodDbRow ||
+      !!fallbackType;
+
+    if (usingAuto) {
       if (!autoFoodInfo.kcal || isNaN(autoFoodInfo.kcal)) {
-        alert('請先輸入正確的份量 / 克數,才能計算熱量。');
+        alert('請先輸入正確的份量 / 克數 / 份量,才能計算熱量。');
         return;
       }
       kcal = autoFoodInfo.kcal;
@@ -1214,6 +1282,7 @@ const MacroRing: React.FC<{
         return;
       }
     }
+
 
     if (editingMealId) {
       // 編輯既有紀錄
@@ -1401,7 +1470,7 @@ const MacroRing: React.FC<{
               />
             </label>
 
-            {/* 搜尋結果：選到食物後就收起來 */}
+                        {/* 搜尋結果：選到食物後就收起來 */}
             {foodName.trim() &&
               !selectedUnitFood &&
               !selectedFoodDbRow && (
@@ -1412,9 +1481,204 @@ const MacroRing: React.FC<{
                         <div className="hint">
                           目前尚無此食物資料,請改用其他類別估算或自定義熱量。
                         </div>
+
+                        {/* C：類別估算 / 其他類 / 自定義熱量 */}
+                        <div className="type-fallback-card">
+                          <label>
+                            類別 / 估算模式
+                            <select
+                              value={fallbackType}
+                              onChange={(e) => {
+                                setFallbackType(e.target.value);
+                                setFallbackServings('');
+                                setFallbackQty('');
+                                setFallbackProtPerServ('');
+                                setFallbackCarbPerServ('');
+                                setFallbackFatPerServ('');
+                                setFallbackKcalPerServ('');
+                              }}
+                            >
+                              <option value="">請選擇</option>
+                              {typeOptions.map((t) => (
+                                <option key={t} value={t}>
+                                  {t}
+                                </option>
+                              ))}
+                              <option value="其他類">其他類</option>
+                              <option value="自定義熱量">
+                                自定義熱量
+                              </option>
+                            </select>
+                          </label>
+
+                          {/* C1：一般類型 */}
+                          {fallbackType &&
+                            fallbackType !== '其他類' &&
+                            fallbackType !== '自定義熱量' && (
+                              <>
+                                <div className="hint">
+                                  從類別估算：{fallbackType}
+                                </div>
+                                <label>
+                                  份量 (份)
+                                  <input
+                                    type="number"
+                                    value={fallbackServings}
+                                    onChange={(e) =>
+                                      setFallbackServings(
+                                        e.target.value
+                                      )
+                                    }
+                                    placeholder="例如:1 或 1.5"
+                                  />
+                                </label>
+                              </>
+                            )}
+
+                          {/* C2：其他類 */}
+                          {fallbackType === '其他類' && (
+                            <>
+                              <label>
+                                份量 (份)
+                                <input
+                                  type="number"
+                                  value={fallbackServings}
+                                  onChange={(e) =>
+                                    setFallbackServings(
+                                      e.target.value
+                                    )
+                                  }
+                                  placeholder="例如:1"
+                                />
+                              </label>
+
+                              <label>
+                                參考數量 (選填)
+                                <div className="inline-inputs">
+                                  <input
+                                    type="number"
+                                    value={fallbackQty}
+                                    onChange={(e) =>
+                                      setFallbackQty(
+                                        e.target.value
+                                      )
+                                    }
+                                    placeholder="例如:2"
+                                    style={{ flex: 1 }}
+                                  />
+                                  <select
+                                    value={fallbackUnitLabel}
+                                    onChange={(e) =>
+                                      setFallbackUnitLabel(
+                                        e.target.value
+                                      )
+                                    }
+                                  >
+                                    <option value="份">份</option>
+                                    <option value="個">個</option>
+                                    <option value="杯">杯</option>
+                                    <option value="碗">碗</option>
+                                    <option value="片">片</option>
+                                    <option value="湯匙">湯匙</option>
+                                    <option value="茶匙">茶匙</option>
+                                    <option value="根">根</option>
+                                    <option value="粒">粒</option>
+                                    <option value="張">張</option>
+                                    <option value="g">g</option>
+                                    <option value="米杯">
+                                      米杯
+                                    </option>
+                                    <option value="瓣">瓣</option>
+                                  </select>
+                                </div>
+                              </label>
+
+                              <label>
+                                每份蛋白質 (g)
+                                <input
+                                  type="number"
+                                  value={fallbackProtPerServ}
+                                  onChange={(e) =>
+                                    setFallbackProtPerServ(
+                                      e.target.value
+                                    )
+                                  }
+                                  placeholder="例如:7"
+                                />
+                              </label>
+                              <label>
+                                每份碳水 (g)
+                                <input
+                                  type="number"
+                                  value={fallbackCarbPerServ}
+                                  onChange={(e) =>
+                                    setFallbackCarbPerServ(
+                                      e.target.value
+                                    )
+                                  }
+                                  placeholder="例如:10"
+                                />
+                              </label>
+                              <label>
+                                每份脂肪 (g)
+                                <input
+                                  type="number"
+                                  value={fallbackFatPerServ}
+                                  onChange={(e) =>
+                                    setFallbackFatPerServ(
+                                      e.target.value
+                                    )
+                                  }
+                                  placeholder="例如:5"
+                                />
+                              </label>
+
+                              <div className="hint">
+                                系統會依 P×4+C×4+F×9
+                                自動估算每份與總熱量。
+                              </div>
+                            </>
+                          )}
+
+                          {/* C3：自定義熱量 */}
+                          {fallbackType === '自定義熱量' && (
+                            <>
+                              <label>
+                                份量 (份)
+                                <input
+                                  type="number"
+                                  value={fallbackServings}
+                                  onChange={(e) =>
+                                    setFallbackServings(
+                                      e.target.value
+                                    )
+                                  }
+                                  placeholder="例如:1"
+                                />
+                              </label>
+                              <label>
+                                每份熱量 (kcal)
+                                <input
+                                  type="number"
+                                  value={fallbackKcalPerServ}
+                                  onChange={(e) =>
+                                    setFallbackKcalPerServ(
+                                      e.target.value
+                                    )
+                                  }
+                                  placeholder="例如:250"
+                                />
+                              </label>
+                              <div className="hint">
+                                不在意 P/C/F，只估算總熱量。
+                              </div>
+                            </>
+                          )}
+                        </div>
                       </>
                     )}
 
+                  {/* A：Unit_Map 有資料 */}
                   {foodSearchResults.unitMatches.length > 0 && (
                     <>
                       <div className="result-title">
@@ -1427,6 +1691,7 @@ const MacroRing: React.FC<{
                           onClick={() => {
                             setSelectedUnitFood(u);
                             setSelectedFoodDbRow(null);
+                            setFallbackType('');
                           }}
                         >
                           <div>
@@ -1438,46 +1703,48 @@ const MacroRing: React.FC<{
                             </div>
                           </div>
                           <span className="tag">
-                            {selectedUnitFood === u
-                              ? '已選'
-                              : '選擇'}
+                            {selectedUnitFood === u ? '已選' : '選擇'}
                           </span>
                         </div>
                       ))}
                     </>
                   )}
 
-                  {foodSearchResults.foodMatches.length > 0 && (
-                    <>
-                      <div className="result-title">
-                        每 100g 精準資料(Food_DB)
-                      </div>
-                      {foodSearchResults.foodMatches.map((f, i) => (
-                        <div
-                          key={i}
-                          className="list-item clickable"
-                          onClick={() => {
-                            setSelectedFoodDbRow(f);
-                            setSelectedUnitFood(null);
-                          }}
-                        >
-                          <div>
-                            <div>{f.food}</div>
-                            <div className="sub">
-                              {f.kcal} kcal / 100g
-                            </div>
-                          </div>
-                          <span className="tag">
-                            {selectedFoodDbRow === f
-                              ? '已選'
-                              : '選擇'}
-                          </span>
+                  {/* B：只有 Food_DB 有資料 */}
+                  {foodSearchResults.unitMatches.length === 0 &&
+                    foodSearchResults.foodMatches.length > 0 && (
+                      <>
+                        <div className="result-title">
+                          每 100g 精準資料(Food_DB)
                         </div>
-                      ))}
-                    </>
-                  )}
+                        {foodSearchResults.foodMatches.map((f, i) => (
+                          <div
+                            key={i}
+                            className="list-item clickable"
+                            onClick={() => {
+                              setSelectedFoodDbRow(f);
+                              setSelectedUnitFood(null);
+                              setFallbackType('');
+                            }}
+                          >
+                            <div>
+                              <div>{f.food}</div>
+                              <div className="sub">
+                                {f.kcal} kcal / 100g
+                              </div>
+                            </div>
+                            <span className="tag">
+                              {selectedFoodDbRow === f
+                                ? '已選'
+                                : '選擇'}
+                            </span>
+                          </div>
+                        ))}
+                      </>
+                    )}
                 </div>
               )}
+
 
             {selectedUnitFood && (
               <>
@@ -2070,11 +2337,13 @@ const MacroRing: React.FC<{
 )}
 
       {tab === 'records' && (
-        <RecordsPage
-          recordTab={recordTab}
-          setRecordTab={setRecordTab}
-        />
-      )}
+  <RecordsPage
+    recordTab={recordTab}
+    setRecordTab={setRecordTab}
+    defaultMealType={recordDefaultMealType}
+  />
+)}
+
       {tab === 'settings' && <SettingsPage />}
 
       <nav className="bottom-nav">
