@@ -279,6 +279,12 @@ const App: React.FC = () => {
   const [todayLocal, setTodayLocal] = useState(
     dayjs().format('YYYY-MM-DD')
   );
+// ✅ 修正：確保在 App 載入時，時間狀態能正確初始化為當下時間
+// 雖然 useState 已經初始化，但這個 useEffect 能確保在客戶端環境中，
+// 初始渲染後的時間狀態是準確的，避免午夜交界點的誤差。
+useEffect(() => {
+    setTodayLocal(dayjs().format('YYYY-MM-DD'));
+}, []); // 僅在元件首次掛載時執行一次
 
   function goToExerciseRecord() {
     setTab('records');         // 切到「記錄」頁
@@ -538,7 +544,7 @@ const App: React.FC = () => {
     );
   };
 
-  // ======== 今天頁 ========
+  // ======== 首頁 ========
 
   type TodayPageProps = {
     onAddExercise: () => void;
@@ -2848,8 +2854,8 @@ const App: React.FC = () => {
           className={tab === 'today' ? 'active' : ''}
           onClick={() => setTab('today')}
         >
-          <div className="nav-icon">📅</div>
-          <div className="nav-label">今天</div>
+          <div className="nav-icon">🏠</div>
+          <div className="nav-label">首頁</div>
         </button>
         <button
           className={tab === 'records' ? 'active' : ''}
@@ -2870,7 +2876,7 @@ const App: React.FC = () => {
           className={tab === 'plan' ? 'active' : ''}
           onClick={() => setTab('plan')}
         >
-          <div className="nav-icon">📐</div>
+          <div className="nav-icon">🎯</div>
           <div className="nav-label">Plan</div>
         </button>
       </nav>
