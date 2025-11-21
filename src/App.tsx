@@ -1219,6 +1219,17 @@ const App: React.FC = () => {
       [typeTable, fallbackType]
     );
 
+    // 🔹 根據 Type 顯示「視覺參照」提示
+    const visualReference = useMemo(() => {
+      if (fallbackType === '豆魚蛋肉類（低脂）') return '一份約三根手指大小';
+      if (fallbackType === '豆魚蛋肉類（中脂）') return '一份約三根手指大小';
+      if (fallbackType === '豆魚蛋肉類（高脂）') return '一份約三根手指大小';
+      if (fallbackType === '水果類') return '一份約一個拳頭大小';
+      if (fallbackType === '全穀雜糧類') return '一份約一個手掌大小';
+      if (fallbackType === '蔬菜類') return '一份約一個拳頭大小';
+      return '';
+    }, [fallbackType]);
+
     // 依照目前選項計算 kcal + P/C/F + 顯示用份量
     const autoFoodInfo = useMemo(() => {
       const zero = {
@@ -1776,6 +1787,12 @@ const App: React.FC = () => {
                                 {currentTypeRow.Notes ? (
                                   <> · 備註：{currentTypeRow.Notes}</>
                                 ) : null}
+                              </div>
+                            )}
+
+                            {visualReference && (
+                              <div className="hint">
+                                視覺參照：{visualReference}
                               </div>
                             )}
 
