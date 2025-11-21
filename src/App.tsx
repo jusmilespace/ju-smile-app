@@ -1629,20 +1629,25 @@ function startEditExercise(e: ExerciseEntry) {
 
           <div className="form-section">
             <label>
-              餐別
-              
-<BigSelect
-  options={[
-    { value: '早餐', label: '早餐' },
-    { value: '午餐', label: '午餐' },
-    { value: '晚餐', label: '晚餐' },
-    { value: '點心', label: '點心' },
-  ]}
-  value={foodMealType}
-  onChange={(v)=>setFoodMealType(v as any)}
-/>
+  餐別
+  <BigSelect
+    options={[
+      { value: '早餐', label: '早餐' },
+      { value: '午餐', label: '午餐' },
+      { value: '晚餐', label: '晚餐' },
+      { value: '點心', label: '點心' },
+    ]}
+    value={foodMealType}
+    onChange={(v) => {
+      setFoodMealType(v as any);
+      // 選完後強制收合所有 BigSelect
+      document.dispatchEvent(
+        new CustomEvent('bigselect:open', { detail: 'force-close' })
+      );
+    }}
+  />
+</label>
 
-            </label>
 
             <label>
               食物名稱
@@ -1674,10 +1679,13 @@ function startEditExercise(e: ExerciseEntry) {
               key={i}
               className="list-item clickable"
               onClick={() => {
-                setSelectedUnitFood(u);
-                setSelectedFoodDbRow(null);
-                setFallbackType('');
-              }}
+  setSelectedUnitFood(u);
+  setSelectedFoodDbRow(null);
+  setFallbackType('');
+  // 把精準名稱帶回輸入框，取代原本關鍵字
+  setFoodName(u.Food ?? '');
+}}
+
             >
               <div>
                 <div>{u.Food}</div>
@@ -1707,10 +1715,13 @@ function startEditExercise(e: ExerciseEntry) {
                 key={i}
                 className="list-item clickable"
                 onClick={() => {
-                  setSelectedFoodDbRow(f);
-                  setSelectedUnitFood(null);
-                  setFallbackType('');
-                }}
+  setSelectedFoodDbRow(f);
+  setSelectedUnitFood(null);
+  setFallbackType('');
+  // 把精準名稱帶回輸入框，取代原本關鍵字
+  setFoodName(f.food ?? '');
+}}
+
               >
                 <div>
                   <div>{f.food}</div>
@@ -1748,26 +1759,31 @@ function startEditExercise(e: ExerciseEntry) {
 
       <div className="type-fallback-card">
         <label>
-          類別 / 估算模式
-          <BigSelect
-            options={[
-              ...typeOptions.map((t) => ({ value: t, label: t })),
-              { value: '其他類', label: '其他類' },
-              { value: '自定義熱量', label: '自定義熱量' },
-            ]}
-            value={fallbackType}
-            onChange={(v) => {
-              setFallbackType(v);
-              setFallbackServings('');
-              setFallbackQty('');
-              setFallbackProtPerServ('');
-              setFallbackCarbPerServ('');
-              setFallbackFatPerServ('');
-              setFallbackKcalPerServ('');
-            }}
-            placeholder="請選擇"
-          />
-        </label>
+  類別 / 估算模式
+  <BigSelect
+    options={[
+      ...typeOptions.map((t) => ({ value: t, label: t })),
+      { value: '其他類', label: '其他類' },
+      { value: '自定義熱量', label: '自定義熱量' },
+    ]}
+    value={fallbackType}
+    onChange={(v) => {
+      setFallbackType(v);
+      setFallbackServings('');
+      setFallbackQty('');
+      setFallbackProtPerServ('');
+      setFallbackCarbPerServ('');
+      setFallbackFatPerServ('');
+      setFallbackKcalPerServ('');
+      // 選完後強制收合所有 BigSelect
+      document.dispatchEvent(
+        new CustomEvent('bigselect:open', { detail: 'force-close' })
+      );
+    }}
+    placeholder="請選擇"
+  />
+</label>
+
 
         {/* C1：一般類型 */}
         {fallbackType &&
