@@ -1658,184 +1658,11 @@ function startEditExercise(e: ExerciseEntry) {
               />
             </label>
 
-                        {/* 搜尋結果：選到食物後就收起來 */}
-            {foodName.trim() &&
+           {/* 搜尋結果：選到食物後就收起來 */}
+{foodName.trim() &&
   !selectedUnitFood &&
   !selectedFoodDbRow && (
     <div className="search-results">
-      {/* 沒找到任何資料時的提示 */}
-      {foodSearchResults.unitMatches.length === 0 &&
-        foodSearchResults.foodMatches.length === 0 && (
-          <div className="hint">
-            目前尚無此食物資料，可以改用下面的
-            「類別估算 / 其他類 / 自定義熱量」來粗估。
-          </div>
-        )}
-
-      {/* C：類別估算 / 其他類 / 自定義熱量：不管有沒有搜尋結果都可以用 */}
-      <div className="hint" style={{textAlign:"center",margin:"8px 0"}}>或</div>
-      <div className="type-fallback-card">
-        <label>
-          類別 / 估算模式
-          <BigSelect
-  options={[...typeOptions.map(t => ({ value: t, label: t })), { value:'其他類', label:'其他類' }, { value:'自定義熱量', label:'自定義熱量' }]}
-  value={fallbackType}
-  onChange={(v)=>{
-    setFallbackType(v);
-    setFallbackServings('');
-    setFallbackQty('');
-    setFallbackProtPerServ('');
-    setFallbackCarbPerServ('');
-    setFallbackFatPerServ('');
-    setFallbackKcalPerServ('');
-  }}
-  placeholder="請選擇"
-/>
-        </label>
-
-        {/* C1：一般類型 */}
-        {fallbackType &&
-          fallbackType !== '其他類' &&
-          fallbackType !== '自定義熱量' && (
-            <>
-              <div className="hint">
-                從類別估算：{fallbackType}
-              </div>
-              <label>
-                份量 (份)
-                <input
-                  type="number"
-                  value={fallbackServings}
-                  onChange={(e) =>
-                    setFallbackServings(e.target.value)
-                  }
-                  placeholder="例如:1 或 1.5"
-                />
-              </label>
-            </>
-          )}
-
-        {/* C2：其他類 */}
-        {fallbackType === '其他類' && (
-          <>
-            <label>
-              份量 (份)
-              <input
-                type="number"
-                value={fallbackServings}
-                onChange={(e) =>
-                  setFallbackServings(e.target.value)
-                }
-                placeholder="例如:1"
-              />
-            </label>
-
-            <label>
-              參考數量 (選填)
-              <div className="inline-inputs">
-                <input
-                  type="number"
-                  value={fallbackQty}
-                  onChange={(e) =>
-                    setFallbackQty(e.target.value)
-                  }
-                  placeholder="例如:2"
-                  style={{ flex: 1 }}
-                />
-                <BigSelect
-  options={[
-    { value:'份', label:'份' }, { value:'個', label:'個' }, { value:'杯', label:'杯' },
-    { value:'碗', label:'碗' }, { value:'片', label:'片' }, { value:'湯匙', label:'湯匙' },
-    { value:'茶匙', label:'茶匙' }, { value:'根', label:'根' }, { value:'粒', label:'粒' },
-    { value:'張', label:'張' }, { value:'g', label:'g' }, { value:'米杯', label:'米杯' },
-    { value:'瓣', label:'瓣' },
-  ]}
-  value={fallbackUnitLabel}
-  onChange={(v)=>setFallbackUnitLabel(v)}
-  placeholder="請選擇"
-/>
-              </div>
-            </label>
-
-            <label>
-              每份蛋白質 (g)
-              <input
-                type="number"
-                value={fallbackProtPerServ}
-                onChange={(e) =>
-                  setFallbackProtPerServ(e.target.value)
-                }
-                placeholder="例如:7"
-              />
-            </label>
-            <label>
-              每份碳水 (g)
-              <input
-                type="number"
-                value={fallbackCarbPerServ}
-                onChange={(e) =>
-                  setFallbackCarbPerServ(e.target.value)
-                }
-                placeholder="例如:10"
-              />
-            </label>
-            <label>
-              每份脂肪 (g)
-              <input
-                type="number"
-                value={fallbackFatPerServ}
-                onChange={(e) =>
-                  setFallbackFatPerServ(e.target.value)
-                }
-                placeholder="例如:5"
-              />
-            </label>
-
-            <div className="hint">
-              系統會依 P×4 + C×4 + F×9
-              自動估算每份與總熱量。
-            </div>
-          </>
-        )}
-
-        {/* C3：自定義熱量 */}
-        {fallbackType === '自定義熱量' && (
-          <>
-            <label>
-              份量 (份)
-              <input
-                type="number"
-                value={fallbackServings}
-                onChange={(e) =>
-                  setFallbackServings(e.target.value)
-                }
-                placeholder="例如:1"
-              />
-            </label>
-            <label>
-              每份熱量 (kcal)
-              <input
-                type="number"
-                value={fallbackKcalPerServ}
-                onChange={(e) =>
-                  setFallbackKcalPerServ(e.target.value)
-                }
-                placeholder="例如:250"
-              />
-            </label>
-            <div className="hint">
-              不在意 P/C/F，只估算總熱量。
-            </div>
-          </>
-        )}
-        {fallbackType && autoFoodInfo.kcal > 0 && (
-  <div className="hint">
-    系統估算總熱量約 {autoFoodInfo.kcal} kcal
-  </div>
-)}
-
-      </div>
-
       {/* A：Unit_Map 有資料 */}
       {foodSearchResults.unitMatches.length > 0 && (
         <>
@@ -1898,8 +1725,186 @@ function startEditExercise(e: ExerciseEntry) {
             ))}
           </>
         )}
+
+      {/* 沒找到任何資料時的提示 */}
+      {foodSearchResults.unitMatches.length === 0 &&
+        foodSearchResults.foodMatches.length === 0 && (
+          <div className="hint">
+            目前尚無此食物資料，可以改用下面的
+            「類別估算 / 其他類 / 自定義熱量」來粗估。
+          </div>
+        )}
+
+      {/* C：類別估算 / 其他類 / 自定義熱量：不管有沒有搜尋結果都可以用 */}
+      {(foodSearchResults.unitMatches.length > 0 ||
+        foodSearchResults.foodMatches.length > 0) && (
+        <div
+          className="hint"
+          style={{ textAlign: 'center', margin: '8px 0' }}
+        >
+          或
+        </div>
+      )}
+
+      <div className="type-fallback-card">
+        <label>
+          類別 / 估算模式
+          <BigSelect
+            options={[
+              ...typeOptions.map((t) => ({ value: t, label: t })),
+              { value: '其他類', label: '其他類' },
+              { value: '自定義熱量', label: '自定義熱量' },
+            ]}
+            value={fallbackType}
+            onChange={(v) => {
+              setFallbackType(v);
+              setFallbackServings('');
+              setFallbackQty('');
+              setFallbackProtPerServ('');
+              setFallbackCarbPerServ('');
+              setFallbackFatPerServ('');
+              setFallbackKcalPerServ('');
+            }}
+            placeholder="請選擇"
+          />
+        </label>
+
+        {/* C1：一般類型 */}
+        {fallbackType &&
+          fallbackType !== '其他類' &&
+          fallbackType !== '自定義熱量' && (
+            <>
+              <div className="hint">
+                從類別估算：{fallbackType}
+              </div>
+              <label>
+                份量 (份)
+                <input
+                  type="number"
+                  value={fallbackServings}
+                  onChange={(e) => setFallbackServings(e.target.value)}
+                  placeholder="例如:1 或 1.5"
+                />
+              </label>
+            </>
+          )}
+
+        {/* C2：其他類 */}
+        {fallbackType === '其他類' && (
+          <>
+            <label>
+              份量 (份)
+              <input
+                type="number"
+                value={fallbackServings}
+                onChange={(e) => setFallbackServings(e.target.value)}
+                placeholder="例如:1"
+              />
+            </label>
+
+            <label>
+              參考數量 (選填)
+              <div className="inline-inputs">
+                <input
+                  type="number"
+                  value={fallbackQty}
+                  onChange={(e) => setFallbackQty(e.target.value)}
+                  placeholder="例如:2"
+                  style={{ flex: 1 }}
+                />
+                <BigSelect
+                  options={[
+                    { value: '份', label: '份' },
+                    { value: '個', label: '個' },
+                    { value: '杯', label: '杯' },
+                    { value: '碗', label: '碗' },
+                    { value: '片', label: '片' },
+                    { value: '湯匙', label: '湯匙' },
+                    { value: '茶匙', label: '茶匙' },
+                    { value: '根', label: '根' },
+                    { value: '粒', label: '粒' },
+                    { value: '張', label: '張' },
+                    { value: 'g', label: 'g' },
+                    { value: '米杯', label: '米杯' },
+                    { value: '瓣', label: '瓣' },
+                  ]}
+                  value={fallbackUnitLabel}
+                  onChange={(v) => setFallbackUnitLabel(v)}
+                  placeholder="請選擇"
+                />
+              </div>
+            </label>
+
+            <label>
+              每份蛋白質 (g)
+              <input
+                type="number"
+                value={fallbackProtPerServ}
+                onChange={(e) => setFallbackProtPerServ(e.target.value)}
+                placeholder="例如:7"
+              />
+            </label>
+            <label>
+              每份碳水 (g)
+              <input
+                type="number"
+                value={fallbackCarbPerServ}
+                onChange={(e) => setFallbackCarbPerServ(e.target.value)}
+                placeholder="例如:10"
+              />
+            </label>
+            <label>
+              每份脂肪 (g)
+              <input
+                type="number"
+                value={fallbackFatPerServ}
+                onChange={(e) => setFallbackFatPerServ(e.target.value)}
+                placeholder="例如:5"
+              />
+            </label>
+
+            <div className="hint">
+              系統會依 P×4 + C×4 + F×9 自動估算每份與總熱量。
+            </div>
+          </>
+        )}
+
+        {/* C3：自定義熱量 */}
+        {fallbackType === '自定義熱量' && (
+          <>
+            <label>
+              份量 (份)
+              <input
+                type="number"
+                value={fallbackServings}
+                onChange={(e) => setFallbackServings(e.target.value)}
+                placeholder="例如:1"
+              />
+            </label>
+            <label>
+              每份熱量 (kcal)
+              <input
+                type="number"
+                value={fallbackKcalPerServ}
+                onChange={(e) => setFallbackKcalPerServ(e.target.value)}
+                placeholder="例如:250"
+              />
+            </label>
+            <div className="hint">
+              不在意 P/C/F，只估算總熱量。
+            </div>
+          </>
+        )}
+
+        {fallbackType && autoFoodInfo.kcal > 0 && (
+          <div className="hint">
+            系統估算總熱量約 {autoFoodInfo.kcal} kcal
+          </div>
+        )}
+      </div>
     </div>
   )}
+            
 
 
 
@@ -2507,19 +2512,81 @@ function startEditExercise(e: ExerciseEntry) {
   };
 
   
+
 // ======== Plan 頁 ========
 const PlanPage: React.FC = () => {
-  // 基本資料：不帶預設值，只放「例:」提示
-  const [gender, setGender]   = useState<'female'|'male'|''>('');
-  const [age, setAge]         = useState<string>('');   // 例: 30
-  const [height, setHeight]   = useState<string>('');   // 例: 165
-  const [weight, setWeight]   = useState<string>('');   // 例: 60
+  // 基本資料：從 localStorage 還原，沒有就留空
+  const [gender, setGender] = useState<'female' | 'male' | ''>(() => {
+    try {
+      const raw = localStorage.getItem('JU_PLAN_FORM');
+      if (!raw) return '';
+      const obj = JSON.parse(raw);
+      return obj.gender === 'female' || obj.gender === 'male' ? obj.gender : '';
+    } catch {
+      return '';
+    }
+  });
+
+  const [age, setAge] = useState<string>(() => {
+    try {
+      const raw = localStorage.getItem('JU_PLAN_FORM');
+      if (!raw) return '';
+      const obj = JSON.parse(raw);
+      return obj.age != null ? String(obj.age) : '';
+    } catch {
+      return '';
+    }
+  }); // 例: 30
+
+  const [height, setHeight] = useState<string>(() => {
+    try {
+      const raw = localStorage.getItem('JU_PLAN_FORM');
+      if (!raw) return '';
+      const obj = JSON.parse(raw);
+      return obj.height != null ? String(obj.height) : '';
+    } catch {
+      return '';
+    }
+  }); // 例: 165
+
+  const [weight, setWeight] = useState<string>(() => {
+    try {
+      const raw = localStorage.getItem('JU_PLAN_FORM');
+      if (!raw) return '';
+      const obj = JSON.parse(raw);
+      return obj.weight != null ? String(obj.weight) : '';
+    } catch {
+      return '';
+    }
+  }); // 例: 60
+
   const [activity, setActivity] =
-    useState<'sedentary'|'light'|'moderate'|'active'|'very'|''>('');
+    useState<'sedentary' | 'light' | 'moderate' | 'active' | 'very' | ''>(() => {
+      try {
+        const raw = localStorage.getItem('JU_PLAN_FORM');
+        if (!raw) return '';
+        const obj = JSON.parse(raw);
+        const v = obj.activity;
+        if (
+          v === 'sedentary' ||
+          v === 'light' ||
+          v === 'moderate' ||
+          v === 'active' ||
+          v === 'very'
+        ) {
+          return v;
+        }
+        return '';
+      } catch {
+        return '';
+      }
+    });
 
   const w = Number(weight) || 0;
   const h = Number(height) || 0;
   const a = Number(age) || 0;
+  // ...（後面原本程式碼照舊）
+
 
   const bmr = useMemo(() => {
     if (!gender || !w || !h || !a) return 0;
@@ -2623,15 +2690,25 @@ const PlanPage: React.FC = () => {
       <section className="card">
         <h2>基本資料</h2>
         <div className="form-section">
-          <label>
-            性別
-            <BigSelect
-              options={[{ value:'female', label:'女性' }, { value:'male', label:'男性' }]}
-              value={gender}
-              onChange={(v) => setGender(v as any)}
-              placeholder="請選擇"
-            />
-          </label>
+         <label>
+  性別
+  <BigSelect
+    options={[
+      { value: 'female', label: '女性' },
+      { value: 'male', label: '男性' },
+    ]}
+    value={gender}
+    onChange={(v) => {
+      setGender(v as any);
+      // 強制關閉所有 BigSelect 下拉
+      document.dispatchEvent(
+        new CustomEvent('bigselect:open', { detail: 'force-close' })
+      );
+    }}
+    placeholder="請選擇"
+  />
+</label>
+
           <label>
             年齡
             <input type="number" value={age} onChange={(e)=>setAge(e.target.value)} placeholder="例: 30" />
@@ -2645,9 +2722,21 @@ const PlanPage: React.FC = () => {
             <input type="number" value={weight} onChange={(e)=>setWeight(e.target.value)} placeholder="例: 60" />
           </label>
           <label>
-            活動量
-            <BigSelect options={activityOptions} value={activity} onChange={(v)=>setActivity(v as any)} placeholder="請選擇" />
-          </label>
+  活動量
+  <BigSelect
+    options={activityOptions}
+    value={activity}
+    onChange={(v) => {
+      setActivity(v as any);
+      // 強制關閉所有 BigSelect 下拉
+      document.dispatchEvent(
+        new CustomEvent('bigselect:open', { detail: 'force-close' })
+      );
+    }}
+    placeholder="請選擇"
+  />
+</label>
+
         </div>
       </section>
 
