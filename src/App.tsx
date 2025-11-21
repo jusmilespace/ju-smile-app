@@ -1,8 +1,6 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import Papa from 'papaparse';
 import dayjs from 'dayjs';
-import BmrCalculator from './BmrCalculator';
-
 
 // ======== 型別定義 ========
 
@@ -112,6 +110,9 @@ const BigSelect: React.FC<{
     document.addEventListener('click', onDocClick);
     return () => document.removeEventListener('click', onDocClick);
   }, []);
+
+  // 值變更時自動收合（保險關閉）
+  useEffect(() => setOpen(false), [value]);
 
   useEffect(() => {
     function onAnyOpen(ev: Event) {
@@ -268,15 +269,17 @@ const App: React.FC = () => {
   const [settings, setSettings] = useState<Settings>(() =>
     loadJSON<Settings>(STORAGE_KEYS.SETTINGS, {})
   );
-    // 預帶「目標攝取熱量」：若尚未設定，使用 Plan 頁面選取的目標攝取
-  useEffect(() => {
-    if (settings.calorieGoal == null) {
-      const planGoal = Number(localStorage.getItem('JU_PLAN_GOAL_KCAL') || '0') || 0;
-      if (planGoal > 0) {
-        setSettings((prev) => ({ ...prev, calorieGoal: planGoal }));
-      }
+// 監聽 Plan 頁送來的目標熱量，立即更新「我的」頁的 目標攝取熱量(kcal)
+useEffect(() => {
+  function onSetGoal(ev: any) {
+    const kcal = Number(ev?.detail);
+    if (!isNaN(kcal) && kcal > 0) {
+      setSettings((s) => ({ ...s, calorieGoal: kcal }));
     }
-  }, []);
+  }
+  document.addEventListener('ju:set-goal-kcal', onSetGoal as any);
+  return () => document.removeEventListener('ju:set-goal-kcal', onSetGoal as any);
+}, []);
 
 
   const [days, setDays] = useState<DaySummary[]>(() =>
@@ -375,41 +378,16 @@ const App: React.FC = () => {
   // ======== 今日統計 ========
 
   const todaySummary = getDay(todayLocal);
-// === Today derived values (single source of truth) ===
-// 今天的餐點與運動（依本地日期）
-const todayMeals = meals.filter((e) => e.date === todayLocal);
-const todayExercises = exercises.filter((e) => e.date === todayLocal);
 
-// 今日總攝取 & 總消耗（先算好，後面才用得到）
-const todayIntake = todayMeals.reduce((sum, m) => sum + (Number(m.kcal) || 0), 0);
-const todayBurn   = todayExercises.reduce((sum, ex) => sum + (Number(ex.kcal) || 0), 0);
+  const todayMeals = meals.filter((m) => m.date === todayLocal);
+  const todayExercises = exercises.filter((e) => e.date === todayLocal);
 
-// 目標攝取（優先用「我的」頁設定；否則帶 Plan 頁選的值）
-const calorieGoal: number | undefined =
-  settings.calorieGoal ??
-  (Number(localStorage.getItem('JU_PLAN_GOAL_KCAL') || '0') || undefined);
-
-// 來自 Plan 的 BMR（沒有就 0）
-const planBmr = Number(localStorage.getItem('JU_PLAN_BMR') || '0') || 0;
-
-// 淨熱量 = 攝取 − 消耗 − BMR
-const net = todayIntake - todayBurn - planBmr;
-const netDisplayValue = Math.abs(Math.round(net));
-let netStatusLabel = '';
-let netColor = '#444';
-
-if (net > 0) {
-  netStatusLabel = '熱量超標';
-  netColor = '#d64545';
-} else if (net < 0) {
-  netStatusLabel = '熱量赤字';
-  netColor = '#3b8c5a';
-} else {
-  netStatusLabel = '熱量平衡';
-  netColor = '#3b8c5a';
-}
-// === End Today derived values ===
-
+  const todayIntake = todayMeals.reduce((s, m) => s + (m.kcal || 0), 0);
+  const todayBurn = todayExercises.reduce((s, e) => s + (e.kcal || 0), 0);
+  const todayExerciseMinutes = todayExercises.reduce(
+    (s, e) => s + (e.minutes || 0),
+    0
+  );
 
   // ======== CSV 同步 ========
 
@@ -653,8 +631,36 @@ const startVisceralFat =
 const calorieGoal =
   settings.calorieGoal != null ? settings.calorieGoal : undefined;
 
+// 先算出今天的「淨熱量」= 攝取 - 消耗
+const netKcal = todayIntake - todayBurn;
 
+// 要顯示在畫面上的數字
+let netDisplayValue = 0;
+let netStatusLabel = '';
+let netColor = '#444';
 
+// 有設定目標時：用「淨熱量 - 目標」判斷
+if (calorieGoal != null) {
+  const diff = netKcal - calorieGoal; // >0 超標, <0 赤字
+  netDisplayValue = Math.abs(Math.round(diff));
+
+  if (diff > 0) {
+    netStatusLabel = '超標';
+    netColor = '#d64545';
+  } else if (diff < 0) {
+    netStatusLabel = '赤字';
+    netColor = '#3b8c5a';
+  } else {
+    netStatusLabel = '達標';
+    netColor = '#3b8c5a';
+  }
+} else {
+  // 沒設定目標時，就退回舊邏輯：和 0 比較
+  netDisplayValue = Math.abs(Math.round(netKcal));
+  const isDeficit = netKcal < 0;
+  netStatusLabel = isDeficit ? '赤字(相對運動)' : '盈餘';
+  netColor = isDeficit ? '#3b8c5a' : '#d64545';
+}
 
  
     const todayExerciseMinutes = todayExercises.reduce(
@@ -1624,19 +1630,18 @@ function startEditExercise(e: ExerciseEntry) {
           <div className="form-section">
             <label>
               餐別
-              <select
+              
+<BigSelect
+  options={[
+    { value: '早餐', label: '早餐' },
+    { value: '午餐', label: '午餐' },
+    { value: '晚餐', label: '晚餐' },
+    { value: '點心', label: '點心' },
+  ]}
   value={foodMealType}
-  onChange={(e) =>
-    setFoodMealType(e.target.value as any)
-  }
-  style={{ fontSize: 16 }}
->
+  onChange={(v)=>setFoodMealType(v as any)}
+/>
 
-                <option value="早餐">早餐</option>
-                <option value="午餐">午餐</option>
-                <option value="晚餐">晚餐</option>
-                <option value="點心">點心</option>
-              </select>
             </label>
 
             <label>
@@ -1668,31 +1673,24 @@ function startEditExercise(e: ExerciseEntry) {
         )}
 
       {/* C：類別估算 / 其他類 / 自定義熱量：不管有沒有搜尋結果都可以用 */}
+      <div className="hint" style={{textAlign:"center",margin:"8px 0"}}>或</div>
       <div className="type-fallback-card">
         <label>
           類別 / 估算模式
-          <select
-            value={fallbackType}
-            onChange={(e) => {
-              setFallbackType(e.target.value);
-              setFallbackServings('');
-              setFallbackQty('');
-              setFallbackProtPerServ('');
-              setFallbackCarbPerServ('');
-              setFallbackFatPerServ('');
-              setFallbackKcalPerServ('');
-            }}
-            style={{ fontSize: 16 }}  // 👈 順便放大字
-          >
-            <option value="">請選擇</option>
-            {typeOptions.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-            <option value="其他類">其他類</option>
-            <option value="自定義熱量">自定義熱量</option>
-          </select>
+          <BigSelect
+  options={[...typeOptions.map(t => ({ value: t, label: t })), { value:'其他類', label:'其他類' }, { value:'自定義熱量', label:'自定義熱量' }]}
+  value={fallbackType}
+  onChange={(v)=>{
+    setFallbackType(v);
+    setFallbackServings('');
+    setFallbackQty('');
+    setFallbackProtPerServ('');
+    setFallbackCarbPerServ('');
+    setFallbackFatPerServ('');
+    setFallbackKcalPerServ('');
+  }}
+  placeholder="請選擇"
+/>
         </label>
 
         {/* C1：一般類型 */}
@@ -1744,27 +1742,18 @@ function startEditExercise(e: ExerciseEntry) {
                   placeholder="例如:2"
                   style={{ flex: 1 }}
                 />
-                <select
-                  value={fallbackUnitLabel}
-                  onChange={(e) =>
-                    setFallbackUnitLabel(e.target.value)
-                  }
-                  style={{ fontSize: 16 }}   // 👈 字體
-                >
-                  <option value="份">份</option>
-                  <option value="個">個</option>
-                  <option value="杯">杯</option>
-                  <option value="碗">碗</option>
-                  <option value="片">片</option>
-                  <option value="湯匙">湯匙</option>
-                  <option value="茶匙">茶匙</option>
-                  <option value="根">根</option>
-                  <option value="粒">粒</option>
-                  <option value="張">張</option>
-                  <option value="g">g</option>
-                  <option value="米杯">米杯</option>
-                  <option value="瓣">瓣</option>
-                </select>
+                <BigSelect
+  options={[
+    { value:'份', label:'份' }, { value:'個', label:'個' }, { value:'杯', label:'杯' },
+    { value:'碗', label:'碗' }, { value:'片', label:'片' }, { value:'湯匙', label:'湯匙' },
+    { value:'茶匙', label:'茶匙' }, { value:'根', label:'根' }, { value:'粒', label:'粒' },
+    { value:'張', label:'張' }, { value:'g', label:'g' }, { value:'米杯', label:'米杯' },
+    { value:'瓣', label:'瓣' },
+  ]}
+  value={fallbackUnitLabel}
+  onChange={(v)=>setFallbackUnitLabel(v)}
+  placeholder="請選擇"
+/>
               </div>
             </label>
 
@@ -2517,7 +2506,211 @@ function startEditExercise(e: ExerciseEntry) {
     );
   };
 
-  // ======== App Root Render ========
+  
+// ======== Plan 頁 ========
+const PlanPage: React.FC = () => {
+  // 基本資料：不帶預設值，只放「例:」提示
+  const [gender, setGender]   = useState<'female'|'male'|''>('');
+  const [age, setAge]         = useState<string>('');   // 例: 30
+  const [height, setHeight]   = useState<string>('');   // 例: 165
+  const [weight, setWeight]   = useState<string>('');   // 例: 60
+  const [activity, setActivity] =
+    useState<'sedentary'|'light'|'moderate'|'active'|'very'|''>('');
+
+  const w = Number(weight) || 0;
+  const h = Number(height) || 0;
+  const a = Number(age) || 0;
+
+  const bmr = useMemo(() => {
+    if (!gender || !w || !h || !a) return 0;
+    return Math.round(
+      gender === 'male'
+        ? 10 * w + 6.25 * h - 5 * a + 5
+        : 10 * w + 6.25 * h - 5 * a - 161
+    );
+  }, [gender, w, h, a]);
+
+  const tdee = useMemo(() => {
+    if (!bmr || !activity) return 0;
+    const mult = {
+      sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725, very: 1.9,
+    }[activity];
+    return Math.round(bmr * (mult || 0));
+  }, [bmr, activity]);
+
+  const [selectedGoal, setSelectedGoal] = useState<number | null>(null);
+  // 初始化：還原上次輸入的表單內容
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('JU_PLAN_FORM');
+      if (raw) {
+        const obj = JSON.parse(raw);
+        if (obj && typeof obj === 'object') {
+          if (obj.gender) setGender(obj.gender);
+          if (obj.age != null) setAge(String(obj.age));
+          if (obj.height != null) setHeight(String(obj.height));
+          if (obj.weight != null) setWeight(String(obj.weight));
+          if (obj.activity) setActivity(obj.activity);
+          if (obj.selectedGoal != null) setSelectedGoal(Number(obj.selectedGoal));
+        }
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  // 變更時即時保存
+  useEffect(() => {
+    const data = { gender, age, height, weight, activity, selectedGoal };
+    try { localStorage.setItem('JU_PLAN_FORM', JSON.stringify(data)); } catch { /* ignore */ }
+  }, [gender, age, height, weight, activity, selectedGoal]);
+
+
+  // 小圓環
+  const ResultRing: React.FC<{value:number; label:string}> = ({ value, label }) => (
+    <div className="ring-card" style={{ minWidth: 140 }}>
+      <div className="ring" style={{ ['--p' as any]: 85 }}>
+        <div className="ring-center">
+          <div className="ring-value" style={{ fontSize: 22, fontWeight: 800 }}>{value || 0}</div>
+          <div style={{ fontSize: 12, opacity: 0.75 }}>{label}</div>
+        </div>
+      </div>
+      <div className="ring-label" style={{ color: 'var(--mint-dark)', fontWeight: 700 }}>
+        {label === 'BMR' ? '基礎代謝率' : '每日總消耗'}
+      </div>
+      <div className="ring-sub" style={{ opacity: 0.75 }}>
+        {label === 'BMR' ? '維持生命最低熱量' : '維持體重熱量'}
+      </div>
+    </div>
+  );
+
+  const GoalCard: React.FC<{title:string; kcal:number; tip?:string; warn?:string; recommended?:boolean;}> =
+  ({ title, kcal, tip, warn, recommended }) => (
+    <div
+      className="card"
+      style={{
+        border: selectedGoal === kcal ? '2px solid #5c9c84' : '1px solid var(--line)',
+        background: recommended ? '#fafffc' : '#fff',
+        cursor: 'pointer'
+      }}
+      onClick={() => setSelectedGoal(kcal)}
+    >
+      <div className="meal-header">
+        {selectedGoal === kcal && <span className="tag" style={{marginRight:8, background:'#5c9c84'}}>已選</span>}
+        <span className="meal-title" style={{ color: recommended ? 'var(--mint-dark)' : 'var(--text-main)' }}>
+          {title}
+        </span>
+        {recommended && <span className="tag" style={{ marginLeft: 8 }}>推薦</span>}
+      </div>
+      <div className="meal-body">
+        <div className="kcal">{Math.max(0, Math.round(kcal))} kcal</div>
+        {tip && <div className="tip">{tip}</div>}
+        {warn && <div className="warning" style={{color:'#d64545'}}>{warn}</div>}
+      </div>
+    </div>
+  );
+
+  const activityOptions: BigOption[] = [
+    { value: 'sedentary', label: '久坐 (1.2)' },
+    { value: 'light',     label: '輕量 (1.375)' },
+    { value: 'moderate',  label: '中等 (1.55)' },
+    { value: 'active',    label: '活躍 (1.725)' },
+    { value: 'very',      label: '非常活躍 (1.9)' },
+  ];
+
+  return (
+    <div className="page page-plan" style={{ padding: 16, paddingBottom: '96px' }}>
+      <h1 style={{ fontSize: 22, marginBottom: 12 }}>BMR / TDEE 計算</h1>
+
+      <section className="card">
+        <h2>基本資料</h2>
+        <div className="form-section">
+          <label>
+            性別
+            <BigSelect
+              options={[{ value:'female', label:'女性' }, { value:'male', label:'男性' }]}
+              value={gender}
+              onChange={(v) => setGender(v as any)}
+              placeholder="請選擇"
+            />
+          </label>
+          <label>
+            年齡
+            <input type="number" value={age} onChange={(e)=>setAge(e.target.value)} placeholder="例: 30" />
+          </label>
+          <label>
+            身高 (cm)
+            <input type="number" value={height} onChange={(e)=>setHeight(e.target.value)} placeholder="例: 165" />
+          </label>
+          <label>
+            體重 (kg)
+            <input type="number" value={weight} onChange={(e)=>setWeight(e.target.value)} placeholder="例: 60" />
+          </label>
+          <label>
+            活動量
+            <BigSelect options={activityOptions} value={activity} onChange={(v)=>setActivity(v as any)} placeholder="請選擇" />
+          </label>
+        </div>
+      </section>
+
+      
+      <section className="card">
+        <h2>計算結果</h2>
+        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:12}}>
+          <div style={{border:'1px solid var(--line)', borderRadius:12, padding:16, background:'#f6fbff'}}>
+            <div style={{fontSize:12, color:'#5c9c84', fontWeight:700, letterSpacing:1}}>BMR</div>
+            <div style={{fontSize:28, fontWeight:800, margin:'4px 0 8px 0'}}>{bmr || 0}</div>
+            <div style={{fontSize:13, opacity:0.8}}>基礎代謝率 · 維持生命最低熱量</div>
+          </div>
+          <div style={{border:'1px solid var(--line)', borderRadius:12, padding:16, background:'#fffaf6'}}>
+            <div style={{fontSize:12, color:'#e68a3a', fontWeight:700, letterSpacing:1}}>TDEE</div>
+            <div style={{fontSize:28, fontWeight:800, margin:'4px 0 8px 0'}}>{tdee || 0}</div>
+            <div style={{fontSize:13, opacity:0.8}}>每日總消耗 · 維持體重熱量</div>
+          </div>
+        </div>
+      </section>
+
+
+      <section className="card">
+        <h2>目標攝取建議</h2>
+        <div className="meals-card">
+          <GoalCard title="維持目前體重" kcal={tdee} tip="熱量平衡 (Net 0)" />
+          <GoalCard title="溫和減重"   kcal={tdee ? tdee - 300 : 0} tip="每日赤字 -300 (月減 ~1.2kg)" recommended />
+          <GoalCard title="標準減重"   kcal={tdee ? tdee - 500 : 0} tip="每日赤字 -500 (月減 ~2kg)"
+                    warn={tdee && (tdee - 500) < bmr ? '低於 BMR，請評估是否過低' : undefined} />
+          <GoalCard title="積極減重"   kcal={tdee ? tdee - 1000 : 0} tip="每日赤字 -1000 (月減 ~4kg)"
+                    warn="不建議長期執行，易流失肌肉" />
+          {/* 增重 */}
+          <GoalCard title="溫和增重"   kcal={tdee ? tdee + 300 : 0} tip="每日盈餘 +300 (月增 ~1.2kg)" />
+          <GoalCard title="標準增重"   kcal={tdee ? tdee + 500 : 0} tip="每日盈餘 +500 (月增 ~2kg)" />
+        </div>
+
+        <div style={{ textAlign:'center', marginTop:12 }}>
+          <button
+            className="btn primary"
+            disabled={!selectedGoal || !bmr}
+            onClick={() => {
+              if (!selectedGoal || !bmr) return;
+              try {
+                localStorage.setItem('JU_PLAN_BMR', String(bmr));
+                localStorage.setItem('JU_PLAN_TDEE', String(tdee || 0));
+                localStorage.setItem('JU_PLAN_GOAL_KCAL', String(selectedGoal));
+                document.dispatchEvent(new CustomEvent('ju:set-goal-kcal', { detail: selectedGoal }));
+                alert(`已加入目標熱量：${selectedGoal} kcal`);
+              } catch {}
+            }}
+            style={{ padding:'10px 16px', borderRadius:10, border:'none', background:'#5c9c84', color:'#fff', fontSize:16 }}
+          >
+            加入目標熱量
+          </button>
+        </div>
+
+        <div className="hint" style={{ marginTop:8 }}>
+          減掉 <b>1 公斤</b> 的體脂肪約需 <b>7,700 kcal</b>；建議以 TDEE 減去 <b>300–500 kcal</b> 做溫和減重。
+        </div>
+      </section>
+    </div>
+  );
+};
+// ======== App Root Render ========
 
   return (
     <div className="app">
@@ -2534,8 +2727,7 @@ function startEditExercise(e: ExerciseEntry) {
 )}
 
       {tab === 'settings' && <SettingsPage />}
-      {tab === 'plan' && <BmrCalculator />}
-
+      {tab === 'plan' && <PlanPage />}
 
       <nav className="bottom-nav">
         <button
@@ -2559,14 +2751,14 @@ function startEditExercise(e: ExerciseEntry) {
           <div className="nav-icon">🦋</div>
           <div className="nav-label">我的</div>
         </button>
+      
         <button
-  className={tab === 'plan' ? 'active' : ''}
-  onClick={() => setTab('plan')}
->
-  <div className="nav-icon">📐</div>
-  <div className="nav-label">Plan</div>
-</button>
-
+          className={tab === 'plan' ? 'active' : ''}
+          onClick={() => setTab('plan')}
+        >
+          <div className="nav-icon">📐</div>
+          <div className="nav-label">Plan</div>
+        </button>
       </nav>
     </div>
   );
