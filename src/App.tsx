@@ -88,6 +88,25 @@ type Settings = {
 type Tab = 'today' | 'records' | 'settings' | 'plan';
 type RecordSubTab = 'food' | 'exercise';
 
+// 🆕 新增：常用組合結構
+type ComboItem = {
+  // 紀錄當時的名稱，可能來自 Food Name 欄位或 Type Name
+  label: string;
+  // 記錄當時計算出的營養素
+  kcal: number;
+  protein?: number;
+  carb?: number;
+  fat?: number;
+  amountText?: string;
+};
+
+type MealCombo = {
+  id: string;
+  name: string;
+  items: ComboItem[];
+};
+
+
 // ======== 常數 & 工具 ========
 // 可客製字體大小的下拉，且互斥展開（選了值/打開時會關閉其他）
 type BigOption = { value: string; label: string };
@@ -178,6 +197,8 @@ const STORAGE_KEYS = {
   DAYS: 'JU_DAYS',
   MEALS: 'JU_MEALS',
   EXERCISES: 'JU_EXERCISES',
+  // 🆕 新增：常用組合的儲存 Key
+  COMBOS: 'JU_COMBOS',
   SRC_TYPE: 'JU_SRC_TYPE',
   SRC_UNIT: 'JU_SRC_UNIT',
   SRC_FOOD: 'JU_SRC_FOOD',
@@ -276,6 +297,11 @@ const App: React.FC = () => {
     loadJSON<ExerciseEntry[]>(STORAGE_KEYS.EXERCISES, [])
   );
 
+  // 🆕 新增：常用組合的狀態
+  const [combos, setCombos] = useState<MealCombo[]>(() =>
+    loadJSON<MealCombo[]>(STORAGE_KEYS.COMBOS, [])
+  );
+
   const [todayLocal, setTodayLocal] = useState(
     dayjs().format('YYYY-MM-DD')
   );
@@ -322,7 +348,7 @@ useEffect(() => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 儲存 settings / days / meals / exercises
+  // 儲存 settings / days / meals / exercises / combos
   useEffect(() => {
     saveJSON(STORAGE_KEYS.SETTINGS, settings);
   }, [settings]);
@@ -338,6 +364,11 @@ useEffect(() => {
   useEffect(() => {
     saveJSON(STORAGE_KEYS.EXERCISES, exercises);
   }, [exercises]);
+
+  // 🆕 儲存 combos
+  useEffect(() => {
+    saveJSON(STORAGE_KEYS.COMBOS, combos);
+  }, [combos]);
 
   // ======== 取得 / 更新某日資料 ========
 
@@ -1152,6 +1183,12 @@ useEffect(() => {
     const [manualFoodKcal, setManualFoodKcal] = useState(''); // 給你保留舊有「直接輸入總熱量」備用
 
     const [editingMealId, setEditingMealId] = useState<string | null>(null);
+    
+    // 🆕 常用組合相關狀態
+    const [selectedMealIds, setSelectedMealIds] = useState<string[]>([]);
+    const [comboNameInput, setComboNameInput] = useState('');
+    const [showSaveComboModal, setShowSaveComboModal] = useState(false);
+
 
     // 運動表單
     const [exName, setExName] = useState('');
@@ -1492,6 +1529,7 @@ useEffect(() => {
       setManualFoodKcal('');
       setSelectedUnitFood(null);
       setSelectedFoodDbRow(null);
+      setFoodName(''); // 清空搜尋欄位
     }
 
     function startEditMeal(m: MealEntry) {
@@ -1507,7 +1545,70 @@ useEffect(() => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       setRecordTab('food');
     }
+    
+    // 🆕 處理選擇常用組合中的品項
+    function toggleMealSelection(id: string) {
+      setSelectedMealIds((prev) =>
+        prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      );
+    }
 
+    // 🆕 儲存為常用組合
+    function handleSaveCombo() {
+      if (!selectedMealIds.length) {
+        alert('請先選擇至少一個飲食紀錄品項');
+        return;
+      }
+      if (!comboNameInput.trim()) {
+        alert('請為常用組合命名');
+        return;
+      }
+
+      const selectedMeals = meals.filter((m) =>
+        selectedMealIds.includes(m.id)
+      );
+
+      const newCombo: MealCombo = {
+        id: uuid(),
+        name: comboNameInput.trim(),
+        items: selectedMeals.map((m) => ({
+          label: m.label,
+          kcal: m.kcal,
+          protein: m.protein,
+          carb: m.carb,
+          fat: m.fat,
+          amountText: m.amountText,
+        })),
+      };
+
+      setCombos((prev) => [...prev, newCombo]);
+      setSelectedMealIds([]);
+      setComboNameInput('');
+      setShowSaveComboModal(false);
+      alert(`已成功儲存常用組合: ${newCombo.name}`);
+    }
+
+    // 🆕 載入常用組合
+    function addComboToMeals(combo: MealCombo, multiplier: number = 1) {
+      const newEntries = combo.items.map((item) => ({
+        id: uuid(),
+        date: selectedDate,
+        mealType: foodMealType, // 套用目前選擇的餐別
+        label: `${item.label} (x${multiplier})`,
+        kcal: Math.round(item.kcal * multiplier),
+        protein: item.protein ? round1(item.protein * multiplier) : 0,
+        carb: item.carb ? round1(item.carb * multiplier) : 0,
+        fat: item.fat ? round1(item.fat * multiplier) : 0,
+        amountText: item.amountText
+          ? `${item.amountText} (x${multiplier})`
+          : `約 ${Math.round(item.kcal * multiplier)} kcal`,
+      }));
+
+      setMeals((prev) => [...prev, ...newEntries]);
+      setTab('today'); // 紀錄完成後自動跳回首頁
+      alert(`已將組合「${combo.name}」加入 ${foodMealType}。`);
+    }
+    
     // 運動搜尋
     const exerciseMatches = useMemo(() => {
       if (!exName.trim()) return [] as ExerciseMetRow[];
@@ -1661,6 +1762,32 @@ useEffect(() => {
                 />
               </label>
 
+              {/* 🆕 常用組合清單預覽 */}
+              {foodName.trim() === '' && combos.length > 0 && (
+                <div className="search-results">
+                  <div className="result-title">🎯 常用組合 (一鍵加入 {foodMealType})</div>
+                  {combos.map((combo) => (
+                    <div key={combo.id} className="list-item combo-item">
+                      <div>
+                        <div>{combo.name}</div>
+                        <div className="sub">
+                          {combo.items.length} 品項 · 總計約{' '}
+                          {combo.items.reduce((sum, item) => sum + item.kcal, 0)} kcal
+                        </div>
+                      </div>
+                      <button 
+                        className="primary small" 
+                        onClick={() => addComboToMeals(combo)}
+                      >
+                        加入
+                      </button>
+                    </div>
+                  ))}
+                  {/* 可選：增加一個按鈕導引到管理組合的頁面 */}
+                </div>
+              )}
+
+
               {/* 搜尋結果：選到食物後就收起來 */}
               {foodName.trim() &&
                 !selectedUnitFood &&
@@ -1680,7 +1807,7 @@ useEffect(() => {
                               setSelectedUnitFood(u);
                               setSelectedFoodDbRow(null);
                               setFallbackType('');
-                              // 把精準名稱帶回輸入框，取代原本關鍵字
+                              // ✅ 修正: 把精準名稱帶回輸入框，取代原本關鍵字
                               setFoodName(u.Food ?? '');
                             }}
                           >
@@ -1690,7 +1817,7 @@ useEffect(() => {
                                 單位:{u.Unit} · 每單位
                                 {u.ServingsPerUnit} 份 · 類別:
                                 {u.Type}
-                                {u.Notes ? <> · 備註:{u.Notes}</> : null}
+                                {u.Notes && ` · 備註: ${u.Notes}`}
                               </div>
                             </div>
                             <span className="tag">
@@ -1716,7 +1843,7 @@ useEffect(() => {
                                 setSelectedFoodDbRow(f);
                                 setSelectedUnitFood(null);
                                 setFallbackType('');
-                                // 把精準名稱帶回輸入框，取代原本關鍵字
+                                // ✅ 修正: 把精準名稱帶回輸入框，取代原本關鍵字
                                 setFoodName(f.food ?? '');
                               }}
                             >
@@ -1785,14 +1912,12 @@ useEffect(() => {
                             <div className="hint">
                               從類別估算：{fallbackType}
                             </div>
-
+                            
+                            {/* ✅ 新增：顯示 Type Table 的份量資訊 */}
                             {currentTypeRow && (
-                              <div className="hint">
-                                每份概估重量參考：約{' '}
-                                {currentTypeRow['Weight per serving (g)'] || '-'} g
-                                {currentTypeRow.Notes ? (
-                                  <> · 備註：{currentTypeRow.Notes}</>
-                                ) : null}
+                              <div className="hint" style={{ marginTop: '0', marginBottom: '8px' }}>
+                                一份約 {currentTypeRow['Weight per serving (g)']} g
+                                {currentTypeRow.note && ` (${currentTypeRow.note})`}
                               </div>
                             )}
 
@@ -2015,36 +2140,139 @@ useEffect(() => {
             </div>
 
             <div className="list-section">
-              <h3>{selectedDate} 飲食明細</h3>
+              <div className="card-header" style={{ alignItems: 'flex-start' }}>
+                <h3>{selectedDate} 飲食明細</h3>
+                {/* 顯示「存為常用組合」按鈕，如果已選取項目 */}
+                {selectedMealIds.length > 0 && (
+                  <div className="btn-row">
+                    <button
+                      className="primary small"
+                      onClick={() => setShowSaveComboModal(true)}
+                    >
+                      存為常用組合 ({selectedMealIds.length})
+                    </button>
+                    <button
+                      className="secondary small"
+                      onClick={() => setSelectedMealIds([])}
+                    >
+                      取消選取
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {dayMeals.length === 0 && (
                 <div className="hint">尚未記錄飲食</div>
               )}
-              {dayMeals.map((m) => (
-                <div key={m.id} className="list-item">
-                  <div>
-                    <div>{m.label}</div>
-                    <div className="sub">
-                      {m.mealType}
-                      {m.amountText ? ` · ${m.amountText}` : ''}
-                      {' · '}
-                      {m.kcal} kcal
+              {dayMeals.map((m) => {
+                const isSelected = selectedMealIds.includes(m.id);
+                return (
+                  // 修正：整個 list-item 容器被改為可以點擊選取
+                  <div
+                    key={m.id}
+                    className="list-item clickable" // 加上 clickable 樣式
+                    onClick={() => toggleMealSelection(m.id)} // 點擊項目即選取/取消選取
+                    style={{
+                      borderLeft: isSelected
+                        ? '4px solid var(--mint-dark)'
+                        : '1px solid #f0f4f2',
+                      background: isSelected ? '#f7fbf8' : '#fff',
+                      paddingLeft: isSelected ? '12px' : '16px',
+                      // 增加 flex 佈局確保選取圖標和內容對齊
+                      alignItems: 'center',
+                    }}
+                  >
+                    {/* 🆕 新增：勾選標記 (雖然沒有標準 emoji 勾選框，但我們可以模擬) */}
+                    <div style={{ marginRight: '8px', fontSize: '18px' }}>
+                      {isSelected ? '☑️' : '◻️'} 
+                    </div>
+
+                    <div style={{ flex: 1 }}> 
+                      <div>
+                        {m.label}
+                      </div>
+                      <div className="sub">
+                        {m.mealType}
+                        {m.amountText ? ` · ${m.amountText}` : ''}
+                        {' · '}
+                        {m.kcal} kcal
+                      </div>
+                    </div>
+                    <div 
+                      className="btn-row"
+                      onClick={(e) => e.stopPropagation()} // 阻止按鈕點擊觸發父級的 toggleSelection
+                    >
+                      <button 
+                        className="small" 
+                        onClick={() => startEditMeal(m)}
+                      >
+                        編輯
+                      </button>
+                      <button
+                        className="small"
+                        onClick={() =>
+                          setMeals((prev) =>
+                            prev.filter((x) => x.id !== m.id)
+                          )
+                        }
+                      >
+                        刪除
+                      </button>
                     </div>
                   </div>
+                );
+              })}
+            </div>
+
+            {/* 🆕 儲存常用組合彈窗 */}
+            {showSaveComboModal && (
+              <div
+                className="modal-backdrop"
+                style={{
+                  position: 'fixed',
+                  inset: 0,
+                  background: 'rgba(0,0,0,0.35)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 20,
+                }}
+              >
+                <div
+                  className="modal"
+                  style={{
+                    background: '#fff',
+                    borderRadius: 12,
+                    padding: 16,
+                    maxWidth: 320,
+                    width: '90%',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                  }}
+                >
+                  <h3 style={{ marginTop: 0 }}>
+                    儲存常用組合 ({selectedMealIds.length} 項)
+                  </h3>
+                  <div className="form-section">
+                    <label>
+                      組合名稱
+                      <input
+                        value={comboNameInput}
+                        onChange={(e) => setComboNameInput(e.target.value)}
+                        placeholder="例如：午餐便當組合"
+                      />
+                    </label>
+                  </div>
                   <div className="btn-row">
-                    <button onClick={() => startEditMeal(m)}>編輯</button>
-                    <button
-                      onClick={() =>
-                        setMeals((prev) =>
-                          prev.filter((x) => x.id !== m.id)
-                        )
-                      }
-                    >
-                      刪除
+                    <button className="primary" onClick={handleSaveCombo}>
+                      儲存組合
+                    </button>
+                    <button onClick={() => setShowSaveComboModal(false)}>
+                      取消
                     </button>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -2279,6 +2507,8 @@ useEffect(() => {
         days,
         meals,
         exercises,
+        // 🆕 匯出常用組合
+        combos, 
       };
       const blob = new Blob([JSON.stringify(data, null, 2)], {
         type: 'application/json',
@@ -2308,6 +2538,8 @@ useEffect(() => {
           if (obj.days) setDays(obj.days);
           if (obj.meals) setMeals(obj.meals);
           if (obj.exercises) setExercises(obj.exercises);
+          // 🆕 匯入常用組合
+          if (obj.combos) setCombos(obj.combos);
           alert('匯入完成');
         } catch {
           alert('匯入失敗:JSON 格式不正確');
@@ -2321,6 +2553,14 @@ useEffect(() => {
         '一鍵備份到 Google Drive：此版本先以本地匯出 JSON 為主，之後可再串接 Google Drive API。'
       );
     }
+    
+    // 🆕 刪除常用組合 (提供給設定頁使用)
+    function deleteCombo(id: string) {
+      if (window.confirm('確定要刪除這個常用組合嗎？')) {
+        setCombos((prev) => prev.filter((c) => c.id !== id));
+      }
+    }
+
 
     return (
 
@@ -2466,6 +2706,41 @@ useEffect(() => {
             </button>
           </div>
         </section>
+
+        {/* 🆕 常用組合管理 */}
+        <section className="card">
+          <h2>常用飲食組合管理 ({combos.length} 組)</h2>
+          <div className="list-section">
+            {combos.length === 0 && <div className="hint">尚未儲存任何常用組合</div>}
+            {combos.map((c) => (
+              <div key={c.id} className="list-item">
+                <div>
+                  <div>{c.name}</div>
+                  <div className="sub">
+                    {c.items.length} 品項 · 總計約{' '}
+                    {c.items.reduce((sum, item) => sum + item.kcal, 0)} kcal
+                  </div>
+                  <details style={{ marginTop: '4px' }}>
+                    <summary style={{ fontSize: '12px' }}>查看明細</summary>
+                    <ul style={{ paddingLeft: '20px', margin: '4px 0 0 0' }}>
+                      {c.items.map((item, index) => (
+                        <li key={index} style={{ fontSize: '12px', listStyleType: 'disc' }}>
+                          {item.label} ({item.kcal} kcal)
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                </div>
+                <div className="btn-row">
+                  <button className="secondary small" onClick={() => deleteCombo(c.id)}>
+                    刪除
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
 
         <section className="card">
           <h2>資料來源同步 (CSV)</h2>
