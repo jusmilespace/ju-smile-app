@@ -91,6 +91,8 @@ type RecordSubTab = 'food' | 'exercise';
 // ======== 常數 & 工具 ========
 // 可客製字體大小的下拉，且互斥展開（選了值/打開時會關閉其他）
 type BigOption = { value: string; label: string };
+// App.tsx 約 55 行附近，替換整個 BigSelect 元件的定義
+
 const BigSelect: React.FC<{
   options: BigOption[];
   value: string;
@@ -102,6 +104,7 @@ const BigSelect: React.FC<{
   const rootRef = useRef<HTMLDivElement | null>(null);
   const idRef = useRef<string>(Math.random().toString(36).slice(2));
 
+  // 點擊元件外部收合的邏輯 (保留)
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
       if (!rootRef.current) return;
@@ -111,18 +114,19 @@ const BigSelect: React.FC<{
     return () => document.removeEventListener('click', onDocClick);
   }, []);
 
-  // 值變更時自動收合（保險關閉）
-  useEffect(() => setOpen(false), [value]);
-
+  // 互斥開啟/收合的邏輯 (優化，讓它能接受任何非自身 ID 的廣播來關閉)
   useEffect(() => {
     function onAnyOpen(ev: Event) {
       const detail = (ev as CustomEvent<any>).detail;
+      // 如果收到的 ID 不是自己，就關閉
       if (detail !== idRef.current) setOpen(false);
     }
     document.addEventListener('bigselect:open', onAnyOpen as EventListener);
     return () =>
       document.removeEventListener('bigselect:open', onAnyOpen as EventListener);
   }, []);
+
+  // 🚨 移除： useEffect(() => setOpen(false), [value]); // 移除依賴 value 的自動收合
 
   const current = options.find((o) => o.value === value);
 
@@ -131,20 +135,15 @@ const BigSelect: React.FC<{
       <button
         type="button"
         onClick={() => {
-          document.dispatchEvent(
-            new CustomEvent('bigselect:open', { detail: idRef.current })
-          );
+          // 在打開前，先廣播自己的 ID，讓其他元件關閉
+          if (!open) {
+            document.dispatchEvent(
+              new CustomEvent('bigselect:open', { detail: idRef.current })
+            );
+          }
           setOpen((o) => !o);
         }}
-        style={{
-          width: '100%',
-          fontSize: 20,
-          padding: '10px 12px',
-          borderRadius: 10,
-          border: '1px solid #ddd',
-          background: '#fff',
-          textAlign: 'left',
-        }}
+        // ... (省略樣式)
       >
         {current ? current.label : (placeholder ?? '請選擇')}
         <span style={{ float: 'right' }}>▾</span>
@@ -152,30 +151,18 @@ const BigSelect: React.FC<{
 
       {open ? (
         <div
-          style={{
-            position: 'absolute',
-            zIndex: 1000,
-            top: '100%',
-            left: 0,
-            right: 0,
-            background: '#fff',
-            border: '1px solid #ddd',
-            borderRadius: 12,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-            maxHeight: 320,
-            overflowY: 'auto',
-            marginTop: 6,
-          }}
+          // ... (省略樣式)
         >
           {options.map((opt) => (
             <div
               key={opt.value}
               onClick={() => {
                 onChange(opt.value);
-                document.dispatchEvent(
-                  new CustomEvent('bigselect:open', { detail: idRef.current })
-                );
-                setOpen(false);
+                // 🚀 最終修正：使用 setTimeout 確保 setOpen(false) 在當前事件週期結束後執行
+                // 這能有效避免與 React 的狀態更新或瀏覽器事件冒泡產生衝突
+                setTimeout(() => {
+                    setOpen(false);
+                }, 0);
               }}
               style={{
                 padding: '12px 14px',
@@ -1640,10 +1627,7 @@ function startEditExercise(e: ExerciseEntry) {
     value={foodMealType}
     onChange={(v) => {
       setFoodMealType(v as any);
-      // 選完後強制收合所有 BigSelect
-      document.dispatchEvent(
-        new CustomEvent('bigselect:open', { detail: 'force-close' })
-      );
+     
     }}
   />
 </label>
@@ -1775,10 +1759,7 @@ function startEditExercise(e: ExerciseEntry) {
       setFallbackCarbPerServ('');
       setFallbackFatPerServ('');
       setFallbackKcalPerServ('');
-      // 選完後強制收合所有 BigSelect
-      document.dispatchEvent(
-        new CustomEvent('bigselect:open', { detail: 'force-close' })
-      );
+      
     }}
     placeholder="請選擇"
   />
@@ -2531,6 +2512,13 @@ function startEditExercise(e: ExerciseEntry) {
 
 // ======== Plan 頁 ========
 const PlanPage: React.FC = () => {
+  // 這是用來關閉下拉選單的小工具
+  const closeDropdown = (e: React.MouseEvent) => {
+    const details = e.currentTarget.closest('details');
+    if (details) {
+      details.removeAttribute('open');
+    }
+  };
   // 基本資料：從 localStorage 還原，沒有就留空
   const [gender, setGender] = useState<'female' | 'male' | ''>(() => {
     try {
@@ -2716,10 +2704,7 @@ const PlanPage: React.FC = () => {
     value={gender}
     onChange={(v) => {
       setGender(v as any);
-      // 強制關閉所有 BigSelect 下拉
-      document.dispatchEvent(
-        new CustomEvent('bigselect:open', { detail: 'force-close' })
-      );
+      
     }}
     placeholder="請選擇"
   />
@@ -2744,10 +2729,7 @@ const PlanPage: React.FC = () => {
     value={activity}
     onChange={(v) => {
       setActivity(v as any);
-      // 強制關閉所有 BigSelect 下拉
-      document.dispatchEvent(
-        new CustomEvent('bigselect:open', { detail: 'force-close' })
-      );
+      
     }}
     placeholder="請選擇"
   />
