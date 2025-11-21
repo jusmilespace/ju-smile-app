@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 
-/** Lightweight inline icons (no external deps) */
+/** 輕量內嵌圖示（不用外部套件） */
 const IconChevronDown = ({ size = 14, style = {} }) => (
   <span style={{ display: 'inline-block', transform: 'translateY(-1px)', ...style }}>▼</span>
 );
@@ -9,7 +8,7 @@ const IconChevronUp = ({ size = 14, style = {} }) => (
   <span style={{ display: 'inline-block', transform: 'translateY(-1px)', ...style }}>▲</span>
 );
 
-/** Goal card */
+/** 目標卡片 */
 const GoalCard = ({ title, calories, diff, warning, recommended, onSelect, selected }) => (
   <div
     className="card"
@@ -42,12 +41,12 @@ const GoalCard = ({ title, calories, diff, warning, recommended, onSelect, selec
   </div>
 );
 
-/** Main BMR/TDEE calculator with selectable target */
+/** BMR/TDEE 計算，並可選擇「目標攝取」 */
 const BmrCalculator = () => {
   const [gender, setGender] = useState('female');
   const [age, setAge] = useState(30);
   const [height, setHeight] = useState(165); // cm
-  const [weight, setWeight] = useState(60); // kg
+  const [weight, setWeight] = useState(60);  // kg
   const [activityLevel, setActivityLevel] = useState('light'); // sedentary/light/moderate/active/very
 
   const [bmr, setBmr] = useState(0);
@@ -55,7 +54,7 @@ const BmrCalculator = () => {
   const [showDetails, setShowDetails] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState(null);
 
-  // Load prior saved values if any
+  // 初始讀取
   useEffect(() => {
     const g = localStorage.getItem('JU_PLAN_GOAL_KCAL');
     if (g) setSelectedGoal(Number(g));
@@ -65,7 +64,7 @@ const BmrCalculator = () => {
     if (t) setTdee(Number(t));
   }, []);
 
-  // Compute BMR/TDEE when inputs change
+  // 計算 BMR/TDEE
   useEffect(() => {
     const w = Number(weight) || 0;
     const h = Number(height) || 0;
@@ -92,7 +91,7 @@ const BmrCalculator = () => {
     setTdee(tdeeCalc);
   }, [gender, age, height, weight, activityLevel]);
 
-  // Persist to localStorage for App to read
+  // 寫入 localStorage，給 App 讀
   useEffect(() => {
     if (bmr > 0) localStorage.setItem('JU_PLAN_BMR', String(bmr));
     if (tdee > 0) localStorage.setItem('JU_PLAN_TDEE', String(tdee));
@@ -206,6 +205,26 @@ const BmrCalculator = () => {
 
         <div className="hint" style={{ textAlign: 'center', marginTop: 8 }}>
           目前選擇的目標攝取：{selectedGoal ?? '未選擇'} kcal（會自動帶到「今天」與「我的」頁）
+        </div>
+
+        {/* 加入目標熱量按鈕 */}
+        <div style={{ textAlign: 'center', marginTop: 12 }}>
+          <button
+            className="btn primary"
+            disabled={selectedGoal == null}
+            onClick={() => {
+              if (selectedGoal == null) return;
+              try {
+                localStorage.setItem('JU_PLAN_GOAL_KCAL', String(selectedGoal));
+                // 通知 App 立即更新「我的」頁的目標攝取熱量
+                document.dispatchEvent(new CustomEvent('ju:set-goal-kcal', { detail: selectedGoal }));
+                alert(`已加入目標熱量：${selectedGoal} kcal`);
+              } catch {}
+            }}
+            style={{ padding: '10px 16px', borderRadius: 10, border: 'none', background: '#5c9c84', color: '#fff', fontSize: 16 }}
+          >
+            加入目標熱量
+          </button>
         </div>
       </section>
     </div>
