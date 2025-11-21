@@ -1236,21 +1236,33 @@ useEffect(() => {
 
     // 飲食搜尋：Unit_Map + Food_DB
     const foodSearchResults = useMemo(() => {
-      if (!foodName.trim()) {
+      const kw = foodName.trim().toLowerCase();
+      
+      // 🆕 常用組合搜尋
+      const comboMatches = combos.filter(c =>
+        normalizeText(c.name).includes(kw)
+      );
+
+      // 如果沒有關鍵字，則顯示全部常用組合，但不顯示 food/unit 搜尋結果
+      if (!kw) {
         return {
           unitMatches: [] as UnitMapRow[],
           foodMatches: [] as FoodDbRow[],
+          comboMatches: combos, 
         };
       }
-      const kw = foodName.trim().toLowerCase();
+      
       const unitMatches = unitMap.filter((u) =>
         normalizeText(u.Food).includes(kw)
       );
       const foodMatches = foodDb.filter((f) =>
         normalizeText(f.food).includes(kw)
       );
-      return { unitMatches, foodMatches };
-    }, [foodName, unitMap, foodDb]);
+
+      // 如果有關鍵字，則顯示搜尋到的常用組合、unitMatches、foodMatches
+      return { unitMatches, foodMatches, comboMatches };
+    }, [foodName, unitMap, foodDb, combos]);
+    
     const typeOptions = useMemo(
       () => Array.from(new Set(typeTable.map((t) => t.Type))),
       [typeTable]
@@ -1594,14 +1606,14 @@ useEffect(() => {
         id: uuid(),
         date: selectedDate,
         mealType: foodMealType, // 套用目前選擇的餐別
-        label: `${item.label} (x${multiplier})`,
+        label: `${item.label}`, // 移除 x1 顯示，因為預設就是 1 倍
         kcal: Math.round(item.kcal * multiplier),
         protein: item.protein ? round1(item.protein * multiplier) : 0,
         carb: item.carb ? round1(item.carb * multiplier) : 0,
         fat: item.fat ? round1(item.fat * multiplier) : 0,
         amountText: item.amountText
-          ? `${item.amountText} (x${multiplier})`
-          : `約 ${Math.round(item.kcal * multiplier)} kcal`,
+          ? `${item.amountText}`
+          : `約 ${Math.round(item.kcal)} kcal`,
       }));
 
       setMeals((prev) => [...prev, ...newEntries]);
@@ -1758,20 +1770,44 @@ useEffect(() => {
                     setSelectedFoodDbRow(null);
                     setEditingMealId(null);
                   }}
-                  placeholder="輸入關鍵字,例如:白飯、雞蛋…"
+                  placeholder="輸入關鍵字,例如:白飯、雞蛋、午餐組合…"
                 />
               </label>
 
-              {/* 🆕 常用組合清單預覽 */}
-              {foodName.trim() === '' && combos.length > 0 && (
-                <div className="search-results">
-                  <div className="result-title">🎯 常用組合 (一鍵加入 {foodMealType})</div>
-                  {combos.map((combo) => (
+              {/* 🆕 常用組合清單 (根據搜尋結果顯示，且收納在 details 內) */}
+              {/* 修正：合併條件渲染，避免結構錯誤 */}
+              {(foodName.trim() === '' && combos.length > 0) ? (
+                <details open style={{ marginBottom: '12px' }}>
+                  <summary>🎯 常用組合 ({combos.length} 組)</summary>
+                  <div className="search-results" style={{ padding: '4px 0', border: 'none', background: 'none' }}>
+                    {combos.map((combo) => (
+                      <div key={combo.id} className="list-item combo-item">
+                        <div>
+                          <div>{combo.name}</div>
+                          <div className="sub">
+                            總計約{' '}
+                            {combo.items.reduce((sum, item) => sum + item.kcal, 0)} kcal
+                          </div>
+                        </div>
+                        <button 
+                          className="primary small" 
+                          onClick={() => addComboToMeals(combo)}
+                        >
+                          加入
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              ) : (foodName.trim() !== '' && foodSearchResults.comboMatches.length > 0) && (
+                <div className="search-results" style={{ marginBottom: '12px' }}>
+                  <div className="result-title">🎯 常用組合 (搜尋結果)</div>
+                  {foodSearchResults.comboMatches.map((combo) => (
                     <div key={combo.id} className="list-item combo-item">
                       <div>
                         <div>{combo.name}</div>
                         <div className="sub">
-                          {combo.items.length} 品項 · 總計約{' '}
+                          總計約{' '}
                           {combo.items.reduce((sum, item) => sum + item.kcal, 0)} kcal
                         </div>
                       </div>
@@ -1783,15 +1819,16 @@ useEffect(() => {
                       </button>
                     </div>
                   ))}
-                  {/* 可選：增加一個按鈕導引到管理組合的頁面 */}
                 </div>
               )}
 
 
               {/* 搜尋結果：選到食物後就收起來 */}
+              {/* 修正：修正條件，確保在沒有選取 Unit/FoodDB 時才顯示搜尋結果列表 */}
               {foodName.trim() &&
                 !selectedUnitFood &&
-                !selectedFoodDbRow && (
+                !selectedFoodDbRow && 
+                (foodSearchResults.unitMatches.length > 0 || foodSearchResults.foodMatches.length > 0) && (
                   <div className="search-results">
                     {/* A：Unit_Map 有資料 */}
                     {foodSearchResults.unitMatches.length > 0 && (
@@ -2142,18 +2179,20 @@ useEffect(() => {
             <div className="list-section">
               <div className="card-header" style={{ alignItems: 'flex-start' }}>
                 <h3>{selectedDate} 飲食明細</h3>
-                {/* 顯示「存為常用組合」按鈕，如果已選取項目 */}
+                {/* 修正：將按鈕變小，並確保只有在選取狀態下顯示 */}
                 {selectedMealIds.length > 0 && (
-                  <div className="btn-row">
+                  <div className="btn-row" style={{ gap: '4px' }}>
                     <button
                       className="primary small"
                       onClick={() => setShowSaveComboModal(true)}
+                      style={{ padding: '4px 8px' }} // 讓按鈕變小
                     >
-                      存為常用組合 ({selectedMealIds.length})
+                      存為組合 ({selectedMealIds.length})
                     </button>
                     <button
                       className="secondary small"
                       onClick={() => setSelectedMealIds([])}
+                      style={{ padding: '4px 8px' }} // 讓按鈕變小
                     >
                       取消選取
                     </button>
@@ -2182,7 +2221,7 @@ useEffect(() => {
                       alignItems: 'center',
                     }}
                   >
-                    {/* 🆕 新增：勾選標記 (雖然沒有標準 emoji 勾選框，但我們可以模擬) */}
+                    {/* 🆕 新增：勾選標記 */}
                     <div style={{ marginRight: '8px', fontSize: '18px' }}>
                       {isSelected ? '☑️' : '◻️'} 
                     </div>
@@ -2480,7 +2519,6 @@ useEffect(() => {
                   </div>
                 </div>
               ))}
-
             </div>
           </div>
         )}
@@ -2498,6 +2536,7 @@ useEffect(() => {
 
     function saveSettings() {
       setSettings(localSettings);
+// ... (SettingsPage 結尾與 App 結尾的程式碼)
       alert('已儲存目標設定');
     }
 
