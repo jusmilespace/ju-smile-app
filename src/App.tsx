@@ -3,6 +3,7 @@ import Papa from 'papaparse';
 import dayjs from 'dayjs';
 import BmrCalculator from './BmrCalculator';
 
+
 // ======== 型別定義 ========
 
 type TypeRow = {
@@ -267,6 +268,16 @@ const App: React.FC = () => {
   const [settings, setSettings] = useState<Settings>(() =>
     loadJSON<Settings>(STORAGE_KEYS.SETTINGS, {})
   );
+    // 預帶「目標攝取熱量」：若尚未設定，使用 Plan 頁面選取的目標攝取
+  useEffect(() => {
+    if (settings.calorieGoal == null) {
+      const planGoal = Number(localStorage.getItem('JU_PLAN_GOAL_KCAL') || '0') || 0;
+      if (planGoal > 0) {
+        setSettings((prev) => ({ ...prev, calorieGoal: planGoal }));
+      }
+    }
+  }, []);
+
 
   const [days, setDays] = useState<DaySummary[]>(() =>
     loadJSON<DaySummary[]>(STORAGE_KEYS.DAYS, [])
@@ -279,16 +290,6 @@ const App: React.FC = () => {
   const [exercises, setExercises] = useState<ExerciseEntry[]>(() =>
     loadJSON<ExerciseEntry[]>(STORAGE_KEYS.EXERCISES, [])
   );
-
-  // 預帶「目標攝取熱量」：若尚未設定，使用 Plan 頁面選取的目標攝取
-  useEffect(() => {
-    if (settings.calorieGoal == null) {
-      const planGoal = Number(localStorage.getItem('JU_PLAN_GOAL_KCAL') || '0') || 0;
-      if (planGoal > 0) {
-        setSettings((prev) => ({ ...prev, calorieGoal: planGoal }));
-      }
-    }
-  }, []);
 
   const [todayLocal, setTodayLocal] = useState(
     dayjs().format('YYYY-MM-DD')
@@ -374,16 +375,41 @@ const App: React.FC = () => {
   // ======== 今日統計 ========
 
   const todaySummary = getDay(todayLocal);
+// === Today derived values (single source of truth) ===
+// 今天的餐點與運動（依本地日期）
+const todayMeals = meals.filter((e) => e.date === todayLocal);
+const todayExercises = exercises.filter((e) => e.date === todayLocal);
 
-  const todayMeals = meals.filter((m) => m.date === todayLocal);
-  const todayExercises = exercises.filter((e) => e.date === todayLocal);
+// 今日總攝取 & 總消耗（先算好，後面才用得到）
+const todayIntake = todayMeals.reduce((sum, m) => sum + (Number(m.kcal) || 0), 0);
+const todayBurn   = todayExercises.reduce((sum, ex) => sum + (Number(ex.kcal) || 0), 0);
 
-  const todayIntake = todayMeals.reduce((s, m) => s + (m.kcal || 0), 0);
-  const todayBurn = todayExercises.reduce((s, e) => s + (e.kcal || 0), 0);
-  const todayExerciseMinutes = todayExercises.reduce(
-    (s, e) => s + (e.minutes || 0),
-    0
-  );
+// 目標攝取（優先用「我的」頁設定；否則帶 Plan 頁選的值）
+const calorieGoal: number | undefined =
+  settings.calorieGoal ??
+  (Number(localStorage.getItem('JU_PLAN_GOAL_KCAL') || '0') || undefined);
+
+// 來自 Plan 的 BMR（沒有就 0）
+const planBmr = Number(localStorage.getItem('JU_PLAN_BMR') || '0') || 0;
+
+// 淨熱量 = 攝取 − 消耗 − BMR
+const net = todayIntake - todayBurn - planBmr;
+const netDisplayValue = Math.abs(Math.round(net));
+let netStatusLabel = '';
+let netColor = '#444';
+
+if (net > 0) {
+  netStatusLabel = '熱量超標';
+  netColor = '#d64545';
+} else if (net < 0) {
+  netStatusLabel = '熱量赤字';
+  netColor = '#3b8c5a';
+} else {
+  netStatusLabel = '熱量平衡';
+  netColor = '#3b8c5a';
+}
+// === End Today derived values ===
+
 
   // ======== CSV 同步 ========
 
@@ -624,33 +650,11 @@ const startVisceralFat =
       (s, e) => s + (e.kcal || 0),
       0
     );
-    // 目標攝取（優先用「我的」頁設定；否則帶 Plan 頁選的值）
-const calorieGoal: number | undefined =
-  settings.calorieGoal ??
-  (Number(localStorage.getItem('JU_PLAN_GOAL_KCAL') || '0') || undefined);
+const calorieGoal =
+  settings.calorieGoal != null ? settings.calorieGoal : undefined;
 
-// 讀取 Plan 頁面計算出的 BMR（沒有就視為 0）
-const planBmr = Number(localStorage.getItem('JU_PLAN_BMR') || '0') || 0;
 
-// 淨熱量 = 攝取 - 消耗 - BMR
-const net = todayIntake - todayBurn - planBmr;
 
-let netDisplayValue = Math.abs(Math.round(net));
-let netStatusLabel = '';
-let netColor = '#444';
-
-if (net > 0) {
-  netStatusLabel = '熱量超標';
-  netColor = '#d64545';
-} else if (net < 0) {
-  netStatusLabel = '熱量赤字';
-  netColor = '#3b8c5a';
-} else {
-  netStatusLabel = '熱量平衡';
-  netColor = '#3b8c5a';
-}
-
-// 今日總運動時間
 
  
     const todayExerciseMinutes = todayExercises.reduce(
@@ -2530,8 +2534,8 @@ function startEditExercise(e: ExerciseEntry) {
 )}
 
       {tab === 'settings' && <SettingsPage />}
-
       {tab === 'plan' && <BmrCalculator />}
+
 
       <nav className="bottom-nav">
         <button
@@ -2555,14 +2559,14 @@ function startEditExercise(e: ExerciseEntry) {
           <div className="nav-icon">🦋</div>
           <div className="nav-label">我的</div>
         </button>
-      
         <button
-          className={tab === 'plan' ? 'active' : ''}
-          onClick={() => setTab('plan')}
-        >
-          <div className="nav-icon">📐</div>
-          <div className="nav-label">Plan</div>
-        </button>
+  className={tab === 'plan' ? 'active' : ''}
+  onClick={() => setTab('plan')}
+>
+  <div className="nav-icon">📐</div>
+  <div className="nav-label">Plan</div>
+</button>
+
       </nav>
     </div>
   );
