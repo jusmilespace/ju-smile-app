@@ -639,7 +639,7 @@ if (calorieGoal != null) {
     netColor = '#3b8c5a';
   } else {
     netStatusLabel = '達標';
-    netColor = '#3b8c5a';
+    netColor = '#3eabbeff';
   }
 } else {
   // 沒設定目標時，就退回舊邏輯：和 0 比較
@@ -779,7 +779,7 @@ if (calorieGoal != null) {
       className="label"
       style={{ fontSize: 13, color: '#666', marginBottom: 4 }}
     >
-      淨熱量
+      熱量目標差距
     </div>
             <div
               className="value"
@@ -1809,9 +1809,10 @@ function startEditExercise(e: ExerciseEntry) {
                   placeholder="例如:2"
                   style={{ flex: 1 }}
                 />
+
+            <label style={{ marginTop: '12px' }}>參考單位</label>
                 <BigSelect
                   options={[
-                    { value: '份', label: '份' },
                     { value: '個', label: '個' },
                     { value: '杯', label: '杯' },
                     { value: '碗', label: '碗' },
@@ -1827,7 +1828,7 @@ function startEditExercise(e: ExerciseEntry) {
                   ]}
                   value={fallbackUnitLabel}
                   onChange={(v) => setFallbackUnitLabel(v)}
-                  placeholder="請選擇"
+                  placeholder="請選擇單位"
                 />
               </div>
             </label>
