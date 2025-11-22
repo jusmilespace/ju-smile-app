@@ -470,3 +470,25 @@ details summary {
 .nav-label {
   font-size: 12px;
 }
+
+/* RecordsPage 子標籤佈局優化 */
+.subtabs {
+    display: flex;
+    gap: 8px; /* 保持按钮间的間距 */
+    padding: 0 16px; /* 確保左右邊距與卡片一致 */
+    margin-bottom: 12px; /* 增加標籤和內容之間的間距 */
+}
+
+.subtabs button {
+    flex: 1; /* 讓每個按鈕佔據等寬空間 */
+    /* 假設您希望它們看起來像普通的按鈕，但可能需要調整一些樣式 */
+    /* 確保按鈕有足夠的點擊區域 */
+    padding: 8px 16px; 
+}
+
+/* 如果 subtabs button 的樣式需要與您 App 的其他 button 區分，您可能需要額外調整 */
+
+/* 範例: subtabs 的 active 狀態 */
+.subtabs button.active {
+    /* 保持您已有的 active 樣式 */
+}
