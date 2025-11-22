@@ -1721,13 +1721,24 @@ useEffect(() => {
             <details open>
               <summary>如何記錄飲食?</summary>
               <p>
-                1. 選日期與餐別,輸入食物名稱。
+                「Ju Smile App」提供多種快速記錄方式：
                 <br />
-                2. 若有顯示份量代換(Unit_Map),點選後輸入幾個/幾份。
+                1. **常用組合**：在搜尋框下方點擊「加入」一鍵套用。
                 <br />
-                3. 若顯示 100g 精準資料(Food_DB),點選後輸入克數。
+                2. **快速搜尋**：輸入食物名稱，點選結果並填入份量/克數。
                 <br />
-                4. 都沒有時,可手動估算熱量後按「加入/更新飲食記錄」。
+                3. **類別估算**：若無資料，可切換至「類別/估算模式」。
+                <br />
+                &nbsp;&nbsp;&nbsp;&nbsp;🔹 **App 精選食物類型**：選擇**食物類型** (例如：**豆魚蛋肉類(低脂)**、**全榖雜糧類**) 後，依**份數**快速估算。
+                <br />
+                &nbsp;&nbsp;&nbsp;&nbsp;🔹 **其他類**：手動輸入**每份**的蛋白質/碳水/脂肪 (P/C/F) 數值。
+                <br />
+                &nbsp;&nbsp;&nbsp;&nbsp;🔹 **自定義熱量**：：若懶得估算P/C/F，可直接在下方「估算總熱量」欄位輸入熱量 (kcal)。
+               
+                <br />
+                🔥 **祕訣：** 點選已記錄的品項，可選取多項儲存為「常用組合」。
+                <hr style={{ margin: '8px 0', border: 'none', borderTop: '1px solid #e9ecef' }} />
+                💡 **資料說明：** App 中的食物數據庫 (精選食物類型、份量代換、Food DB) 是由 Ju Smile 團隊**精選整合**，提供您快速、可靠的熱量與營養素參考。
               </p>
             </details>
 
@@ -1776,35 +1787,16 @@ useEffect(() => {
 
               {/* 🆕 常用組合清單 (根據搜尋結果顯示，且收納在 details 內) */}
               {/* 修正：合併條件渲染，避免結構錯誤 */}
-              {(foodName.trim() === '' && combos.length > 0) ? (
-                <details open style={{ marginBottom: '12px' }}>
-                  <summary>🎯 常用組合 ({combos.length} 組)</summary>
-                  <div className="search-results" style={{ padding: '4px 0', border: 'none', background: 'none' }}>
-                    {combos.map((combo) => (
-                      <div key={combo.id} className="list-item combo-item">
-                        <div>
-                          <div>{combo.name}</div>
-                          <div className="sub">
-                            總計約{' '}
-                            {combo.items.reduce((sum, item) => sum + item.kcal, 0)} kcal
-                          </div>
-                        </div>
-                        <button 
-                          className="primary small" 
-                          onClick={() => addComboToMeals(combo)}
-                        >
-                          加入
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </details>
-              ) : (foodName.trim() !== '' && foodSearchResults.comboMatches.length > 0) && (
-                <div className="search-results" style={{ marginBottom: '12px' }}>
-                  <div className="result-title">🎯 常用組合 (搜尋結果)</div>
-                  {foodSearchResults.comboMatches.map((combo) => (
-                    <div key={combo.id} className="list-item combo-item">
-                      <div>
+              {/* 🆕 常用組合清單 (根據搜尋結果顯示，且收納在 details 內) */}
+          {/* 修正：優化常用組合列表的顯示，增加明細展開 */}
+          {(foodName.trim() === '' && combos.length > 0) ? (
+            <details open style={{ marginBottom: '12px' }}>
+              <summary>🎯 常用組合 ({combos.length} 組)</summary>
+              <div className="search-results" style={{ padding: '4px 0', border: 'none', background: 'none' }}>
+                {combos.map((combo) => (
+                  <div key={combo.id} className="list-item combo-item" style={{ flexDirection: 'column', alignItems: 'flex-start', paddingBottom: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                      <div style={{ flex: 1 }}>
                         <div>{combo.name}</div>
                         <div className="sub">
                           總計約{' '}
@@ -1814,13 +1806,64 @@ useEffect(() => {
                       <button 
                         className="primary small" 
                         onClick={() => addComboToMeals(combo)}
+                        style={{ flexShrink: 0 }}
                       >
                         加入
                       </button>
                     </div>
-                  ))}
+                    <details style={{ width: '100%', marginTop: '4px' }}>
+                        <summary style={{ fontSize: '12px', color: '#666' }}>查看組合明細 ({combo.items.length} 項)</summary>
+                        <ul style={{ paddingLeft: '16px', margin: '4px 0 0 0', listStyleType: 'disc', fontSize: '13px', color: '#888' }}>
+                            {combo.items.map((item, index) => (
+                                <li key={index}>
+                                    {item.label}{' '}
+                                    {item.amountText ? `(${item.amountText})` : ''}
+                                    {item.kcal ? ` · ${item.kcal} kcal` : ''}
+                                </li>
+                            ))}
+                        </ul>
+                    </details>
+                  </div>
+                ))}
+              </div>
+            </details>
+          ) : (foodName.trim() !== '' && foodSearchResults.comboMatches.length > 0) && (
+                <div className="search-results" style={{ marginBottom: '12px' }}>
+                  <div className="result-title">🎯 常用組合 (搜尋結果)</div>
+              {foodSearchResults.comboMatches.map((combo) => (
+                <div key={combo.id} className="list-item combo-item" style={{ flexDirection: 'column', alignItems: 'flex-start', paddingBottom: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                    <div style={{ flex: 1 }}>
+                      <div>{combo.name}</div>
+                      <div className="sub">
+                        總計約{' '}
+                        {combo.items.reduce((sum, item) => sum + item.kcal, 0)} kcal
+                      </div>
+                    </div>
+                    <button 
+                      className="primary small" 
+                      onClick={() => addComboToMeals(combo)}
+                      style={{ flexShrink: 0 }}
+                    >
+                      加入
+                    </button>
+                  </div>
+                  <details style={{ width: '100%', marginTop: '4px' }}>
+                        <summary style={{ fontSize: '12px', color: '#666' }}>查看組合明細 ({combo.items.length} 項)</summary>
+                        <ul style={{ paddingLeft: '16px', margin: '4px 0 0 0', listStyleType: 'disc', fontSize: '13px', color: '#888' }}>
+                            {combo.items.map((item, index) => (
+                                <li key={index}>
+                                    {item.label}{' '}
+                                    {item.amountText ? `(${item.amountText})` : ''}
+                                    {item.kcal ? ` · ${item.kcal} kcal` : ''}
+                                </li>
+                            ))}
+                        </ul>
+                    </details>
                 </div>
-              )}
+              ))}
+            </div>
+          )}
 
 
               {/* 搜尋結果：選到食物後就收起來 */}
