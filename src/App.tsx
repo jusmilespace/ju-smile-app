@@ -1325,18 +1325,26 @@ useEffect(() => {
         let carbPerServ = 0;
         let fatPerServ = 0;
 
-        const typeLabel = selectedUnitFood.Type?.trim();
-        if (typeLabel) {
-          const typeRow = typeTable.find((t) => t.Type === typeLabel);
-          if (typeRow) {
-            kcalPerServ = Number(typeRow.kcal || 0) || 0;
-            protPerServ =
-              Number(typeRow['protein (g)'] || 0) || 0;
-            carbPerServ = Number(typeRow['carb (g)'] || 0) || 0;
-            fatPerServ = Number(typeRow['fat (g)'] || 0) || 0;
+        // 🆕 優先使用 Unit_Map 自身攜帶的精準營養素 (用於組合餐或調整過的項目)
+        if (selectedUnitFood.Kcal_per_serv != null) {
+          kcalPerServ = Number(selectedUnitFood.Kcal_per_serv || '0') || 0;
+          protPerServ = Number(selectedUnitFood['Prot_per_serv (g)'] || '0') || 0;
+          carbPerServ = Number(selectedUnitFood['Carb_per_serv (g)'] || '0') || 0;
+          fatPerServ = Number(selectedUnitFood['Fat_per_serv (g)'] || '0') || 0;
+        } else {
+          // ⬇️ Fallback: 若無精準數據，則使用 Type_Table 進行估算
+          const typeLabel = selectedUnitFood.Type?.trim();
+          if (typeLabel) {
+            const typeRow = typeTable.find((t) => t.Type === typeLabel);
+            if (typeRow) {
+              kcalPerServ = Number(typeRow.kcal || 0) || 0;
+              protPerServ =
+                Number(typeRow['protein (g)'] || 0) || 0;
+              carbPerServ = Number(typeRow['carb (g)'] || 0) || 0;
+              fatPerServ = Number(typeRow['fat (g)'] || 0) || 0;
+            }
           }
         }
-
         const kcal = Math.round(servings * kcalPerServ);
         const protein = servings * protPerServ;
         const carb = servings * carbPerServ;
@@ -2103,6 +2111,7 @@ useEffect(() => {
                                 { value: '個', label: '個' },
                                 { value: '杯', label: '杯' },
                                 { value: '碗', label: '碗' },
+                                { value: '盤', label: '盤' },
                                 { value: '片', label: '片' },
                                 { value: '湯匙', label: '湯匙' },
                                 { value: '茶匙', label: '茶匙' },
