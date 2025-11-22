@@ -492,3 +492,40 @@ details summary {
 .subtabs button.active {
     /* 保持您已有的 active 樣式 */
 }
+/* ---- Fixed Combo Bar ---- */
+.fixed-combo-bar {
+  position: fixed;
+  bottom: 65px; /* 浮動在底部導航列之上 */
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 480px;
+  width: 100%;
+  background: #ffffff;
+  padding: 10px 16px;
+  box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.1);
+  border-top: 1px solid var(--border-soft);
+  z-index: 10; /* 確保在所有內容之上 */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.fixed-combo-bar .combo-summary {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-main);
+  flex-grow: 1;
+}
+
+.fixed-combo-bar .btn-row {
+  gap: 8px;
+  flex-shrink: 0;
+  display: flex;
+}
+
+.fixed-combo-bar .btn-row button {
+  /* 移除一般 button 樣式的 flex: 1 限制，讓按鈕大小由 padding 決定 */
+  width: auto;
+  flex: none;
+}
