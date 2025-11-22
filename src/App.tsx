@@ -2272,25 +2272,7 @@ useEffect(() => {
             <div className="list-section">
               <div className="card-header" style={{ alignItems: 'flex-start' }}>
                 <h3>{selectedDate} 飲食明細</h3>
-                {/* 修正：將按鈕變小，並確保只有在選取狀態下顯示 */}
-                {selectedMealIds.length > 0 && (
-                  <div className="btn-row" style={{ gap: '4px' }}>
-                    <button
-                      className="primary small"
-                      onClick={() => setShowSaveComboModal(true)}
-                      style={{ padding: '4px 8px' }} // 讓按鈕變小
-                    >
-                      存為組合 ({selectedMealIds.length})
-                    </button>
-                    <button
-                      className="secondary small"
-                      onClick={() => setSelectedMealIds([])}
-                      style={{ padding: '4px 8px' }} // 讓按鈕變小
-                    >
-                      取消選取
-                    </button>
-                  </div>
-                )}
+          
               </div>
 
               {dayMeals.length === 0 && (
@@ -2615,6 +2597,31 @@ useEffect(() => {
             </div>
           </div>
         )}
+        {/* 🆕 浮動常用組合動作列 (當有選取項目時才顯示) -- 請將以下代碼塊貼到這裡 */}
+        {selectedMealIds.length > 0 && (
+          <div className="fixed-combo-bar">
+            <div className="combo-summary">
+              已選取 <b>{selectedMealIds.length}</b> 個品項
+            </div>
+            <div className="btn-row">
+              <button
+                className="secondary"
+                onClick={() => setSelectedMealIds([])}
+                style={{ padding: '8px 16px' }}
+              >
+                取消選取
+              </button>
+              <button
+                className="primary"
+                onClick={() => setShowSaveComboModal(true)}
+                style={{ padding: '8px 16px' }}
+              >
+                存為組合
+              </button>
+            </div>
+          </div>
+        )}
+        {/* 浮動動作列代碼塊貼到這裡結束 */}
       </div>
     );
   };
