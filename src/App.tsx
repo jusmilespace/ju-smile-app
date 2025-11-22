@@ -960,6 +960,10 @@ useEffect(() => {
               setRecordDefaultMealType('早餐');
               setTab('records');
               setRecordTab('food');
+              // 🆕 增加滾動到頂部
+            setTimeout(() => {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 0);
             }}
           />
           <MealCard
@@ -972,6 +976,10 @@ useEffect(() => {
               setRecordDefaultMealType('午餐');
               setTab('records');
               setRecordTab('food');
+              // 🆕 增加滾動到頂部
+            setTimeout(() => {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 0);
             }}
           />
           <MealCard
@@ -984,6 +992,10 @@ useEffect(() => {
               setRecordDefaultMealType('晚餐');
               setTab('records');
               setRecordTab('food');
+              // 🆕 增加滾動到頂部
+            setTimeout(() => {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 0);
             }}
           />
           <MealCard
@@ -996,6 +1008,10 @@ useEffect(() => {
               setRecordDefaultMealType('點心');
               setTab('records');
               setRecordTab('food');
+              // 🆕 增加滾動到頂部
+            setTimeout(() => {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 0);
             }}
           />
         </section>
@@ -1752,7 +1768,7 @@ useEffect(() => {
                 <br />
                 &nbsp;&nbsp;&nbsp;&nbsp;🔹 **其他類**：手動輸入**每份**的蛋白質/碳水/脂肪 (P/C/F) 數值。
                 <br />
-                &nbsp;&nbsp;&nbsp;&nbsp;🔹 **自定義熱量**：若懶得估算P/C/F，可直接在下方「估算總熱量」欄位輸入熱量 (kcal)。
+                &nbsp;&nbsp;&nbsp;&nbsp;🔹 **自定義熱量**：若懶得估算P/C/F，可直接輸入「份量」及「每份熱量」。
                 <br />
                 <br />
                 🔥 **祕訣：** 點選已記錄的品項，可選取多項儲存為「常用組合」。
@@ -1908,11 +1924,12 @@ useEffect(() => {
 
               {/* 搜尋結果：選到食物後就收起來 */}
               {/* 修正：修正條件，確保在沒有選取 Unit/FoodDB 時才顯示搜尋結果列表 */}
+              {/* 搜尋結果：只顯示 Unit Map 或 Food DB 的匹配清單 */}
               {foodName.trim() &&
                 !selectedUnitFood &&
                 !selectedFoodDbRow && 
                 (foodSearchResults.unitMatches.length > 0 || foodSearchResults.foodMatches.length > 0) && (
-                  <div className="search-results">
+                  <div className="search-results" style={{ marginBottom: '12px' }}>
                     {/* A：Unit_Map 有資料 */}
                     {foodSearchResults.unitMatches.length > 0 && (
                       <>
@@ -1980,201 +1997,198 @@ useEffect(() => {
                           ))}
                         </>
                       )}
-
-                    {/* 沒找到任何資料時的提示 */}
+                  </div>
+              )}
+              
+              {/* 🆕 獨立的類別/估算模式區塊 (只要未選取精準食物，且有輸入名稱，就顯示此備援區塊) */}
+              {foodName.trim() && 
+                !selectedUnitFood && 
+                !selectedFoodDbRow && 
+                (
+                  <div className="type-fallback-card card" style={{ padding: '12px', background: '#fbfdfc', border: '1px solid #e3eee8', marginTop: 0 }}>
+                    <h3 style={{ marginTop: 0, fontSize: 16 }}>類別/估算模式</h3>
+                    
+                    {/* 沒找到精準資料時的提示 */}
                     {foodSearchResults.unitMatches.length === 0 &&
                       foodSearchResults.foodMatches.length === 0 && (
-                        <div className="hint">
-                          目前尚無此食物資料，可以改用下面的
-                          「類別估算 / 其他類 / 自定義熱量」來粗估。
+                        <div className="hint" style={{ marginBottom: '12px' }}>
+                          找不到精準資料，請利用以下類別代換或自訂熱量估算。
                         </div>
                       )}
 
-                    {/* C：類別估算 / 其他類 / 自定義熱量：不管有沒有搜尋結果都可以用 */}
-                    {(foodSearchResults.unitMatches.length > 0 ||
-                      foodSearchResults.foodMatches.length > 0) && (
-                        <div
-                          className="hint"
-                          style={{ textAlign: 'center', margin: '8px 0' }}
-                        >
-                          或
-                        </div>
-                      )}
+                    <label>
+                      食物類別
+                      <BigSelect
+                        options={[
+                          ...typeOptions.map((t) => ({ value: t, label: t })),
+                          { value: '其他類', label: '其他類 (自訂 P/C/F)' },
+                          { value: '自定義熱量', label: '自定義熱量 (僅 Kcal)' },
+                        ]}
+                        value={fallbackType}
+                        onChange={(v) => {
+                          setFallbackType(v);
+                          setFallbackServings('');
+                          setFallbackQty('');
+                          setFallbackProtPerServ('');
+                          setFallbackCarbPerServ('');
+                          setFallbackFatPerServ('');
+                          setFallbackKcalPerServ('');
+                        }}
+                        placeholder="請選擇食物類型或估算模式"
+                        width="100%"
+                      />
+                    </label>
 
-                    <div className="type-fallback-card">
-                      <label>
-                        類別 / 估算模式
-                        <BigSelect
-                          options={[
-                            ...typeOptions.map((t) => ({ value: t, label: t })),
-                            { value: '其他類', label: '其他類' },
-                            { value: '自定義熱量', label: '自定義熱量' },
-                          ]}
-                          value={fallbackType}
-                          onChange={(v) => {
-                            setFallbackType(v);
-                            setFallbackServings('');
-                            setFallbackQty('');
-                            setFallbackProtPerServ('');
-                            setFallbackCarbPerServ('');
-                            setFallbackFatPerServ('');
-                            setFallbackKcalPerServ('');
-                          }}
-                          placeholder="請選擇"
-                        />
-                      </label>
+                    {/* C1：一般類型 */}
+                    {fallbackType &&
+                      fallbackType !== '其他類' &&
+                      fallbackType !== '自定義熱量' && (
+                        <>
+                          <div className="hint" style={{ marginTop: '8px' }}>
+                            從類別估算：{fallbackType}
+                          </div>
+                          
+                          {/* ✅ 新增：顯示 Type Table 的份量資訊 */}
+                          {currentTypeRow && (
+                            <div className="hint" style={{ marginTop: '0', marginBottom: '8px' }}>
+                              一份約 {currentTypeRow['Weight per serving (g)']} g
+                              {currentTypeRow.note && ` (${currentTypeRow.note})`}
+                            </div>
+                          )}
 
-                      {/* C1：一般類型 */}
-                      {fallbackType &&
-                        fallbackType !== '其他類' &&
-                        fallbackType !== '自定義熱量' && (
-                          <>
+                          {visualReference && (
                             <div className="hint">
-                              從類別估算：{fallbackType}
+                              視覺參照：{visualReference}
                             </div>
-                            
-                            {/* ✅ 新增：顯示 Type Table 的份量資訊 */}
-                            {currentTypeRow && (
-                              <div className="hint" style={{ marginTop: '0', marginBottom: '8px' }}>
-                                一份約 {currentTypeRow['Weight per serving (g)']} g
-                                {currentTypeRow.note && ` (${currentTypeRow.note})`}
-                              </div>
-                            )}
+                          )}
 
-                            {visualReference && (
-                              <div className="hint">
-                                視覺參照：{visualReference}
-                              </div>
-                            )}
-
-                            <label>
-                              份量 (份)
-                              <input
-                                type="number"
-                                value={fallbackServings}
-                                onChange={(e) => setFallbackServings(e.target.value)}
-                                placeholder="例如:1 或 1.5"
-                              />
-                            </label>
-                          </>
-                        )}
-
-                      {/* C2：其他類 */}
-                      {fallbackType === '其他類' && (
-                        <>
                           <label>
                             份量 (份)
                             <input
                               type="number"
                               value={fallbackServings}
                               onChange={(e) => setFallbackServings(e.target.value)}
-                              placeholder="例如:1"
+                              placeholder="例如:1 或 1.5"
                             />
                           </label>
-
-                          <label>
-                            參考數量 (選填)
-                            <div className="inline-inputs">
-                              <input
-                                type="number"
-                                value={fallbackQty}
-                                onChange={(e) => setFallbackQty(e.target.value)}
-                                placeholder="例如:2"
-                                style={{ flex: 1 }}
-                              />
-
-                              <label style={{ marginTop: '12px' }}>參考單位</label>
-                              <BigSelect
-                                options={[
-                                  { value: '個', label: '個' },
-                                  { value: '杯', label: '杯' },
-                                  { value: '碗', label: '碗' },
-                                  { value: '片', label: '片' },
-                                  { value: '湯匙', label: '湯匙' },
-                                  { value: '茶匙', label: '茶匙' },
-                                  { value: '根', label: '根' },
-                                  { value: '粒', label: '粒' },
-                                  { value: '張', label: '張' },
-                                  { value: 'g', label: 'g' },
-                                  { value: '米杯', label: '米杯' },
-                                  { value: '瓣', label: '瓣' },
-                                ]}
-                                value={fallbackUnitLabel}
-                                onChange={(v) => setFallbackUnitLabel(v)}
-                                placeholder="請選擇單位"
-                              />
-                            </div>
-                          </label>
-
-                          <label>
-                            每份蛋白質 (g)
-                            <input
-                              type="number"
-                              value={fallbackProtPerServ}
-                              onChange={(e) => setFallbackProtPerServ(e.target.value)}
-                              placeholder="例如:7"
-                            />
-                          </label>
-                          <label>
-                            每份碳水 (g)
-                            <input
-                              type="number"
-                              value={fallbackCarbPerServ}
-                              onChange={(e) => setFallbackCarbPerServ(e.target.value)}
-                              placeholder="例如:10"
-                            />
-                          </label>
-                          <label>
-                            每份脂肪 (g)
-                            <input
-                              type="number"
-                              value={fallbackFatPerServ}
-                              onChange={(e) => setFallbackFatPerServ(e.target.value)}
-                              placeholder="例如:5"
-                            />
-                          </label>
-
-                          <div className="hint">
-                            系統會依 P×4 + C×4 + F×9 自動估算每份與總熱量。
-                          </div>
                         </>
                       )}
 
-                      {/* C3：自定義熱量 */}
-                      {fallbackType === '自定義熱量' && (
-                        <>
-                          <label>
-                            份量 (份)
-                            <input
-                              type="number"
-                              value={fallbackServings}
-                              onChange={(e) => setFallbackServings(e.target.value)}
-                              placeholder="例如:1"
-                            />
-                          </label>
-                          <label>
-                            每份熱量 (kcal)
-                            <input
-                              type="number"
-                              value={fallbackKcalPerServ}
-                              onChange={(e) => setFallbackKcalPerServ(e.target.value)}
-                              placeholder="例如:250"
-                            />
-                          </label>
-                          <div className="hint">
-                            不在意 P/C/F，只估算總熱量。
-                          </div>
-                        </>
-                      )}
+                    {/* C2：其他類 (自訂 P/C/F) */}
+                    {fallbackType === '其他類' && (
+                      <>
+                        <label>
+                          份量 (份)
+                          <input
+                            type="number"
+                            value={fallbackServings}
+                            onChange={(e) => setFallbackServings(e.target.value)}
+                            placeholder="例如:1"
+                          />
+                        </label>
 
-                      {fallbackType && autoFoodInfo.kcal > 0 && (
+                        <label>
+                          參考數量 (選填)
+                          <div className="inline-inputs" style={{ display: 'flex', gap: '10px' }}>
+                            <input
+                              type="number"
+                              value={fallbackQty}
+                              onChange={(e) => setFallbackQty(e.target.value)}
+                              placeholder="例如:2"
+                              style={{ flex: 1 }}
+                            />
+
+                            <BigSelect
+                              options={[
+                                { value: '個', label: '個' },
+                                { value: '杯', label: '杯' },
+                                { value: '碗', label: '碗' },
+                                { value: '片', label: '片' },
+                                { value: '湯匙', label: '湯匙' },
+                                { value: '茶匙', label: '茶匙' },
+                                { value: '根', label: '根' },
+                                { value: '粒', label: '粒' },
+                                { value: '張', label: '張' },
+                                { value: 'g', label: 'g' },
+                                { value: '米杯', label: '米杯' },
+                                { value: '瓣', label: '瓣' },
+                              ]}
+                              value={fallbackUnitLabel}
+                              onChange={(v) => setFallbackUnitLabel(v)}
+                              placeholder="請選擇單位"
+                            />
+                          </div>
+                        </label>
+
+                        <label>
+                          每份蛋白質 (g)
+                          <input
+                            type="number"
+                            value={fallbackProtPerServ}
+                            onChange={(e) => setFallbackProtPerServ(e.target.value)}
+                            placeholder="例如:7"
+                          />
+                        </label>
+                        <label>
+                          每份碳水 (g)
+                          <input
+                            type="number"
+                            value={fallbackCarbPerServ}
+                            onChange={(e) => setFallbackCarbPerServ(e.target.value)}
+                            placeholder="例如:10"
+                          />
+                        </label>
+                        <label>
+                          每份脂肪 (g)
+                          <input
+                            type="number"
+                            value={fallbackFatPerServ}
+                            onChange={(e) => setFallbackFatPerServ(e.target.value)}
+                            placeholder="例如:5"
+                          />
+                        </label>
+
                         <div className="hint">
-                          系統估算總熱量約 {autoFoodInfo.kcal} kcal
+                          系統會依 P×4 + C×4 + F×9 自動估算每份與總熱量。
                         </div>
-                      )}
-                    </div>
+                      </>
+                    )}
+
+                    {/* C3：自定義熱量 (僅 Kcal) */}
+                    {fallbackType === '自定義熱量' && (
+                      <>
+                        <label>
+                          份量 (份)
+                          <input
+                            type="number"
+                            value={fallbackServings}
+                            onChange={(e) => setFallbackServings(e.target.value)}
+                            placeholder="例如:1"
+                          />
+                        </label>
+                        <label>
+                          每份熱量 (kcal)
+                          <input
+                            type="number"
+                            value={fallbackKcalPerServ}
+                            onChange={(e) => setFallbackKcalPerServ(e.target.value)}
+                            placeholder="例如:250"
+                          />
+                        </label>
+                        <div className="hint">
+                          不在意 P/C/F，只估算總熱量。
+                        </div>
+                      </>
+                    )}
+
+                    {fallbackType && autoFoodInfo.kcal > 0 && (
+                      <div className="hint">
+                        系統估算總熱量約 {autoFoodInfo.kcal} kcal
+                      </div>
+                    )}
                   </div>
                 )}
+
 
               {selectedUnitFood && (
                 <>
@@ -2219,22 +2233,9 @@ useEffect(() => {
                 </>
               )}
 
-              {!selectedUnitFood &&
-                !selectedFoodDbRow &&
-                !fallbackType && (
-                  <label>
-                    估算總熱量 (kcal)
-                    <input
-                      type="number"
-                      value={manualFoodKcal}
-                      onChange={(e) =>
-                        setManualFoodKcal(e.target.value)
-                      }
-                      placeholder="例如:350"
-                    />
-                  </label>
-                )}
-
+            
+              {/* 獨立移除「估算總熱量」欄位，因為已被「自定義熱量」取代 */}
+              
               {effectiveFoodKcal > 0 && (
                 <div className="hint">
                   即將{editingMealId ? '更新' : '記錄'}的熱量:約{' '}
