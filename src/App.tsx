@@ -1742,7 +1742,7 @@ useEffect(() => {
                 >
                   +
                 </span>
-                鈕一鍵加入。
+                鈕**一鍵加入**。
                 <br />
                 2. **快速搜尋**：輸入食物名稱，點選結果並填入份量/克數。
                 <br />
@@ -1752,15 +1752,18 @@ useEffect(() => {
                 <br />
                 &nbsp;&nbsp;&nbsp;&nbsp;🔹 **其他類**：手動輸入**每份**的蛋白質/碳水/脂肪 (P/C/F) 數值。
                 <br />
-                &nbsp;&nbsp;&nbsp;&nbsp;🔹 **自定義熱量**：只輸入總熱量 (kcal)。
-                <br />
-                4. **自訂熱量**：若懶得估算P/C/F，可直接在下方「估算總熱量」欄位輸入熱量 (kcal)。
+                &nbsp;&nbsp;&nbsp;&nbsp;🔹 **自定義熱量**：若懶得估算P/C/F，可直接在下方「估算總熱量」欄位輸入熱量 (kcal)。
                 <br />
                 <br />
                 🔥 **祕訣：** 點選已記錄的品項，可選取多項儲存為「常用組合」。
-                <hr style={{ margin: '8px 0', border: 'none', borderTop: '1px solid #e9ecef' }} />
-                💡 **資料說明：** App 中的食物數據庫 (精選食物類型、份量代換、Food DB) 是由 Ju Smile 團隊**精選整合**，提供您快速、可靠的熱量與營養素參考。
-              </p>
+              </p> 
+              {/* 🛑 修正：將 hr 移到 <p> 之外，避免 DOM 嵌套錯誤 */}
+              <div style={{ marginTop: '8px' }}> 
+                <hr style={{ margin: '0', border: 'none', borderTop: '1px solid #e9ecef' }} />
+                <p style={{ marginTop: '8px', fontSize: '13px', color: '#666' }}> 
+                  💡 **資料說明：** App 中的食物數據庫 (精選食物類型、份量代換、Food DB) 是由 Ju Smile 團隊**精選整合**，提供您快速、可靠的熱量與營養素參考。
+                </p>
+              </div>
             </details>
 
             {/* ✅ 常見食物重量參考 */}
