@@ -1723,7 +1723,26 @@ useEffect(() => {
               <p>
                 「Ju Smile App」提供多種快速記錄方式：
                 <br />
-                1. **常用組合**：在搜尋框下方點擊「加入」一鍵套用。
+                1. **常用組合**：在搜尋框下方點擊
+                <span 
+                  style={{
+                    display: 'inline-block',
+                    width: '16px',
+                    height: '16px',
+                    borderRadius: '50%',
+                    background: 'var(--mint-dark, #5c9c84)', /* 使用品牌綠色 */
+                    color: '#fff',
+                    textAlign: 'center',
+                    lineHeight: '16px',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    margin: '0 4px',
+                    verticalAlign: 'middle',
+                  }}
+                >
+                  +
+                </span>
+                鈕一鍵加入。
                 <br />
                 2. **快速搜尋**：輸入食物名稱，點選結果並填入份量/克數。
                 <br />
@@ -1733,8 +1752,10 @@ useEffect(() => {
                 <br />
                 &nbsp;&nbsp;&nbsp;&nbsp;🔹 **其他類**：手動輸入**每份**的蛋白質/碳水/脂肪 (P/C/F) 數值。
                 <br />
-                &nbsp;&nbsp;&nbsp;&nbsp;🔹 **自定義熱量**：：若懶得估算P/C/F，可直接在下方「估算總熱量」欄位輸入熱量 (kcal)。
-               
+                &nbsp;&nbsp;&nbsp;&nbsp;🔹 **自定義熱量**：只輸入總熱量 (kcal)。
+                <br />
+                4. **自訂熱量**：若懶得估算P/C/F，可直接在下方「估算總熱量」欄位輸入熱量 (kcal)。
+                <br />
                 <br />
                 🔥 **祕訣：** 點選已記錄的品項，可選取多項儲存為「常用組合」。
                 <hr style={{ margin: '8px 0', border: 'none', borderTop: '1px solid #e9ecef' }} />
@@ -1804,12 +1825,20 @@ useEffect(() => {
                         </div>
                       </div>
                       <button 
-                        className="primary small" 
-                        onClick={() => addComboToMeals(combo)}
-                        style={{ flexShrink: 0 }}
-                      >
-                        加入
-                      </button>
+                            className="primary small" 
+                            onClick={() => addComboToMeals(combo)}
+                            style={{ 
+                              flexShrink: 0, 
+                              width: '32px', // 設定固定寬度
+                              height: '32px', // 設定固定高度
+                              padding: 0, 
+                              fontSize: '20px', 
+                              lineHeight: 1, 
+                              borderRadius: '50%' // 讓它變成圓形
+                            }}
+                          >
+                            +
+                          </button>
                     </div>
                     <details style={{ width: '100%', marginTop: '4px' }}>
                         <summary style={{ fontSize: '12px', color: '#666' }}>查看組合明細 ({combo.items.length} 項)</summary>
@@ -1841,12 +1870,20 @@ useEffect(() => {
                       </div>
                     </div>
                     <button 
-                      className="primary small" 
-                      onClick={() => addComboToMeals(combo)}
-                      style={{ flexShrink: 0 }}
-                    >
-                      加入
-                    </button>
+                            className="primary small" 
+                            onClick={() => addComboToMeals(combo)}
+                            style={{ 
+                              flexShrink: 0, 
+                              width: '32px', // 設定固定寬度
+                              height: '32px', // 設定固定高度
+                              padding: 0, 
+                              fontSize: '20px', 
+                              lineHeight: 1, 
+                              borderRadius: '50%' // 讓它變成圓形
+                            }}
+                          >
+                            +
+                          </button>
                   </div>
                   <details style={{ width: '100%', marginTop: '4px' }}>
                         <summary style={{ fontSize: '12px', color: '#666' }}>查看組合明細 ({combo.items.length} 項)</summary>
