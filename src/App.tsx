@@ -2618,6 +2618,8 @@ useEffect(() => {
     // 🆕 新增編輯常用組合的狀態
     const [editingCombo, setEditingCombo] = useState<MealCombo | null>(null);
     const [editingComboName, setEditingComboName] = useState('');
+    // 🆕 新增：用於編輯組合明細的狀態
+    const [editingComboItems, setEditingComboItems] = useState<ComboItem[]>([]);
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -2628,19 +2630,36 @@ useEffect(() => {
     }
 
     // 🆕 儲存常用組合的編輯
+    // 🆕 修改 saveComboEdit 函數，使其能儲存 items
     function saveComboEdit() {
+      // 確保有正在編輯的組合且名稱不為空
       if (!editingCombo || !editingComboName.trim()) return;
       
+      // 確保明細至少有一項
+      if (editingComboItems.length === 0) {
+          alert('組合中必須至少包含一項食物明細。');
+          return;
+      }
+      
+      // 這是核心邏輯：更新 combos 狀態
       setCombos((prev) =>
         prev.map((c) =>
           c.id === editingCombo.id
-            ? { ...c, name: editingComboName.trim() } // 只允許編輯名稱
+            ? { 
+                ...c, 
+                name: editingComboName.trim(),
+                items: editingComboItems // 這裡必須是 editingComboItems (新的明細)
+              }
             : c
         )
       );
+      
+      // 清空所有編輯相關的狀態
       setEditingCombo(null);
       setEditingComboName('');
-      alert(`組合「${editingCombo.name}」已更名為「${editingComboName}」`);
+      setEditingComboItems([]); 
+
+      alert(`組合「${editingCombo.name}」已更新並更名為「${editingComboName}」`);
     }
 
     // 🆕 刪除常用組合 (提供給設定頁使用)
@@ -2892,12 +2911,12 @@ useEffect(() => {
                   {/* 🔼 修正/還原：確保組合名稱和明細正確顯示 🔼 */}
                 </div>
                 <div className="btn-row">
-                  {/* 🆕 增加編輯按鈕 */}
                   <button 
                     className="secondary small" 
                     onClick={() => {
                       setEditingCombo(c);
                       setEditingComboName(c.name);
+                      setEditingComboItems(c.items); // 🆕 載入組合明細
                     }}
                   >
                     編輯
@@ -2910,18 +2929,19 @@ useEffect(() => {
             ))}
           </div>
         </section>
-        {/* 🆕 編輯常用組合彈窗 (在 SettingsPage 結尾的 return 之前加入) */}
+       {/* 🆕 編輯常用組合彈窗 (在 SettingsPage 結尾的 return 之前加入) */}
         {editingCombo && (
           <div
             className="modal-backdrop"
             style={{
               position: 'fixed',
               inset: 0,
-              background: 'rgba(0,0,0,0.35)',
+              background: 'rgba(0,0,0,0.5)', /* 略微調深背景 */
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               zIndex: 20,
+              padding: '20px 0', /* 增加上下內距，避免手機鍵盤遮擋 */
             }}
           >
             <div
@@ -2930,12 +2950,14 @@ useEffect(() => {
                 background: '#fff',
                 borderRadius: 12,
                 padding: 16,
-                maxWidth: 320,
+                maxWidth: 400, /* 稍微加寬 */
                 width: '90%',
+                maxHeight: '90vh',
+                overflowY: 'auto', /* 允許滾動 */
                 boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
               }}
             >
-              <h3 style={{ marginTop: 0 }}>編輯組合名稱</h3>
+              <h3 style={{ marginTop: 0 }}>編輯組合：{editingCombo.name}</h3>
               <div className="form-section">
                 <label>
                   組合名稱
@@ -2946,22 +2968,77 @@ useEffect(() => {
                   />
                 </label>
               </div>
-              <div className="btn-row">
+
+              {/* === 明細編輯區 === */}
+              <h4 style={{ marginBottom: 8 }}>組合明細 ({editingComboItems.length} 項)</h4>
+              <div className="list-section" style={{ border: '1px solid var(--line)', borderRadius: 8, padding: 8 }}>
+                {editingComboItems.map((item, index) => (
+                  <div key={index} style={{ marginBottom: 12, borderBottom: '1px dotted #ccc', paddingBottom: 8 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <b style={{ fontSize: 15 }}>{item.label}</b>
+                        <button 
+                            className="secondary small" 
+                            onClick={() => setEditingComboItems(prev => prev.filter((_, i) => i !== index))}
+                            style={{ padding: '2px 8px' }}
+                        >
+                            移除
+                        </button>
+                    </div>
+                    <div className="inline-inputs" style={{ marginTop: 6, display: 'flex', gap: 10 }}>
+                        <label style={{ flex: 1 }}>
+                            Kcal
+                            <input
+                                type="number"
+                                value={item.kcal}
+                                onChange={(e) => {
+                                    const v = Number(e.target.value) || 0;
+                                    setEditingComboItems(prev => prev.map((it, i) => i === index ? { ...it, kcal: v } : it));
+                                }}
+                                style={{ padding: '6px' }}
+                            />
+                        </label>
+                        <label style={{ flex: 1 }}>
+                            份量描述
+                            <input
+                                type="text"
+                                value={item.amountText || ''}
+                                onChange={(e) => {
+                                    setEditingComboItems(prev => prev.map((it, i) => i === index ? { ...it, amountText: e.target.value } : it));
+                                }}
+                                style={{ padding: '6px' }}
+                            />
+                        </label>
+                    </div>
+                  </div>
+                ))}
+                {editingComboItems.length === 0 && <div className="hint">組合中無品項，請重新紀錄。</div>}
+                
+                <div style={{ textAlign: 'center', paddingTop: 10, fontSize: 14 }}>
+                    總熱量：<b>{editingComboItems.reduce((sum, item) => sum + (item.kcal || 0), 0)} kcal</b>
+                </div>
+              </div>
+              {/* === /明細編輯區 === */}
+
+              <div className="btn-row" style={{ marginTop: 16 }}>
                 <button 
                   className="primary" 
                   onClick={saveComboEdit}
-                  disabled={!editingComboName.trim()}
+                  disabled={!editingComboName.trim() || editingComboItems.length === 0}
                 >
-                  儲存變更
+                  儲存全部變更
                 </button>
-                <button onClick={() => setEditingCombo(null)}>
+                <button 
+                  onClick={() => {
+                      setEditingCombo(null);
+                      setEditingComboItems([]); // 清空狀態
+                  }}
+                >
                   取消
                 </button>
               </div>
             </div>
           </div>
         )}
-        
         {/* ... (SettingsPage 結尾) */}
 
 
