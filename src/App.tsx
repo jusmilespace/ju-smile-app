@@ -2614,8 +2614,44 @@ useEffect(() => {
   const SettingsPage: React.FC = () => {
     const [localSettings, setLocalSettings] =
       useState<Settings>(settings);
+    
+    // 🆕 新增編輯常用組合的狀態
+    const [editingCombo, setEditingCombo] = useState<MealCombo | null>(null);
+    const [editingComboName, setEditingComboName] = useState('');
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+    function saveSettings() {
+      setSettings(localSettings);
+// ... (SettingsPage 結尾與 App 結尾的程式碼)
+      alert('已儲存目標設定');
+    }
+
+    // 🆕 儲存常用組合的編輯
+    function saveComboEdit() {
+      if (!editingCombo || !editingComboName.trim()) return;
+      
+      setCombos((prev) =>
+        prev.map((c) =>
+          c.id === editingCombo.id
+            ? { ...c, name: editingComboName.trim() } // 只允許編輯名稱
+            : c
+        )
+      );
+      setEditingCombo(null);
+      setEditingComboName('');
+      alert(`組合「${editingCombo.name}」已更名為「${editingComboName}」`);
+    }
+
+    // 🆕 刪除常用組合 (提供給設定頁使用)
+    function deleteCombo(id: string) {
+      if (window.confirm('確定要刪除這個常用組合嗎？')) {
+        setCombos((prev) => prev.filter((c) => c.id !== id));
+      }
+    }
+    // ... (其他函數：handleExportJson, handleImportClick, etc. 保持在後面)
+      
+
 
     function saveSettings() {
       setSettings(localSettings);
@@ -2837,6 +2873,7 @@ useEffect(() => {
             {combos.map((c) => (
               <div key={c.id} className="list-item">
                 <div>
+                  {/* 🔽 修正/還原：確保組合名稱和明細正確顯示 🔽 */}
                   <div>{c.name}</div>
                   <div className="sub">
                     {c.items.length} 品項 · 總計約{' '}
@@ -2852,8 +2889,19 @@ useEffect(() => {
                       ))}
                     </ul>
                   </details>
+                  {/* 🔼 修正/還原：確保組合名稱和明細正確顯示 🔼 */}
                 </div>
                 <div className="btn-row">
+                  {/* 🆕 增加編輯按鈕 */}
+                  <button 
+                    className="secondary small" 
+                    onClick={() => {
+                      setEditingCombo(c);
+                      setEditingComboName(c.name);
+                    }}
+                  >
+                    編輯
+                  </button>
                   <button className="secondary small" onClick={() => deleteCombo(c.id)}>
                     刪除
                   </button>
@@ -2862,6 +2910,59 @@ useEffect(() => {
             ))}
           </div>
         </section>
+        {/* 🆕 編輯常用組合彈窗 (在 SettingsPage 結尾的 return 之前加入) */}
+        {editingCombo && (
+          <div
+            className="modal-backdrop"
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.35)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 20,
+            }}
+          >
+            <div
+              className="modal"
+              style={{
+                background: '#fff',
+                borderRadius: 12,
+                padding: 16,
+                maxWidth: 320,
+                width: '90%',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              }}
+            >
+              <h3 style={{ marginTop: 0 }}>編輯組合名稱</h3>
+              <div className="form-section">
+                <label>
+                  組合名稱
+                  <input
+                    value={editingComboName}
+                    onChange={(e) => setEditingComboName(e.target.value)}
+                    placeholder="例如：午餐便當組合"
+                  />
+                </label>
+              </div>
+              <div className="btn-row">
+                <button 
+                  className="primary" 
+                  onClick={saveComboEdit}
+                  disabled={!editingComboName.trim()}
+                >
+                  儲存變更
+                </button>
+                <button onClick={() => setEditingCombo(null)}>
+                  取消
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* ... (SettingsPage 結尾) */}
 
 
         <section className="card">
