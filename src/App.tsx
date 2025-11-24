@@ -1200,33 +1200,66 @@ useEffect(() => {
         style={{ paddingBottom: '90px' }}
       >
         <header className="top-bar">
-          <button
-            onClick={() =>
-              setTodayLocal(
-                dayjs(todayLocal)
-                  .subtract(1, 'day')
-                  .format('YYYY-MM-DD')
-              )
-            }
-          >
-            ◀
-          </button>
-          <div className="date-text">
-            {todayLocal}{' '}
-            {todayLocal === dayjs().format('YYYY-MM-DD') && '(今天)'}
-          </div>
-          <button
-            onClick={() =>
-              setTodayLocal(
-                dayjs(todayLocal)
-                  .add(1, 'day')
-                  .format('YYYY-MM-DD')
-              )
-            }
-          >
-            ▶
-          </button>
-        </header>
+  <button
+    type="button"
+    onClick={() =>
+      setTodayLocal(
+        dayjs(todayLocal)
+          .subtract(1, 'day')
+          .format('YYYY-MM-DD')
+      )
+    }
+  >
+    ◀
+  </button>
+
+  <div
+    className="date-text"
+    style={{
+      flex: 1,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 2,
+    }}
+  >
+    <input
+      type="date"
+      value={todayLocal}
+      onChange={(e) => {
+        const v = e.target.value;
+        if (v) {
+          setTodayLocal(v);
+        }
+      }}
+      style={{
+        maxWidth: 160,
+        padding: '2px 8px',
+        borderRadius: 999,
+        border: '1px solid var(--line, #ccc)',
+        fontSize: 14,
+      }}
+    />
+    {todayLocal === dayjs().format('YYYY-MM-DD') && (
+      <span style={{ fontSize: 11, color: '#666' }}>今天</span>
+    )}
+  </div>
+
+  <button
+    type="button"
+    onClick={() =>
+      setTodayLocal(
+        dayjs(todayLocal)
+          .add(1, 'day')
+          .format('YYYY-MM-DD')
+      )
+    }
+  >
+    ▶
+  </button>
+</header>
+
 
         <section className="card">
           <h2>今日概況</h2>
@@ -3178,13 +3211,20 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
   }
 
   function handleBackupToDrive() {
-    handleExportJson();
+  // 先匯出 JSON（觸發下載）
+  handleExportJson();
+
+  // 為了相容手機瀏覽器，延遲一點再開啟 Google Drive，
+  // 避免只執行最後一個 window.open，看起來像「還沒下載就直接跳走」。
+  setTimeout(() => {
     try {
       window.open('https://drive.google.com/drive/my-drive', '_blank');
     } catch {
       // ignore popup block
     }
-  }
+  }, 800);
+}
+
 
   return (
     <div className="page page-settings" style={{ paddingBottom: '90px' }}>
