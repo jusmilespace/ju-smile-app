@@ -621,6 +621,8 @@ const AboutPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
 const App: React.FC = () => {
   const [tab, setTab] = useState<Tab>('today');
+  const [showUpdateBar, setShowUpdateBar] = useState(false);
+
   const [recordDefaultMealType, setRecordDefaultMealType] =
     useState<'早餐' | '午餐' | '晚餐' | '點心'>('早餐');
 
@@ -629,6 +631,45 @@ const App: React.FC = () => {
   const [settings, setSettings] = useState<Settings>(() =>
     loadJSON<Settings>(STORAGE_KEYS.SETTINGS, {})
   );
+
+    // 🔔 監聽 Service Worker 是否有安裝新版本
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+
+    navigator.serviceWorker
+      .getRegistration()
+      .then((reg) => {
+        if (!reg) return;
+
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          if (!newWorker) return;
+
+          newWorker.addEventListener('statechange', () => {
+            // 有舊 SW 在控制頁面，且新 SW 安裝完成 → 有「新版本」
+            if (
+              newWorker.state === 'installed' &&
+              navigator.serviceWorker.controller
+            ) {
+              setShowUpdateBar(true);
+            }
+          });
+        });
+      })
+      .catch(() => {
+        // 忽略錯誤
+      });
+  }, []);
+
+    function handleReloadForUpdate() {
+    // 告訴 SW：可以跳過 waiting，直接啟用新版本
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+    }
+    // 重新載入頁面，載入最新版
+    window.location.reload();
+  }
+
   // 監聽 Plan 頁送來的目標熱量，立即更新「我的」頁的 目標攝取熱量(kcal)
   useEffect(() => {
     function onSetGoal(ev: any) {
@@ -3914,6 +3955,41 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
           <div className="nav-label">Plan</div>
         </button>
       </nav>
+          {showUpdateBar && (
+      <div
+        style={{
+          position: 'fixed',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          padding: '8px 12px',
+          background: '#222',
+          color: '#fff',
+          fontSize: 13,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 8,
+          zIndex: 50,
+        }}
+      >
+        <span>Ju Smile App 有新版本，請重新載入取得最新功能。</span>
+        <button
+          type="button"
+          onClick={handleReloadForUpdate}
+          style={{
+            borderRadius: 999,
+            border: 'none',
+            padding: '6px 10px',
+            fontSize: 12,
+            cursor: 'pointer',
+          }}
+        >
+          立即更新
+        </button>
+      </div>
+    )}
+
     </div>
   );
 };
