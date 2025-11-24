@@ -85,7 +85,7 @@ type Settings = {
   targetDate?: string;
 };
 
-type Tab = 'today' | 'records' | 'settings' | 'plan';
+type Tab = 'today' | 'records' | 'settings' | 'plan' | 'about';
 type RecordSubTab = 'food' | 'exercise';
 
 // 🆕 新增：常用組合結構
@@ -260,6 +260,362 @@ async function fetchCsv<T = any>(url: string): Promise<T[]> {
   }
   return parsed.data;
 }
+const InstallGuideWidget: React.FC = () => {
+  const [open, setOpen] = useState(false); // 教學 Modal 是否開啟
+  const [showHint, setShowHint] = useState(false); // 底部提醒 bar
+  const [platformTab, setPlatformTab] = useState<'ios' | 'android' | 'desktop'>('ios');
+
+  useEffect(() => {
+    // 已安裝的情況，就不用顯示提示 bar
+    let standalone = false;
+    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
+      standalone = true;
+    }
+    if ((window.navigator as any).standalone) {
+      standalone = true; // iOS Safari PWA
+    }
+    if (standalone) return;
+
+    // 如果使用者勾過「不再顯示」，就不要再出現提醒 bar
+    const dismissed = localStorage.getItem('JU_INSTALL_HINT_DISMISSED');
+    if (dismissed === '1') return;
+
+    // 根據 userAgent 粗略選一個預設平台 tab
+    const ua = window.navigator.userAgent.toLowerCase();
+    if (ua.includes('iphone') || ua.includes('ipad') || ua.includes('ipod')) {
+      setPlatformTab('ios');
+    } else if (ua.includes('android')) {
+      setPlatformTab('android');
+    } else {
+      setPlatformTab('desktop');
+    }
+
+    setShowHint(true);
+  }, []);
+
+  function openModal() {
+    setOpen(true);
+    setShowHint(false);
+  }
+
+  function handleNeverShow() {
+    localStorage.setItem('JU_INSTALL_HINT_DISMISSED', '1');
+    setShowHint(false);
+  }
+
+  return (
+    <>
+      {/* 設定頁中的卡片 */}
+      <section className="card">
+        <h2>安裝到手機主畫面</h2>
+        <div className="form-section">
+          <p style={{ marginBottom: 8 }}>
+            將 Ju Smile App 加到主畫面，就能像一般 App 一樣從桌面開啟。
+          </p>
+          <button
+            type="button"
+            className="secondary"
+            onClick={openModal}
+            style={{ borderRadius: 999, padding: '8px 16px', cursor: 'pointer' }}
+          >
+            查看安裝教學
+          </button>
+        </div>
+      </section>
+
+      {/* 第一次開啟時的小提醒 bar */}
+      {showHint && (
+        <div
+          style={{
+            position: 'fixed',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            padding: '8px 12px',
+            background: '#333',
+            color: '#fff',
+            fontSize: 13,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 8,
+            zIndex: 30,
+          }}
+        >
+          <span>提示：可以把 Ju Smile App 安裝到手機主畫面，使用更方便。</span>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button
+              type="button"
+              onClick={openModal}
+              style={{
+                borderRadius: 999,
+                border: 'none',
+                padding: '4px 8px',
+                fontSize: 12,
+                cursor: 'pointer',
+              }}
+            >
+              看教學
+            </button>
+            <button
+              type="button"
+              onClick={handleNeverShow}
+              style={{
+                borderRadius: 999,
+                border: 'none',
+                padding: '4px 8px',
+                fontSize: 12,
+                background: 'transparent',
+                color: '#fff',
+                textDecoration: 'underline',
+                cursor: 'pointer',
+              }}
+            >
+              不再顯示
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 安裝教學 Modal */}
+      {open && (
+        <div
+          className="modal-backdrop"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 40,
+            padding: '20px 0',
+          }}
+        >
+          <div
+            className="modal"
+            style={{
+              background: '#fff',
+              borderRadius: 12,
+              padding: 16,
+              maxWidth: 420,
+              width: '90%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              fontSize: 14,
+              lineHeight: 1.6,
+            }}
+          >
+            <h3 style={{ marginTop: 0, marginBottom: 12 }}>安裝到主畫面教學</h3>
+
+            {/* 平台切換按鈕 */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+              <button
+                type="button"
+                onClick={() => setPlatformTab('ios')}
+                style={{
+                  flex: 1,
+                  padding: '6px 8px',
+                  borderRadius: 999,
+                  border: '1px solid var(--line)',
+                  background: platformTab === 'ios' ? 'var(--accent, #eee)' : '#fff',
+                  cursor: 'pointer',
+                }}
+              >
+                iPhone / iPad
+              </button>
+              <button
+                type="button"
+                onClick={() => setPlatformTab('android')}
+                style={{
+                  flex: 1,
+                  padding: '6px 8px',
+                  borderRadius: 999,
+                  border: '1px solid var(--line)',
+                  background: platformTab === 'android' ? 'var(--accent, #eee)' : '#fff',
+                  cursor: 'pointer',
+                }}
+              >
+                Android
+              </button>
+              <button
+                type="button"
+                onClick={() => setPlatformTab('desktop')}
+                style={{
+                  flex: 1,
+                  padding: '6px 8px',
+                  borderRadius: 999,
+                  border: '1px solid var(--line)',
+                  background: platformTab === 'desktop' ? 'var(--accent, #eee)' : '#fff',
+                  cursor: 'pointer',
+                }}
+              >
+                電腦瀏覽器
+              </button>
+            </div>
+
+            {platformTab === 'ios' && (
+              <div>
+                <p>使用 Safari 開啟本頁：</p>
+                <ol style={{ paddingLeft: 20, margin: 0 }}>
+                  <li>點畫面下方中間的「分享」按鈕（⏫ 的圖示）。</li>
+                  <li>在選單中往下滑，找到並點選「加入主畫面」。</li>
+                  <li>確認名稱為「Ju Smile App」，再點右上角「加入」。</li>
+                  <li>之後就可以從主畫面像一般 App 一樣開啟。</li>
+                </ol>
+              </div>
+            )}
+
+            {platformTab === 'android' && (
+              <div>
+                <p>使用 Chrome 開啟本頁：</p>
+                <ol style={{ paddingLeft: 20, margin: 0 }}>
+                  <li>點畫面右上角「⋮」選單。</li>
+                  <li>
+                    點選「安裝 App」或「加到主畫面」（不同手機可能顯示文字略有差異）。
+                  </li>
+                  <li>如有需要可以修改名稱，然後按「新增」或「安裝」。</li>
+                  <li>主畫面會出現 Ju Smile App 圖示，之後可直接點開。</li>
+                </ol>
+              </div>
+            )}
+
+            {platformTab === 'desktop' && (
+              <div>
+                <p>在電腦瀏覽器（Chrome / Edge）：</p>
+                <ol style={{ paddingLeft: 20, margin: 0 }}>
+                  <li>在網址列右側尋找「安裝」或「+」圖示。</li>
+                  <li>點擊後選擇「安裝」或「安裝應用程式」。</li>
+                  <li>安裝後，可以在桌面或開始選單找到 Ju Smile App。</li>
+                </ol>
+              </div>
+            )}
+
+            <div
+              className="btn-row"
+              style={{
+                marginTop: 16,
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: 8,
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                style={{
+                  borderRadius: 999,
+                  padding: '6px 12px',
+                  border: '1px solid var(--line)',
+                  background: '#fff',
+                  cursor: 'pointer',
+                }}
+              >
+                關閉
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+
+const AboutPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  return (
+    <div className="page page-settings" style={{ paddingBottom: '90px' }}>
+      <section className="card">
+        <div className="form-section" style={{ lineHeight: 1.6 }}>
+          <h2>關於 Ju Smile App</h2>
+          <p>
+            Ju Smile App 是一個幫助你記錄體重、飲食與運動的個人熱量管理工具，
+            讓你更有意識地照顧自己的身體狀態與日常習慣。
+          </p>
+        </div>
+      </section>
+
+      <section className="card">
+        <div className="form-section" style={{ lineHeight: 1.6 }}>
+          <h2>資料儲存與隱私</h2>
+          <ul style={{ paddingLeft: 20, marginBottom: 0 }}>
+            <li>所有紀錄（體重、飲食、運動…）都只儲存在你目前使用裝置的瀏覽器本機。</li>
+            <li>不會自動上傳到任何伺服器或雲端，也不會與其他裝置同步。</li>
+            <li>清除瀏覽器資料、重灌或換裝置時，紀錄都有可能一併被刪除。</li>
+          </ul>
+        </div>
+      </section>
+
+      <section className="card">
+        <div className="form-section" style={{ lineHeight: 1.6 }}>
+          <h2>建議操作：定期備份（匯出 JSON）</h2>
+          <ol style={{ paddingLeft: 20, marginBottom: 0 }}>
+            <li>在 App 中點選「匯出 JSON」。</li>
+            <li>會下載一個 <code>.json</code> 檔案（內含體重、飲食、運動紀錄）。</li>
+            <li>建議存到雲端硬碟、寄到自己 Email，或放在平常會備份的資料夾。</li>
+          </ol>
+        </div>
+      </section>
+
+      <section className="card">
+        <div className="form-section" style={{ lineHeight: 1.6 }}>
+          <h2>還原紀錄：匯入 JSON</h2>
+          <ol style={{ paddingLeft: 20, marginBottom: 0 }}>
+            <li>在新裝置上打開 Ju Smile App。</li>
+            <li>點選「匯入 JSON」。</li>
+            <li>選擇之前備份的 <code>.json</code> 檔案，即可還原紀錄。</li>
+          </ol>
+        </div>
+      </section>
+
+      <section className="card">
+        <div className="form-section" style={{ lineHeight: 1.6 }}>
+          <h2>精準資料同步（進階功能）</h2>
+          <p>
+            如果你有自行更新以下 CSV 檔案：
+            Type Table / Unit Map / Food DB / Exercise MET，
+            請在設定頁更新網址後按一次「同步精準資料」，讓 App 重新載入最新版內容。
+          </p>
+          <p style={{ fontSize: 13, color: '#666', marginBottom: 0 }}>
+            一般使用者如果沒有自己改 CSV，可以忽略「同步精準資料」，照平常使用即可。
+          </p>
+        </div>
+      </section>
+
+      <section className="card">
+        <div className="form-section" style={{ lineHeight: 1.6 }}>
+          <h2>版本資訊</h2>
+          <p style={{ marginBottom: 4 }}>
+            目前版本：<b>Ju Smile App v{APP_VERSION}</b>
+          </p>
+          <ul style={{ paddingLeft: 20, marginBottom: 0, fontSize: 13 }}>
+            <li>v0.1.0：初始版本，提供體重 / 飲食 / 運動紀錄與 JSON 匯出 / 匯入功能。</li>
+            {/* 未來可以在這裡往下加 v0.1.1, v0.2.0 ... */}
+          </ul>
+        </div>
+      </section>
+
+      <div style={{ padding: '0 16px 24px' }}>
+        <button
+          type="button"
+          onClick={onBack}
+          className="secondary"
+          style={{
+            borderRadius: 999,
+            padding: '8px 16px',
+            cursor: 'pointer',
+          }}
+        >
+          ← 回到「我的」頁
+        </button>
+      </div>
+    </div>
+  );
+};
+
+
+
 
 // ======== App 主元件 ========
 
@@ -2628,518 +2984,599 @@ useEffect(() => {
 
   // ======== 我的頁 ========
 
-  const SettingsPage: React.FC = () => {
-    const [localSettings, setLocalSettings] =
-      useState<Settings>(settings);
-    
-    // 🆕 新增編輯常用組合的狀態
-    const [editingCombo, setEditingCombo] = useState<MealCombo | null>(null);
-    const [editingComboName, setEditingComboName] = useState('');
-    // 🆕 新增：用於編輯組合明細的狀態
-    const [editingComboItems, setEditingComboItems] = useState<ComboItem[]>([]);
+type SettingsPageProps = {
+  onOpenAbout: () => void;
+};
 
-    const fileInputRef = useRef<HTMLInputElement | null>(null);
+const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
+  const [localSettings, setLocalSettings] = useState<Settings>(settings);
 
-    function saveSettings() {
-      setSettings(localSettings);
-// ... (SettingsPage 結尾與 App 結尾的程式碼)
-      alert('已儲存目標設定');
+  // 🆕 新增編輯常用組合的狀態
+  const [editingCombo, setEditingCombo] = useState<MealCombo | null>(null);
+  const [editingComboName, setEditingComboName] = useState('');
+  // 🆕 新增：用於編輯組合明細的狀態
+  const [editingComboItems, setEditingComboItems] = useState<ComboItem[]>([]);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // 儲存目標設定
+  function saveSettings() {
+    setSettings(localSettings);
+    alert('已儲存目標設定');
+  }
+
+  // 🆕 儲存常用組合的編輯（包含明細）
+  function saveComboEdit() {
+    if (!editingCombo || !editingComboName.trim()) return;
+
+    if (editingComboItems.length === 0) {
+      alert('組合中必須至少包含一項食物明細。');
+      return;
     }
 
-    // 🆕 儲存常用組合的編輯
-    // 🆕 修改 saveComboEdit 函數，使其能儲存 items
-    function saveComboEdit() {
-      // 確保有正在編輯的組合且名稱不為空
-      if (!editingCombo || !editingComboName.trim()) return;
-      
-      // 確保明細至少有一項
-      if (editingComboItems.length === 0) {
-          alert('組合中必須至少包含一項食物明細。');
-          return;
+    setCombos((prev) =>
+      prev.map((c) =>
+        c.id === editingCombo.id
+          ? {
+              ...c,
+              name: editingComboName.trim(),
+              items: editingComboItems,
+            }
+          : c
+      )
+    );
+
+    const oldName = editingCombo.name;
+    const newName = editingComboName.trim();
+
+    setEditingCombo(null);
+    setEditingComboName('');
+    setEditingComboItems([]);
+
+    alert(`組合「${oldName}」已更新並更名為「${newName}」`);
+  }
+
+  // 🆕 刪除常用組合
+  function deleteCombo(id: string) {
+    if (window.confirm('確定要刪除這個常用組合嗎？')) {
+      setCombos((prev) => prev.filter((c) => c.id !== id));
+    }
+  }
+
+  function handleExportJson() {
+    const data = {
+      settings,
+      days,
+      meals,
+      exercises,
+      combos, // 匯出常用組合
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ju-smile-app-backup-${dayjs().format(
+      'YYYYMMDD-HHmmss'
+    )}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function handleImportClick() {
+    fileInputRef.current?.click();
+  }
+
+  function handleImportJson(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const obj = JSON.parse(reader.result as string);
+        if (obj.settings) setSettings(obj.settings);
+        if (obj.days) setDays(obj.days);
+        if (obj.meals) setMeals(obj.meals);
+        if (obj.exercises) setExercises(obj.exercises);
+        if (obj.combos) setCombos(obj.combos);
+        alert('匯入完成');
+      } catch {
+        alert('匯入失敗:JSON 格式不正確');
       }
-      
-      // 這是核心邏輯：更新 combos 狀態
-      setCombos((prev) =>
-        prev.map((c) =>
-          c.id === editingCombo.id
-            ? { 
-                ...c, 
-                name: editingComboName.trim(),
-                items: editingComboItems // 這裡必須是 editingComboItems (新的明細)
+    };
+    reader.readAsText(file);
+  }
+
+  function handleBackupToDrive() {
+    handleExportJson();
+    try {
+      window.open('https://drive.google.com/drive/my-drive', '_blank');
+    } catch {
+      // ignore popup block
+    }
+  }
+
+  return (
+    <div className="page page-settings" style={{ paddingBottom: '90px' }}>
+      {/* 我的目標 */}
+      <section className="card">
+        <h2>我的目標</h2>
+        <div className="form-section">
+          <label>
+            減重起始日期
+            <input
+              type="date"
+              value={localSettings.startDate || ''}
+              onChange={(e) =>
+                setLocalSettings((s) => ({
+                  ...s,
+                  startDate: e.target.value || undefined,
+                }))
               }
-            : c
-        )
-      );
-      
-      // 清空所有編輯相關的狀態
-      setEditingCombo(null);
-      setEditingComboName('');
-      setEditingComboItems([]); 
-
-      alert(`組合「${editingCombo.name}」已更新並更名為「${editingComboName}」`);
-    }
-
-    // 🆕 刪除常用組合 (提供給設定頁使用)
-    function deleteCombo(id: string) {
-      if (window.confirm('確定要刪除這個常用組合嗎？')) {
-        setCombos((prev) => prev.filter((c) => c.id !== id));
-      }
-    }
-    // ... (其他函數：handleExportJson, handleImportClick, etc. 保持在後面)
-      
-
-
-    function saveSettings() {
-      setSettings(localSettings);
-// ... (SettingsPage 結尾與 App 結尾的程式碼)
-      alert('已儲存目標設定');
-    }
-
-    function handleExportJson() {
-      const data = {
-        settings,
-        days,
-        meals,
-        exercises,
-        // 🆕 匯出常用組合
-        combos, 
-      };
-      const blob = new Blob([JSON.stringify(data, null, 2)], {
-        type: 'application/json',
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `ju-smile-app-backup-${dayjs().format(
-        'YYYYMMDD-HHmmss'
-      )}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    function handleImportClick() {
-      fileInputRef.current?.click();
-    }
-
-    function handleImportJson(e: React.ChangeEvent<HTMLInputElement>) {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          const obj = JSON.parse(reader.result as string);
-          if (obj.settings) setSettings(obj.settings);
-          if (obj.days) setDays(obj.days);
-          if (obj.meals) setMeals(obj.meals);
-          if (obj.exercises) setExercises(obj.exercises);
-          // 🆕 匯入常用組合
-          if (obj.combos) setCombos(obj.combos);
-          alert('匯入完成');
-        } catch {
-          alert('匯入失敗:JSON 格式不正確');
-        }
-      };
-      reader.readAsText(file);
-    }
-
-    function handleBackupToDrive() {
-      alert(
-        '一鍵備份到 Google Drive：此版本先以本地匯出 JSON 為主，之後可再串接 Google Drive API。'
-      );
-    }
-    
-    // 🆕 刪除常用組合 (提供給設定頁使用)
-    function deleteCombo(id: string) {
-      if (window.confirm('確定要刪除這個常用組合嗎？')) {
-        setCombos((prev) => prev.filter((c) => c.id !== id));
-      }
-    }
-
-
-    return (
-
-      <div className="page page-settings" style={{ paddingBottom: '90px' }}>
-
-        <section className="card">
-          <h2>我的目標</h2>
-          <div className="form-section">
-            <label>
-              減重起始日期
-              <input
-                type="date"
-                value={localSettings.startDate || ''}
-                onChange={(e) =>
-                  setLocalSettings((s) => ({
-                    ...s,
-                    startDate: e.target.value || undefined,
-                  }))
-                }
-              />
-            </label>
-            <label>
-              預計達成日期
-              <input
-                type="date"
-                value={localSettings.targetDate || ''}
-                onChange={(e) =>
-                  setLocalSettings((s) => ({
-                    ...s,
-                    targetDate: e.target.value || undefined,
-                  }))
-                }
-              />
-            </label>
-            <label>
-              目標體重 (kg)
-              <input
-                type="number"
-                value={localSettings.targetWeight ?? ''}
-                onChange={(e) =>
-                  setLocalSettings((s) => ({
-                    ...s,
-                    targetWeight: e.target.value
-                      ? Number(e.target.value)
-                      : undefined,
-                  }))
-                }
-              />
-            </label>
-            <label>
-              目標攝取熱量 (kcal)
-              <input
-                type="number"
-                value={localSettings.calorieGoal ?? ''}
-                onChange={(e) =>
-                  setLocalSettings((s) => ({
-                    ...s,
-                    calorieGoal: e.target.value
-                      ? Number(e.target.value)
-                      : undefined,
-                  }))
-                }
-              />
-            </label>
-            <label>
-              每日蛋白質目標 (g)
-              <input
-                type="number"
-                value={localSettings.proteinGoal ?? ''}
-                onChange={(e) =>
-                  setLocalSettings((s) => ({
-                    ...s,
-                    proteinGoal: e.target.value
-                      ? Number(e.target.value)
-                      : undefined,
-                  }))
-                }
-              />
-            </label>
-            <label>
-              每日飲水目標 (ml)
-              <input
-                type="number"
-                value={localSettings.waterGoalMl ?? ''}
-                onChange={(e) =>
-                  setLocalSettings((s) => ({
-                    ...s,
-                    waterGoalMl: e.target.value
-                      ? Number(e.target.value)
-                      : undefined,
-                  }))
-                }
-              />
-            </label>
-            <label>
-              體脂率目標 (%)
-              <input
-                type="number"
-                value={localSettings.bodyFatGoal ?? ''}
-                onChange={(e) =>
-                  setLocalSettings((s) => ({
-                    ...s,
-                    bodyFatGoal: e.target.value
-                      ? Number(e.target.value)
-                      : undefined,
-                  }))
-                }
-              />
-            </label>
-            <label>
-              內臟脂肪指數目標
-              <input
-                type="number"
-                value={localSettings.visceralFatGoal ?? ''}
-                onChange={(e) =>
-                  setLocalSettings((s) => ({
-                    ...s,
-                    visceralFatGoal: e.target.value
-                      ? Number(e.target.value)
-                      : undefined,
-                  }))
-                }
-              />
-            </label>
-            <label>
-              每日運動時間目標 (分鐘)
-              <input
-                type="number"
-                value={localSettings.exerciseMinutesGoal ?? ''}
-                onChange={(e) =>
-                  setLocalSettings((s) => ({
-                    ...s,
-                    exerciseMinutesGoal: e.target.value
-                      ? Number(e.target.value)
-                      : undefined,
-                  }))
-                }
-              />
-            </label>
-
-            <button className="primary" onClick={saveSettings}>
-              儲存目標設定
-            </button>
-          </div>
-        </section>
-
-        {/* 🆕 常用組合管理 */}
-        <section className="card">
-          <h2>常用飲食組合管理 ({combos.length} 組)</h2>
-          <div className="list-section">
-            {combos.length === 0 && <div className="hint">尚未儲存任何常用組合</div>}
-            {combos.map((c) => (
-              <div key={c.id} className="list-item">
-                <div>
-                  {/* 🔽 修正/還原：確保組合名稱和明細正確顯示 🔽 */}
-                  <div>{c.name}</div>
-                  <div className="sub">
-                    {c.items.length} 品項 · 總計約{' '}
-                    {c.items.reduce((sum, item) => sum + item.kcal, 0)} kcal
-                  </div>
-                  <details style={{ marginTop: '4px' }}>
-                    <summary style={{ fontSize: '12px' }}>查看明細</summary>
-                    <ul style={{ paddingLeft: '20px', margin: '4px 0 0 0' }}>
-                      {c.items.map((item, index) => (
-                        <li key={index} style={{ fontSize: '12px', listStyleType: 'disc' }}>
-                          {item.label} ({item.kcal} kcal)
-                        </li>
-                      ))}
-                    </ul>
-                  </details>
-                  {/* 🔼 修正/還原：確保組合名稱和明細正確顯示 🔼 */}
-                </div>
-                <div className="btn-row">
-                  <button 
-                    className="secondary small" 
-                    onClick={() => {
-                      setEditingCombo(c);
-                      setEditingComboName(c.name);
-                      setEditingComboItems(c.items); // 🆕 載入組合明細
-                    }}
-                  >
-                    編輯
-                  </button>
-                  <button className="secondary small" onClick={() => deleteCombo(c.id)}>
-                    刪除
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-       {/* 🆕 編輯常用組合彈窗 (在 SettingsPage 結尾的 return 之前加入) */}
-        {editingCombo && (
-          <div
-            className="modal-backdrop"
-            style={{
-              position: 'fixed',
-              inset: 0,
-              background: 'rgba(0,0,0,0.5)', /* 略微調深背景 */
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 20,
-              padding: '20px 0', /* 增加上下內距，避免手機鍵盤遮擋 */
-            }}
-          >
-            <div
-              className="modal"
-              style={{
-                background: '#fff',
-                borderRadius: 12,
-                padding: 16,
-                maxWidth: 400, /* 稍微加寬 */
-                width: '90%',
-                maxHeight: '90vh',
-                overflowY: 'auto', /* 允許滾動 */
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-              }}
-            >
-              <h3 style={{ marginTop: 0 }}>編輯組合：{editingCombo.name}</h3>
-              <div className="form-section">
-                <label>
-                  組合名稱
-                  <input
-                    value={editingComboName}
-                    onChange={(e) => setEditingComboName(e.target.value)}
-                    placeholder="例如：午餐便當組合"
-                  />
-                </label>
-              </div>
-
-              {/* === 明細編輯區 === */}
-              <h4 style={{ marginBottom: 8 }}>組合明細 ({editingComboItems.length} 項)</h4>
-              <div className="list-section" style={{ border: '1px solid var(--line)', borderRadius: 8, padding: 8 }}>
-                {editingComboItems.map((item, index) => (
-                  <div key={index} style={{ marginBottom: 12, borderBottom: '1px dotted #ccc', paddingBottom: 8 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <b style={{ fontSize: 15 }}>{item.label}</b>
-                        <button 
-                            className="secondary small" 
-                            onClick={() => setEditingComboItems(prev => prev.filter((_, i) => i !== index))}
-                            style={{ padding: '2px 8px' }}
-                        >
-                            移除
-                        </button>
-                    </div>
-                    <div className="inline-inputs" style={{ marginTop: 6, display: 'flex', gap: 10 }}>
-                        <label style={{ flex: 1 }}>
-                            Kcal
-                            <input
-                                type="number"
-                                value={item.kcal}
-                                onChange={(e) => {
-                                    const v = Number(e.target.value) || 0;
-                                    setEditingComboItems(prev => prev.map((it, i) => i === index ? { ...it, kcal: v } : it));
-                                }}
-                                style={{ padding: '6px' }}
-                            />
-                        </label>
-                        <label style={{ flex: 1 }}>
-                            份量描述
-                            <input
-                                type="text"
-                                value={item.amountText || ''}
-                                onChange={(e) => {
-                                    setEditingComboItems(prev => prev.map((it, i) => i === index ? { ...it, amountText: e.target.value } : it));
-                                }}
-                                style={{ padding: '6px' }}
-                            />
-                        </label>
-                    </div>
-                  </div>
-                ))}
-                {editingComboItems.length === 0 && <div className="hint">組合中無品項，請重新紀錄。</div>}
-                
-                <div style={{ textAlign: 'center', paddingTop: 10, fontSize: 14 }}>
-                    總熱量：<b>{editingComboItems.reduce((sum, item) => sum + (item.kcal || 0), 0)} kcal</b>
-                </div>
-              </div>
-              {/* === /明細編輯區 === */}
-
-              <div className="btn-row" style={{ marginTop: 16 }}>
-                <button 
-                  className="primary" 
-                  onClick={saveComboEdit}
-                  disabled={!editingComboName.trim() || editingComboItems.length === 0}
-                >
-                  儲存全部變更
-                </button>
-                <button 
-                  onClick={() => {
-                      setEditingCombo(null);
-                      setEditingComboItems([]); // 清空狀態
-                  }}
-                >
-                  取消
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-        {/* ... (SettingsPage 結尾) */}
-
-
-        <section className="card">
-          <h2>資料來源同步 (CSV)</h2>
-          <div className="form-section">
-            <label>
-              Type Table
-              <input
-                value={srcType}
-                onChange={(e) => setSrcType(e.target.value)}
-                placeholder="/ju-smile-app/data/Type_Table.csv"
-              />
-            </label>
-            <label>
-              Unit Map
-              <input
-                value={srcUnit}
-                onChange={(e) => setSrcUnit(e.target.value)}
-                placeholder="/ju-smile-app/data/Unit_Map.csv"
-              />
-            </label>
-            <label>
-              Food DB
-              <input
-                value={srcFood}
-                onChange={(e) => setSrcFood(e.target.value)}
-                placeholder="/ju-smile-app/data/Food_DB.csv"
-              />
-            </label>
-            <label>
-              Exercise MET
-              <input
-                value={srcMet}
-                onChange={(e) => setSrcMet(e.target.value)}
-                placeholder="/ju-smile-app/data/Exercise_Met.csv"
-              />
-            </label>
-            <button className="primary" onClick={syncCsv} disabled={csvLoading}>
-              {csvLoading ? '同步中…' : '同步精準資料'}
-            </button>
-            {csvError && <div className="error-text">{csvError}</div>}
-          </div>
-        </section>
-
-        <section className="card">
-          <h2>資料匯出 / 匯入</h2>
-          <div className="form-section">
-            <div className="btn-row">
-              <button className="secondary" onClick={handleExportJson}>
-                匯出 JSON
-              </button>
-              <button className="secondary" onClick={handleImportClick}>
-                匯入 JSON
-              </button>
-              <button className="secondary" onClick={handleBackupToDrive}>
-                一鍵備份到 Google Drive
-              </button>
+            />
+          </label>
+          <label>
+            預計達成日期
+            <input
+              type="date"
+              value={localSettings.targetDate || ''}
+              onChange={(e) =>
+                setLocalSettings((s) => ({
+                  ...s,
+                  targetDate: e.target.value || undefined,
+                }))
+              }
+            />
+          </label>
+          <label>
+            目標體重 (kg)
+            <input
+              type="number"
+              value={localSettings.targetWeight ?? ''}
+              onChange={(e) =>
+                setLocalSettings((s) => ({
+                  ...s,
+                  targetWeight: e.target.value
+                    ? Number(e.target.value)
+                    : undefined,
+                }))
+              }
+            />
+          </label>
+          <label>
+            目標攝取熱量 (kcal)
+            <input
+              type="number"
+              value={localSettings.calorieGoal ?? ''}
+              onChange={(e) =>
+                setLocalSettings((s) => ({
+                  ...s,
+                  calorieGoal: e.target.value
+                    ? Number(e.target.value)
+                    : undefined,
+                }))
+              }
+            />
+          </label>
+          <label>
+            每日蛋白質目標 (g)
+            <div className="hint">
+              建議 1.2–1.6 g × 體重(kg)。<br />
+              <strong>若有腎臟疾病請依醫師建議調整。</strong>
             </div>
             <input
-              type="file"
-              accept="application/json"
-              style={{ display: 'none' }}
-              ref={fileInputRef}
-              onChange={handleImportJson}
+              type="number"
+              value={localSettings.proteinGoal ?? ''}
+              onChange={(e) =>
+                setLocalSettings((s) => ({
+                  ...s,
+                  proteinGoal: e.target.value
+                    ? Number(e.target.value)
+                    : undefined,
+                }))
+              }
             />
-          </div>
-        </section>
+          </label>
 
-        {/* 🔹 App 版本 & 說明 */}
-        <section className="card">
-          <h2>App 版本 & 說明</h2>
-          <div className="form-section">
-            <p>目前版本：<b>Ju Smile App v{APP_VERSION}</b></p>
-            <ul className="met-list">
-              <li>所有紀錄（體重、飲食、運動）皆儲存在<strong>本機瀏覽器</strong>中，不會自動上傳。</li>
-              <li>建議定期使用「匯出 JSON」備份，日後換手機或重灌時可以用「匯入 JSON」還原。</li>
-              <li>若更新 Type Table / Unit Map / Food DB / Exercise MET 的 CSV，請記得在上方按「同步精準資料」。</li>
-            </ul>
+          <label>
+            每日飲水目標 (ml)
+            <div className="hint">建議：30–35 ml × 體重(kg)</div>
+            <input
+              type="number"
+              value={localSettings.waterGoalMl ?? ''}
+              onChange={(e) =>
+                setLocalSettings((s) => ({
+                  ...s,
+                  waterGoalMl: e.target.value
+                    ? Number(e.target.value)
+                    : undefined,
+                }))
+              }
+            />
+          </label>
+
+          <label>
+            體脂率目標 (%)
+            <div className="hint">
+              男性健康體脂：約 8–19%。<br />
+              女性健康體脂：約 20–30%。
+            </div>
+            <input
+              type="number"
+              value={localSettings.bodyFatGoal ?? ''}
+              onChange={(e) =>
+                setLocalSettings((s) => ({
+                  ...s,
+                  bodyFatGoal: e.target.value
+                    ? Number(e.target.value)
+                    : undefined,
+                }))
+              }
+            />
+          </label>
+
+          <label>
+            內臟脂肪指數目標
+            <div className="hint">建議目標 ≤ 9</div>
+            <input
+              type="number"
+              value={localSettings.visceralFatGoal ?? ''}
+              onChange={(e) =>
+                setLocalSettings((s) => ({
+                  ...s,
+                  visceralFatGoal: e.target.value
+                    ? Number(e.target.value)
+                    : undefined,
+                }))
+              }
+            />
+          </label>
+
+          <label>
+            每日運動時間目標 (分鐘)
+            <div className="hint">
+              最低：每週 150 分鐘中等強度（約 30 分鐘 × 5 天）。<br />
+              減脂建議：45–60 分鐘/天，5–6 天/週＋每週 2–3 天肌力訓練。
+            </div>
+            <input
+              type="number"
+              value={localSettings.exerciseMinutesGoal ?? ''}
+              onChange={(e) =>
+                setLocalSettings((s) => ({
+                  ...s,
+                  exerciseMinutesGoal: e.target.value
+                    ? Number(e.target.value)
+                    : undefined,
+                }))
+              }
+            />
+          </label>
+
+          <button className="primary" onClick={saveSettings}>
+            儲存目標設定
+          </button>
+        </div>
+      </section>
+
+      {/* 常用飲食組合管理 */}
+      <section className="card">
+        <h2>常用飲食組合管理 ({combos.length} 組)</h2>
+        <div className="list-section">
+          {combos.length === 0 && (
+            <div className="hint">尚未儲存任何常用組合</div>
+          )}
+          {combos.map((c) => (
+            <div key={c.id} className="list-item">
+              <div>
+                <div>{c.name}</div>
+                <div className="sub">
+                  {c.items.length} 品項 · 總計約{' '}
+                  {c.items.reduce((sum, item) => sum + item.kcal, 0)} kcal
+                </div>
+                <details style={{ marginTop: '4px' }}>
+                  <summary style={{ fontSize: '12px' }}>查看明細</summary>
+                  <ul
+                    style={{
+                      paddingLeft: '20px',
+                      margin: '4px 0 0 0',
+                    }}
+                  >
+                    {c.items.map((item, index) => (
+                      <li
+                        key={index}
+                        style={{
+                          fontSize: '12px',
+                          listStyleType: 'disc',
+                        }}
+                      >
+                        {item.label} ({item.kcal} kcal)
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              </div>
+              <div className="btn-row">
+                <button
+                  className="secondary small"
+                  onClick={() => {
+                    setEditingCombo(c);
+                    setEditingComboName(c.name);
+                    setEditingComboItems(c.items);
+                  }}
+                >
+                  編輯
+                </button>
+                <button
+                  className="secondary small"
+                  onClick={() => deleteCombo(c.id)}
+                >
+                  刪除
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 編輯常用組合彈窗 */}
+      {editingCombo && (
+        <div
+          className="modal-backdrop"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 20,
+            padding: '20px 0',
+          }}
+        >
+          <div
+            className="modal"
+            style={{
+              background: '#fff',
+              borderRadius: 12,
+              padding: 16,
+              maxWidth: 400,
+              width: '90%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            }}
+          >
+            <h3 style={{ marginTop: 0 }}>編輯組合：{editingCombo.name}</h3>
+            <div className="form-section">
+              <label>
+                組合名稱
+                <input
+                  value={editingComboName}
+                  onChange={(e) => setEditingComboName(e.target.value)}
+                  placeholder="例如：午餐便當組合"
+                />
+              </label>
+            </div>
+
+            <h4 style={{ marginBottom: 8 }}>
+              組合明細 ({editingComboItems.length} 項)
+            </h4>
+            <div
+              className="list-section"
+              style={{
+                border: '1px solid var(--line)',
+                borderRadius: 8,
+                padding: 8,
+              }}
+            >
+              {editingComboItems.map((item, index) => (
+                <div
+                  key={index}
+                  style={{
+                    marginBottom: 12,
+                    borderBottom: '1px dotted #ccc',
+                    paddingBottom: 8,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <b style={{ fontSize: 15 }}>{item.label}</b>
+                    <button
+                      className="secondary small"
+                      onClick={() =>
+                        setEditingComboItems((prev) =>
+                          prev.filter((_, i) => i !== index)
+                        )
+                      }
+                      style={{ padding: '2px 8px' }}
+                    >
+                      移除
+                    </button>
+                  </div>
+                  <div
+                    className="inline-inputs"
+                    style={{
+                      marginTop: 6,
+                      display: 'flex',
+                      gap: 10,
+                    }}
+                  >
+                    <label style={{ flex: 1 }}>
+                      Kcal
+                      <input
+                        type="number"
+                        value={item.kcal}
+                        onChange={(e) => {
+                          const v = Number(e.target.value) || 0;
+                          setEditingComboItems((prev) =>
+                            prev.map((it, i) =>
+                              i === index ? { ...it, kcal: v } : it
+                            )
+                          );
+                        }}
+                        style={{ padding: '6px' }}
+                      />
+                    </label>
+                    <label style={{ flex: 1 }}>
+                      份量描述
+                      <input
+                        type="text"
+                        value={item.amountText || ''}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setEditingComboItems((prev) =>
+                            prev.map((it, i) =>
+                              i === index ? { ...it, amountText: v } : it
+                            )
+                          );
+                        }}
+                        style={{ padding: '6px' }}
+                      />
+                    </label>
+                  </div>
+                </div>
+              ))}
+              {editingComboItems.length === 0 && (
+                <div className="hint">組合中無品項，請重新紀錄。</div>
+              )}
+
+              <div
+                style={{
+                  textAlign: 'center',
+                  paddingTop: 10,
+                  fontSize: 14,
+                }}
+              >
+                總熱量：
+                <b>
+                  {editingComboItems.reduce(
+                    (sum, item) => sum + (item.kcal || 0),
+                    0
+                  )}{' '}
+                  kcal
+                </b>
+              </div>
+            </div>
+
+            <div className="btn-row" style={{ marginTop: 16 }}>
+              <button
+                className="primary"
+                onClick={saveComboEdit}
+                disabled={
+                  !editingComboName.trim() || editingComboItems.length === 0
+                }
+              >
+                儲存全部變更
+              </button>
+              <button
+                onClick={() => {
+                  setEditingCombo(null);
+                  setEditingComboItems([]);
+                }}
+              >
+                取消
+              </button>
+            </div>
           </div>
-        </section>
-      </div>
-    );
-  };
+        </div>
+      )}
+
+      {/* 資料來源同步 (CSV) */}
+      <section className="card">
+        <h2>資料來源同步 (CSV)</h2>
+        <div className="form-section">
+          <label>
+            Type Table
+            <input
+              value={srcType}
+              onChange={(e) => setSrcType(e.target.value)}
+              placeholder="/ju-smile-app/data/Type_Table.csv"
+            />
+          </label>
+          <label>
+            Unit Map
+            <input
+              value={srcUnit}
+              onChange={(e) => setSrcUnit(e.target.value)}
+              placeholder="/ju-smile-app/data/Unit_Map.csv"
+            />
+          </label>
+          <label>
+            Food DB
+            <input
+              value={srcFood}
+              onChange={(e) => setSrcFood(e.target.value)}
+              placeholder="/ju-smile-app/data/Food_DB.csv"
+            />
+          </label>
+          <label>
+            Exercise MET
+            <input
+              value={srcMet}
+              onChange={(e) => setSrcMet(e.target.value)}
+              placeholder="/ju-smile-app/data/Exercise_Met.csv"
+            />
+          </label>
+          <button className="primary" onClick={syncCsv} disabled={csvLoading}>
+            {csvLoading ? '同步中…' : '同步精準資料'}
+          </button>
+          {csvError && <div className="error-text">{csvError}</div>}
+        </div>
+      </section>
+
+      {/* 資料匯出 / 匯入 */}
+      <section className="card">
+        <h2>資料匯出 / 匯入</h2>
+        <div className="form-section">
+          <div className="btn-row">
+            <button className="secondary" onClick={handleExportJson}>
+              匯出 JSON
+            </button>
+            <button className="secondary" onClick={handleImportClick}>
+              匯入 JSON
+            </button>
+            <button className="secondary" onClick={handleBackupToDrive}>
+              一鍵備份到 Google Drive
+            </button>
+          </div>
+          <input
+            type="file"
+            accept="application/json"
+            style={{ display: 'none' }}
+            ref={fileInputRef}
+            onChange={handleImportJson}
+          />
+        </div>
+      </section>
+      <InstallGuideWidget />
+
+
+      {/* 去關於頁的入口 */}
+      <section className="card">
+        <h2>關於 Ju Smile App</h2>
+        <div className="form-section">
+          <p style={{ marginBottom: 8 }}>
+            查看 App 版本、資料儲存方式與備份建議。
+          </p>
+          <button
+            type="button"
+            className="secondary"
+            onClick={onOpenAbout}
+            style={{ borderRadius: 999, padding: '8px 16px', cursor: 'pointer' }}
+          >
+            查看 App 版本 & 詳細說明
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+};
 
   // ======== Plan 頁 ========
   const PlanPage: React.FC = () => {
@@ -3438,8 +3875,13 @@ useEffect(() => {
         />
       )}
 
-      {tab === 'settings' && <SettingsPage />}
+      {tab === 'settings' && (
+  <SettingsPage
+    onOpenAbout={() => setTab('about')}
+    />
+)}
       {tab === 'plan' && <PlanPage />}
+      {tab === 'about' && <AboutPage onBack={() => setTab('settings')} />}
 
       <nav className="bottom-nav">
         <button
