@@ -2425,10 +2425,10 @@ useEffect(() => {
                       食物類別
                       <BigSelect
                         options={[
-                          ...typeOptions.map((t) => ({ value: t, label: t })),
-                          { value: '其他類', label: '其他類 (自訂 P/C/F)' },
-                          { value: '自定義熱量', label: '自定義熱量 (僅 Kcal)' },
-                        ]}
+    { value: '其他類', value: '其他類', label: '其他類 (自訂 P/C/F)' },
+    { value: '自定義熱量', label: '自定義熱量 (僅 Kcal)' },
+    ...typeOptions.map((t) => ({ value: t, label: t })),
+  ]}
                         value={fallbackType}
                         onChange={(v) => {
                           setFallbackType(v);
@@ -2493,38 +2493,48 @@ useEffect(() => {
                         </label>
 
                         <label>
-                          參考數量 (選填)
-                          <div className="inline-inputs" style={{ display: 'flex', gap: '10px' }}>
-                            <input
-                              type="number"
-                              value={fallbackQty}
-                              onChange={(e) => setFallbackQty(e.target.value)}
-                              placeholder="例如:2"
-                              style={{ flex: 1 }}
-                            />
+  參考數量 (選填)
+  <div
+    className="inline-inputs"
+    style={{ display: 'flex', gap: '10px', alignItems: 'center' }}
+  >
+    {/* 左邊：數量欄位放大 */}
+    <input
+      type="number"
+      value={fallbackQty}
+      onChange={(e) => setFallbackQty(e.target.value)}
+      placeholder="例如:2"
+      style={{ flex: '1 1 0', width: '100%' }}   // 這行讓數量欄位吃掉剩餘空間
+    />
 
-                            <BigSelect
-                              options={[
-                                { value: '個', label: '個' },
-                                { value: '杯', label: '杯' },
-                                { value: '碗', label: '碗' },
-                                { value: '盤', label: '盤' },
-                                { value: '片', label: '片' },
-                                { value: '湯匙', label: '湯匙' },
-                                { value: '茶匙', label: '茶匙' },
-                                { value: '根', label: '根' },
-                                { value: '粒', label: '粒' },
-                                { value: '張', label: '張' },
-                                { value: 'g', label: 'g' },
-                                { value: '米杯', label: '米杯' },
-                                { value: '瓣', label: '瓣' },
-                              ]}
-                              value={fallbackUnitLabel}
-                              onChange={(v) => setFallbackUnitLabel(v)}
-                              placeholder="請選擇單位"
-                            />
-                          </div>
-                        </label>
+    {/* 右邊：單位下拉固定寬度較小 */}
+    <div style={{ flex: '0 0 120px' }}>       {/* 單位欄位大約 120px 寬 */}
+      <BigSelect
+        options={[
+          { value: '個', label: '個' },
+          { value: '杯', label: '杯' },
+          { value: '碗', label: '碗' },
+          { value: '盤', label: '盤' },
+          { value: '片', label: '片' },
+          { value: '瓶', label: '瓶' },        // ✅ 新增
+          { value: '包', label: '包' },        // ✅ 新增
+          { value: '湯匙', label: '湯匙' },
+          { value: '茶匙', label: '茶匙' },
+          { value: '根', label: '根' },
+          { value: '粒', label: '粒' },
+          { value: '張', label: '張' },
+          { value: 'g', label: 'g' },
+          { value: '米杯', label: '米杯' },
+          { value: '瓣', label: '瓣' },
+        ]}
+        value={fallbackUnitLabel}
+        onChange={(v) => setFallbackUnitLabel(v)}
+        placeholder="請選擇單位"
+      />
+    </div>
+  </div>
+</label>
+
 
                         <label>
                           每份蛋白質 (g)
@@ -3324,16 +3334,19 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
                     }}
                   >
                     {c.items.map((item, index) => (
-                      <li
-                        key={index}
-                        style={{
-                          fontSize: '12px',
-                          listStyleType: 'disc',
-                        }}
-                      >
-                        {item.label} ({item.kcal} kcal)
-                      </li>
-                    ))}
+  <li
+    key={index}
+    style={{
+      fontSize: '12px',
+      listStyleType: 'disc',
+    }}
+  >
+    {item.label}
+    {item.amountText ? ` ${item.amountText}` : ''}
+    {` · ${item.kcal} kcal`}
+  </li>
+))}
+
                   </ul>
                 </details>
               </div>
@@ -3440,7 +3453,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
                       移除
                     </button>
                   </div>
-                  <div
+                                                                  <div
                     className="inline-inputs"
                     style={{
                       marginTop: 6,
@@ -3448,8 +3461,22 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
                       gap: 10,
                     }}
                   >
-                    <label style={{ flex: 1 }}>
-                      Kcal
+                    <div
+                      style={{
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 4,
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: 14,
+                          lineHeight: 1.3,
+                        }}
+                      >
+                        Kcal
+                      </div>
                       <input
                         type="number"
                         value={item.kcal}
@@ -3461,11 +3488,30 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
                             )
                           );
                         }}
-                        style={{ padding: '6px' }}
+                        style={{
+                          padding: '6px',
+                          width: '100%',
+                          boxSizing: 'border-box',
+                        }}
                       />
-                    </label>
-                    <label style={{ flex: 1 }}>
-                      份量描述
+                    </div>
+
+                    <div
+                      style={{
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 4,
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: 14,
+                          lineHeight: 1.3,
+                        }}
+                      >
+                        份量描述
+                      </div>
                       <input
                         type="text"
                         value={item.amountText || ''}
@@ -3477,10 +3523,17 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
                             )
                           );
                         }}
-                        style={{ padding: '6px' }}
+                        style={{
+                          padding: '6px',
+                          width: '100%',
+                          boxSizing: 'border-box',
+                        }}
                       />
-                    </label>
+                    </div>
                   </div>
+
+
+
                 </div>
               ))}
               {editingComboItems.length === 0 && (
@@ -3787,12 +3840,13 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
       );
 
     const activityOptions: BigOption[] = [
-      { value: 'sedentary', label: '久坐 (1.2)' },
-      { value: 'light', label: '輕量 (1.375)' },
-      { value: 'moderate', label: '中等 (1.55)' },
-      { value: 'active', label: '活躍 (1.725)' },
-      { value: 'very', label: '非常活躍 (1.9)' },
-    ];
+  { value: 'sedentary', label: '久坐 (1.2) · 幾乎不運動 / 整天久坐' },
+  { value: 'light',     label: '輕量 (1.375) · 每週 1–3 天輕度活動' },
+  { value: 'moderate',  label: '中等 (1.55) · 每週 3–5 天中等強度活動' },
+  { value: 'active',    label: '活躍 (1.725) · 每週 6–7 天運動或站立工作' },
+  { value: 'very',      label: '非常活躍 (1.9) · 高強度訓練 / 體力工作' },
+];
+
 
     return (
       <div className="page page-plan" style={{ padding: 16, paddingBottom: '96px' }}>
