@@ -247,19 +247,57 @@ function normalizeText(v: unknown): string {
   return String(v).trim().toLowerCase();
 }
 
-async function fetchCsv<T = any>(url: string): Promise<T[]> {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`無法下載: ${url}`);
-  const text = await res.text();
-  const parsed = Papa.parse<T>(text, {
-    header: true,
-    skipEmptyLines: true,
-  });
-  if (parsed.errors.length) {
-    console.warn('CSV parse errors', parsed.errors);
+// App 部署的 base 路徑：
+// 如果你的 GitHub Pages 網址是 https://jusmilespace.github.io/ju-smile-app/
+// 那 base 就會是 "/ju-smile-app/"
+const APP_BASE_URL =
+  (import.meta as any).env?.BASE_URL || '/ju-smile-app/';
+
+// 把呼叫傳進來的字串，轉成真正要拿去 fetch 的 URL
+function resolveCsvUrl(input: string): string {
+  // 已經是 http / https 完整網址，就原樣用
+  if (input.startsWith('http://') || input.startsWith('https://')) {
+    return input;
   }
-  return parsed.data;
+
+  // 這裡處理像 "data/Food_DB.csv" 或 "/data/Food_DB.csv" 這種
+  const base = APP_BASE_URL.replace(/\/+$/, ''); // 去掉結尾多餘斜線
+  const path = input.replace(/^\/+/, '');        // 去掉開頭多餘斜線
+
+  // 如果 input 本身已經是 "/ju-smile-app/xxx"，就不要重複加
+  if (('/' + path).startsWith(base + '/')) {
+    return '/' + path;
+  }
+
+  return `${base}/${path}`;
 }
+
+async function fetchCsv<T = any>(url: string): Promise<T[]> {
+  const finalUrl = resolveCsvUrl(url);
+
+  try {
+    const res = await fetch(finalUrl, { cache: 'no-cache' });
+    if (!res.ok) {
+      throw new Error(`無法下載: ${finalUrl} (HTTP ${res.status})`);
+    }
+
+    const text = await res.text();
+    const parsed = Papa.parse<T>(text, {
+      header: true,
+      skipEmptyLines: true,
+    });
+
+    if (parsed.errors.length) {
+      console.warn('CSV parse errors for', finalUrl, parsed.errors);
+    }
+
+    return parsed.data;
+  } catch (err) {
+    console.error('fetchCsv 失敗，URL =', finalUrl, err);
+    throw err; // 讓上層 decide 要不要顯示「同步失敗」之類訊息
+  }
+}
+
 const InstallGuideWidget: React.FC = () => {
   const [open, setOpen] = useState(false); // 教學 Modal 是否開啟
   const [showHint, setShowHint] = useState(false); // 底部提醒 bar
