@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <title>重設 Ju Smile App 快取</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body
+    style="
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      padding: 16px;
+      line-height: 1.6;
+    "
+  >
+    <h1 style="font-size: 18px; margin-bottom: 8px;">Ju Smile App 重設中…</h1>
+    <p>正在清除這個裝置上的快取、Service Worker 與本機資料，請稍候。</p>
+    <p>完成後會自動帶你回 Ju Smile App 首頁。</p>
+
+    <script>
+      (async function () {
+        try {
+          // 1) 清除 localStorage
+          try {
+            localStorage.clear();
+          } catch (e) {
+            console.log('清除 localStorage 失敗', e);
+          }
+
+          // 2) 清除 caches（PWA 快取）
+          try {
+            if ('caches' in window) {
+              const names = await caches.keys();
+              await Promise.all(names.map((name) => caches.delete(name)));
+            }
+          } catch (e) {
+            console.log('清除 caches 失敗', e);
+          }
+
+          // 3) 解除註冊所有 Service Worker
+          try {
+            if ('serviceWorker' in navigator) {
+              const regs = await navigator.serviceWorker.getRegistrations();
+              await Promise.all(regs.map((reg) => reg.unregister()));
+            }
+          } catch (e) {
+            console.log('解除 SW 失敗', e);
+          }
+
+          // 小小延遲一下，再導回首頁
+          setTimeout(function () {
+            window.location.href =
+              'https://jusmilespace.github.io/ju-smile-app/';
+          }, 800);
+        } catch (e) {
+          console.error('重設過程錯誤', e);
+          alert('重設過程中發生錯誤，可以再重新整理此頁再試一次。');
+        }
+      })();
+    </script>
+  </body>
+</html>
