@@ -50,7 +50,10 @@ type DaySummary = {
   bodyFat?: number;
   visceralFat?: number;
   waterMl: number;
+  /** 當日的目標攝取熱量（kcal），只影響這一天，不會改到其他日期 */
+  calorieGoalKcal?: number;
 };
+
 
 type MealEntry = {
   id: string;
@@ -707,22 +710,64 @@ const App: React.FC = () => {
     // 重新載入頁面，載入最新版
     window.location.reload();
   }
-
-  // 監聽 Plan 頁送來的目標熱量，立即更新「我的」頁的 目標攝取熱量(kcal)
+  // 監聽 Plan 頁送來的目標熱量：
+  // 1) 更新「我的」頁的目標攝取熱量 (作為未來新日期的預設值)
+  // 2) 只更新「今天這一天」的日目標，不改舊日期
   useEffect(() => {
     function onSetGoal(ev: any) {
       const kcal = Number(ev?.detail);
       if (!isNaN(kcal) && kcal > 0) {
+        // 更新全域設定（未來新日期的預設）
         setSettings((s) => ({ ...s, calorieGoal: kcal }));
+
+        // 更新當天的 DaySummary，只動今天，不動歷史
+        const todayYMD = dayjs().format('YYYY-MM-DD');
+        setDays((prev) => {
+          const idx = prev.findIndex((d) => d.date === todayYMD);
+          if (idx === -1) {
+            const newDay: DaySummary = {
+              date: todayYMD,
+              waterMl: 0,
+              calorieGoalKcal: kcal,
+            };
+            return [...prev, newDay];
+          }
+          const copy = [...prev];
+          copy[idx] = { ...copy[idx], calorieGoalKcal: kcal };
+          return copy;
+        });
       }
     }
+
     document.addEventListener('ju:set-goal-kcal', onSetGoal as any);
-    return () => document.removeEventListener('ju:set-goal-kcal', onSetGoal as any);
+    return () =>
+      document.removeEventListener('ju:set-goal-kcal', onSetGoal as any);
   }, []);
+
+
 
   const [days, setDays] = useState<DaySummary[]>(() =>
     loadJSON<DaySummary[]>(STORAGE_KEYS.DAYS, [])
   );
+// 🆕 一次性初始化：
+// 如果以前的紀錄都沒有日目標，但有設定全域目標，
+// 就把「當下的全域目標」灑到所有既有日期，當作「當時的舊目標」。
+// 之後再改目標，就只會影響當天與未來新日期。
+useEffect(() => {
+  if (settings.calorieGoal == null) return;
+
+  setDays((prev) => {
+    // 已經有任何一天有 calorieGoalKcal，就視為已初始化過
+    if (prev.some((d) => d.calorieGoalKcal != null)) {
+      return prev;
+    }
+    return prev.map((d) => ({
+      ...d,
+      calorieGoalKcal:
+        d.calorieGoalKcal != null ? d.calorieGoalKcal : settings.calorieGoal!,
+    }));
+  });
+}, [settings.calorieGoal]);
 
   const [meals, setMeals] = useState<MealEntry[]>(() =>
     loadJSON<MealEntry[]>(STORAGE_KEYS.MEALS, [])
@@ -808,13 +853,20 @@ useEffect(() => {
   // ======== 取得 / 更新某日資料 ========
 
   function getDay(date: string): DaySummary {
-    let day = days.find((d) => d.date === date);
-    if (!day) {
-      day = { date, waterMl: 0 };
-      setDays((prev) => [...prev, day!]);
-    }
-    return day;
+  let day = days.find((d) => d.date === date);
+  if (!day) {
+    day = {
+      date,
+      waterMl: 0,
+      // 新增日期時，預帶當下設定的目標熱量，當作這一天的日目標
+      ...(settings.calorieGoal != null
+        ? { calorieGoalKcal: settings.calorieGoal }
+        : {}),
+    };
+    setDays((prev) => [...prev, day!]);
   }
+  return day;
+}
 
   function updateDay(date: string, patch: Partial<DaySummary>) {
     setDays((prev) => {
@@ -1077,8 +1129,14 @@ useEffect(() => {
       (s, e) => s + (e.kcal || 0),
       0
     );
-    const calorieGoal =
-      settings.calorieGoal != null ? settings.calorieGoal : undefined;
+// 改成使用「這一天」自己的目標熱量，不再直接看全域 settings
+const calorieGoal =
+  todaySummary.calorieGoalKcal != null
+    ? todaySummary.calorieGoalKcal
+    : undefined;
+
+
+
 
     // 先算出今天的「淨熱量」= 攝取 - 消耗
     const netKcal = todayIntake - todayBurn;
@@ -3123,9 +3181,36 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
 
   // 儲存目標設定
   function saveSettings() {
-    setSettings(localSettings);
-    alert('已儲存目標設定');
+  setSettings(localSettings);
+
+  // 如果有輸入目標攝取熱量，就把「今天」這一天的日目標也一起更新
+  if (
+    localSettings.calorieGoal != null &&
+    localSettings.calorieGoal > 0
+  ) {
+    const todayYMD = dayjs().format('YYYY-MM-DD');
+    setDays((prev) => {
+      const idx = prev.findIndex((d) => d.date === todayYMD);
+      if (idx === -1) {
+        const newDay: DaySummary = {
+          date: todayYMD,
+          waterMl: 0,
+          calorieGoalKcal: localSettings.calorieGoal!,
+        };
+        return [...prev, newDay];
+      }
+      const copy = [...prev];
+      copy[idx] = {
+        ...copy[idx],
+        calorieGoalKcal: localSettings.calorieGoal!,
+      };
+      return copy;
+    });
   }
+
+  alert('已儲存目標設定');
+}
+
 
   // 🆕 儲存常用組合的編輯（包含明細）
   function saveComboEdit() {
