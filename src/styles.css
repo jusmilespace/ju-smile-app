@@ -529,3 +529,8 @@ details summary {
   width: auto;
   flex: none;
 }
+
+/* UX-01: 防止 iOS 在輸入框聚焦時自動放大畫面 (需 >= 16px) */
+input, select, textarea {
+  font-size: 16px;
+}

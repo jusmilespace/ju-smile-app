@@ -1283,22 +1283,23 @@ const calorieGoal =
     }}
   >
     <input
-      type="date"
-      value={todayLocal}
-      onChange={(e) => {
-        const v = e.target.value;
-        if (v) {
-          setTodayLocal(v);
-        }
-      }}
-      style={{
-        maxWidth: 160,
-        padding: '2px 8px',
-        borderRadius: 999,
-        border: '1px solid var(--line, #ccc)',
-        fontSize: 14,
-      }}
-    />
+  type="date"
+  value={todayLocal}
+  onChange={(e) => {
+    const v = e.target.value;
+    if (v) {
+      setTodayLocal(v);
+    }
+  }}
+  style={{
+    maxWidth: 160,
+    padding: '2px 8px',
+    borderRadius: 999,
+    border: '1px solid var(--line, #ccc)',
+    fontSize: 16,   // 這裡你可以改成 16px 以符合 UX-01
+  }}
+/>
+
     {todayLocal === dayjs().format('YYYY-MM-DD') && (
       <span style={{ fontSize: 11, color: '#666' }}>今天</span>
     )}
@@ -1453,9 +1454,9 @@ const calorieGoal =
           <div className="water-row">
           </div>
           <div className="btn-row">
+            <button onClick={() => addWater(100)}>+100 ml</button>
             <button onClick={() => addWater(500)}>+500 ml</button>
             <button onClick={() => addWater(1000)}>+1000 ml</button>
-            <button onClick={() => addWater(2000)}>+2000 ml</button>
           </div>
           <div className="form-section">
             <label>
@@ -1694,9 +1695,11 @@ const calorieGoal =
     // 飲食表單
     const [foodMealType, setFoodMealType] =
       useState<'早餐' | '午餐' | '晚餐' | '點心'>('早餐');
-    useEffect(() => {
-      setFoodMealType(defaultMealType);
-    }, [defaultMealType]);
+    
+ useEffect(() => {
+  setFoodMealType(defaultMealType);
+}, [defaultMealType]);
+
 
     const [foodName, setFoodName] = useState('');
 
@@ -1714,6 +1717,12 @@ const calorieGoal =
     const [fallbackQty, setFallbackQty] = useState(''); // 參考數量, 例如 2
     const [fallbackUnitLabel, setFallbackUnitLabel] = useState('份'); // 參考單位, 例如 片、碗…
 
+    // UX-07：份量 / 數量輸入模式（十進位 or 分數）
+const [servingsInputMode, setServingsInputMode] =
+  useState<'dec' | 'frac'>('dec');
+const [unitQtyInputMode, setUnitQtyInputMode] =
+  useState<'dec' | 'frac'>('dec');
+
     // C2：其他類 - 每份 P/C/F
     const [fallbackProtPerServ, setFallbackProtPerServ] = useState('');
     const [fallbackCarbPerServ, setFallbackCarbPerServ] = useState('');
@@ -1726,6 +1735,29 @@ const calorieGoal =
 
     const [editingMealId, setEditingMealId] = useState<string | null>(null);
     
+    const recentMealsForQuickAdd = useMemo(() => {
+  if (!meals.length) return [] as MealEntry[];
+
+  const base = dayjs(selectedDate || todayLocal);
+  const cutoff = base.subtract(14, 'day');
+  const map = new Map<string, MealEntry>();
+
+  for (const m of meals) {
+    if (m.date === selectedDate) continue;
+    const d = dayjs(m.date);
+    if (d.isBefore(cutoff)) continue;
+
+    const key = `${m.label}|${m.amountText || ''}|${m.kcal}`;
+    if (!map.has(key)) {
+      map.set(key, m);
+    }
+  }
+
+  // 按日期排序,最新的在前面
+  return Array.from(map.values())
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 20);
+}, [meals, selectedDate, todayLocal]);
     // 🆕 常用組合相關狀態
     const [selectedMealIds, setSelectedMealIds] = useState<string[]>([]);
     const [comboNameInput, setComboNameInput] = useState('');
@@ -1753,6 +1785,7 @@ const calorieGoal =
       { name: '重訓', met: 6.0 },
       { name: '爬山', met: 6.5 },
       { name: '游泳', met: 7.0 },
+      { name: '飛輪有氧', met: 7.0 },
     ];
 
     // 運動體重預帶當日體重
@@ -1779,7 +1812,8 @@ const calorieGoal =
     // 飲食搜尋：Unit_Map + Food_DB
     const foodSearchResults = useMemo(() => {
       const kw = foodName.trim().toLowerCase();
-      
+    
+
       // 🆕 常用組合搜尋
       const comboMatches = combos.filter(c =>
         normalizeText(c.name).includes(kw)
@@ -2242,13 +2276,66 @@ const calorieGoal =
       <div className="page page-records"
         style={{ paddingBottom: '90px' }}
       >
-        <header className="top-bar">
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-          />
-        </header>
+<header className="top-bar">
+  <button
+    type="button"
+    onClick={() =>
+      setSelectedDate(
+        dayjs(selectedDate)
+          .subtract(1, 'day')
+          .format('YYYY-MM-DD')
+      )
+    }
+  >
+    ◀
+  </button>
+
+  <div
+    className="date-text"
+    style={{
+      flex: 1,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 2,
+    }}
+  >
+    <input
+      type="date"
+      value={selectedDate}
+      onChange={(e) => {
+        const v = e.target.value;
+        if (v) {
+          setSelectedDate(v);
+        }
+      }}
+      style={{
+        maxWidth: 160,
+        padding: '2px 8px',
+        borderRadius: 999,
+        border: '1px solid var(--line, #ccc)',
+        fontSize: 16,
+      }}
+    />
+    {selectedDate === dayjs().format('YYYY-MM-DD') && (
+      <span style={{ fontSize: 11, color: '#666' }}>今天</span>
+    )}
+  </div>
+
+  <button
+    type="button"
+    onClick={() =>
+      setSelectedDate(
+        dayjs(selectedDate)
+          .add(1, 'day')
+          .format('YYYY-MM-DD')
+      )
+    }
+  >
+    ▶
+  </button>
+</header>
 
         <div className="subtabs">
           <button
@@ -2268,7 +2355,7 @@ const calorieGoal =
         {/* 飲食 */}
         {recordTab === 'food' && (
           <div className="card">
-            <details open>
+            <details>
               <summary>如何記錄飲食?</summary>
               <p>
                 「Ju Smile App」提供多種快速記錄方式：
@@ -2317,16 +2404,45 @@ const calorieGoal =
             </details>
 
             {/* ✅ 常見食物重量參考 */}
-            <details style={{ marginTop: 8 }}>
-              <summary>常見食物重量參考</summary>
-              <ul className="met-list">
-                <li>一碗飯 ≈ 200 g</li>
-                <li>一個拳頭大小的水果 ≈ 150–200 g</li>
-                <li>一片吐司 ≈ 30–40 g</li>
-                <li>一顆雞蛋 ≈ 50–60 g</li>
-                <li>一湯匙油 ≈ 15 g</li>
-              </ul>
-            </details>
+<details style={{ marginTop: 8 }}>
+  <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>常見食物重量參考</summary>
+  <ul className="met-list">
+    
+    {/* 拳頭 (Fist) */}
+    <li style={{ marginTop: 8 }}>
+      <strong>拳頭 (Fist) 👊：</strong>
+      <ul style={{ paddingLeft: 20, marginTop: 4, listStyleType: 'disc' }}>
+        <li>水果：1 個拳頭大小 ≈ 1 份 (約 100g - 150g)</li>
+        <li>熟蔬菜：1 個拳頭 (或半碗) ≈ 1 份 (約 100g)</li>
+        <li>飯/麵：1 個拳頭熟飯/麵 ≈ 150g - 160g</li>
+      </ul>
+    </li>
+
+    {/* 手掌心 (Palm) */}
+    <li style={{ marginTop: 8 }}>
+      <strong>手掌心 (Palm) ✋ (不含手指)：</strong>
+      <ul style={{ paddingLeft: 20, marginTop: 4, listStyleType: 'disc' }}>
+        <li>肉類/魚類：手掌大、小指厚 ≈ 3 份 (熟重 90g - 100g)</li>
+        <li style={{ color: '#666', fontSize: '0.9em' }}>
+          註：女生手掌較小，約為 2-3 份
+        </li>
+      </ul>
+    </li>
+
+    {/* 大拇指 (Thumb) */}
+    <li style={{ marginTop: 8 }}>
+      <strong>大拇指 (Thumb) 👍：</strong>
+      <ul style={{ paddingLeft: 20, marginTop: 4, listStyleType: 'disc' }}>
+        <li>油脂/堅果：1 個大拇指節 ≈ 1 茶匙 (5g)</li>
+      </ul>
+    </li>
+
+  </ul>
+</details>
+
+          
+
+
 
             <div className="form-section">
               <label>
@@ -2359,12 +2475,67 @@ const calorieGoal =
                 />
               </label>
 
+              {/* UX-05：從歷史紀錄快速加入（新版，版型比照「飲食明細」） */}
+{recentMealsForQuickAdd.length > 0 && (
+  <details style={{ marginTop: 8 }}>
+    <summary>從歷史紀錄快速加入</summary>
+
+    <div className="list-section" style={{ marginTop: 8 }}>
+      {recentMealsForQuickAdd.map((m: MealEntry) => (
+        <div
+          key={m.id}
+          className="list-item"
+          style={{
+            alignItems: 'center',
+            paddingLeft: 16,
+            paddingRight: 12,
+          }}
+        >
+          {/* 左邊：名稱＋小字說明（版型同飲食明細） */}
+          <div style={{ flex: 1 }}>
+            <div>{m.label}</div>
+            <div className="sub">
+              {m.mealType}
+              {m.amountText ? ` · ${m.amountText}` : ''}
+              {' · '}
+              {m.kcal} kcal
+            </div>
+          </div>
+
+          {/* 右邊：加入按鈕 */}
+          <div
+            className="btn-row"
+            style={{ flexShrink: 0 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="small"
+              onClick={() => {
+                const copied: MealEntry = {
+                  ...m,
+                  id: uuid(),
+                  date: selectedDate,
+                  mealType: foodMealType,
+                };
+                setMeals((prev) => [...prev, copied]);
+              }}
+            >
+              加入
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  </details>
+)}
+
               {/* 🆕 常用組合清單 (根據搜尋結果顯示，且收納在 details 內) */}
               {/* 修正：合併條件渲染，避免結構錯誤 */}
               {/* 🆕 常用組合清單 (根據搜尋結果顯示，且收納在 details 內) */}
           {/* 修正：優化常用組合列表的顯示，增加明細展開 */}
           {(foodName.trim() === '' && combos.length > 0) ? (
-            <details open style={{ marginBottom: '12px' }}>
+            <details style={{ marginBottom: '12px' }}>
               <summary>🎯 常用組合 ({combos.length} 組)</summary>
               <div className="search-results" style={{ padding: '4px 0', border: 'none', background: 'none' }}>
                 {combos.map((combo) => (
@@ -2554,7 +2725,7 @@ const calorieGoal =
                       食物類別
                       <BigSelect
                         options={[
-    { value: '其他類', value: '其他類', label: '其他類 (自訂 P/C/F)' },
+    { value: '其他類', label: '其他類 (自訂 P/C/F)' },
     { value: '自定義熱量', label: '自定義熱量 (僅 Kcal)' },
     ...typeOptions.map((t) => ({ value: t, label: t })),
   ]}
@@ -2605,64 +2776,218 @@ const calorieGoal =
                               placeholder="例如:1 或 1.5"
                             />
                           </label>
+
+                          <label>
+  份量 (份)
+  <input
+    type="number"
+    min={0}
+    step={0.1}
+    value={fallbackServings}
+    onChange={(e) => setFallbackServings(e.target.value)}
+    placeholder="例如:1 或 1.5"
+  />
+  <div
+    style={{
+      marginTop: 4,
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: 4,
+      fontSize: 12,
+    }}
+  >
+    {['1/8','2/8','3/8','4/8','5/8','6/8','7/8'].map((f) => (
+      <button
+        key={f}
+        type="button"
+        className="small"
+        style={{ padding: '2px 6px' }}
+        onClick={() => {
+          const [n, d] = f.split('/').map(Number);
+          if (!d) return;
+          const value = (n / d)
+            .toFixed(3)
+            .replace(/0+$/, '')
+            .replace(/\.$/, '');
+          setFallbackServings(value);
+        }}
+      >
+        {f}
+      </button>
+    ))}
+  </div>
+</label>
                         </>
                       )}
 
                     {/* C2：其他類 (自訂 P/C/F) */}
-                    {fallbackType === '其他類' && (
-                      <>
-                        <label>
-                          份量 (份)
-                          <input
-                            type="number"
-                            value={fallbackServings}
-                            onChange={(e) => setFallbackServings(e.target.value)}
-                            placeholder="例如:1"
-                          />
-                        </label>
-
-                        <label>
-  參考數量 (選填)
-  <div
-    className="inline-inputs"
-    style={{ display: 'flex', gap: '10px', alignItems: 'center' }}
-  >
-    {/* 左邊：數量欄位放大 */}
-    <input
-      type="number"
-      value={fallbackQty}
-      onChange={(e) => setFallbackQty(e.target.value)}
-      placeholder="例如:2"
-      style={{ flex: '1 1 0', width: '100%' }}   // 這行讓數量欄位吃掉剩餘空間
-    />
-
-    {/* 右邊：單位下拉固定寬度較小 */}
-    <div style={{ flex: '0 0 120px' }}>       {/* 單位欄位大約 120px 寬 */}
-      <BigSelect
-        options={[
-          { value: '個', label: '個' },
-          { value: '杯', label: '杯' },
-          { value: '碗', label: '碗' },
-          { value: '盤', label: '盤' },
-          { value: '片', label: '片' },
-          { value: '瓶', label: '瓶' },        // ✅ 新增
-          { value: '包', label: '包' },        // ✅ 新增
-          { value: '湯匙', label: '湯匙' },
-          { value: '茶匙', label: '茶匙' },
-          { value: '根', label: '根' },
-          { value: '粒', label: '粒' },
-          { value: '張', label: '張' },
-          { value: 'g', label: 'g' },
-          { value: '米杯', label: '米杯' },
-          { value: '瓣', label: '瓣' },
-        ]}
-        value={fallbackUnitLabel}
-        onChange={(v) => setFallbackUnitLabel(v)}
-        placeholder="請選擇單位"
+{fallbackType === '其他類' && (
+  <>
+    <label>
+      份量 (份)
+      <input
+        type="number"
+        value={fallbackServings}
+        onChange={(e) => setFallbackServings(e.target.value)}
+        placeholder="例如:1 或 1.5"
       />
-    </div>
-  </div>
-</label>
+
+      {/* UX-07：份量輸入 DEC / FRAC 切換 */}
+      <div
+        style={{
+          marginTop: 4,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          fontSize: 12,
+        }}
+      >
+        {/* DEC / FRAC 小開關 */}
+        <div
+          style={{
+            display: 'inline-flex',
+            borderRadius: 999,
+            border: '1px solid var(--line, #ccc)',
+            overflow: 'hidden',
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setServingsInputMode('dec')}
+            style={{
+              padding: '2px 10px',
+              border: 'none',
+              background:
+                servingsInputMode === 'dec'
+                  ? '#1e88e5'
+                  : 'transparent',
+              color:
+                servingsInputMode === 'dec'
+                  ? '#fff'
+                  : 'inherit',
+              fontSize: 12,
+            }}
+          >
+            DEC
+          </button>
+          <button
+            type="button"
+            onClick={() => setServingsInputMode('frac')}
+            style={{
+              padding: '2px 10px',
+              border: 'none',
+              borderLeft: '1px solid var(--line, #ccc)',
+              background:
+                servingsInputMode === 'frac'
+                  ? '#1e88e5'
+                  : 'transparent',
+              color:
+                servingsInputMode === 'frac'
+                  ? '#fff'
+                  : 'inherit',
+              fontSize: 12,
+            }}
+          >
+            FRAC
+          </button>
+        </div>
+
+        <span className="sub">
+          {servingsInputMode === 'dec'
+            ? '直接輸入 1.5、2.25 等小數'
+            : '從常用分數中選擇，會自動換算成小數'}
+        </span>
+      </div>
+
+      {/* 只有在 FRAC 模式時，才顯示 1/8～7/8 快捷按鈕 */}
+      {servingsInputMode === 'frac' && (
+        <div
+          style={{
+            marginTop: 4,
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 4,
+            fontSize: 12,
+          }}
+        >
+          {[
+  '1/8',
+  '1/4',
+  '1/3',
+  '3/8',
+  '1/2',
+  '5/8',
+  '2/3',
+  '3/4',
+  '7/8',
+].map((f: string) => (
+              <button
+                key={f}
+                type="button"
+                className="small"
+                style={{ padding: '2px 6px' }}
+                onClick={() => {
+                  const [n, d] = f.split('/').map(Number);
+                  if (!d) return;
+                  const value = (n / d)
+                    .toFixed(3)
+                    .replace(/0+$/, '')
+                    .replace(/\.$/, '');
+                  setFallbackServings(value);
+                }}
+              >
+                {f}
+              </button>
+            )
+          )}
+        </div>
+      )}
+    </label>
+
+    {/* ⬇️ 這一段「參考數量 (選填)」保留你的版本，不動 */}
+    <label>
+      參考數量 (選填)
+      <div
+        className="inline-inputs"
+        style={{ display: 'flex', gap: '10px', alignItems: 'center' }}
+      >
+        {/* 左邊：數量欄位 */}
+        <input
+          type="number"
+          value={fallbackQty}
+          onChange={(e) => setFallbackQty(e.target.value)}
+          placeholder="例如:2"
+          style={{ flex: '1 1 0', width: '100%' }}
+        />
+
+        {/* 右邊：單位下拉，跟左邊一樣 flex 佔比 */}
+        <div style={{ flex: '1 1 0', minWidth: 0 }}>
+          <BigSelect
+            options={[
+              { value: '個', label: '個' },
+              { value: '杯', label: '杯' },
+              { value: '碗', label: '碗' },
+              { value: '盤', label: '盤' },
+              { value: '片', label: '片' },
+              { value: '瓶', label: '瓶' },
+              { value: '包', label: '包' },
+              { value: '湯匙', label: '湯匙' },
+              { value: '茶匙', label: '茶匙' },
+              { value: '根', label: '根' },
+              { value: '粒', label: '粒' },
+              { value: '張', label: '張' },
+              { value: 'g', label: 'g' },
+              { value: '米杯', label: '米杯' },
+              { value: '瓣', label: '瓣' },
+            ]}
+            value={fallbackUnitLabel}
+            onChange={(v) => setFallbackUnitLabel(v)}
+            placeholder="請選擇單位"
+          />
+        </div>
+      </div>
+    </label>
+
 
 
                         <label>
@@ -2735,29 +3060,70 @@ const calorieGoal =
                 )}
 
 
-              {selectedUnitFood && (
-                <>
-                  <label>
-                    數量({selectedUnitFood.Unit})
-                    <input
-                      type="number"
-                      value={unitQuantity}
-                      onChange={(e) =>
-                        setUnitQuantity(e.target.value)
-                      }
-                      placeholder="例如:1"
-                    />
-                  </label>
-                  <div className="hint">
-                    目前估算熱量:約 {autoFoodInfo.kcal || 0} kcal
-                  </div>
-                  {selectedUnitFood.Notes && (
-                    <div className="hint">
-                      備註：{selectedUnitFood.Notes}
-                    </div>
-                  )}
-                </>
-              )}
+
+{selectedUnitFood && (
+  <>
+    <label>
+      數量({selectedUnitFood.Unit})
+      <input
+        type="number"
+        value={unitQuantity}
+        onChange={(e) => setUnitQuantity(e.target.value)}
+        placeholder="例如:1"
+      />
+      {/* UX-07：數量分數快捷鍵 1/8～7/8 */}
+      <div
+        style={{
+          marginTop: 4,
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 4,
+          fontSize: 12,
+        }}
+      >
+        {[
+  '1/8',
+  '1/4',
+  '1/3',
+  '3/8',
+  '1/2',
+  '5/8',
+  '2/3',
+  '3/4',
+  '7/8',
+].map((f: string) => (
+          <button
+            key={f}
+            type="button"
+            className="small"
+            style={{ padding: '2px 6px' }}
+            onClick={() => {
+              const [n, d] = f.split('/').map(Number);
+              if (!d) return;
+              const value = (n / d)
+                .toFixed(3)
+                .replace(/0+$/, '')
+                .replace(/\.$/, '');
+              setUnitQuantity(value);
+            }}
+          >
+            {f}
+          </button>
+        ))}
+      </div>
+    </label>
+
+    <div className="hint">
+      目前估算熱量:約 {autoFoodInfo.kcal || 0} kcal
+    </div>
+    {selectedUnitFood.Notes && (
+      <div className="hint">
+        備註：{selectedUnitFood.Notes}
+      </div>
+    )}
+  </>
+)}
+
 
               {selectedFoodDbRow && (
                 <>
