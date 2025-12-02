@@ -2403,42 +2403,7 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
               </div>
             </details>
 
-            {/* ✅ 常見食物重量參考 */}
-<details style={{ marginTop: 8 }}>
-  <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>常見食物重量參考</summary>
-  <ul className="met-list">
-    
-    {/* 拳頭 (Fist) */}
-    <li style={{ marginTop: 8 }}>
-      <strong>拳頭 (Fist) 👊：</strong>
-      <ul style={{ paddingLeft: 20, marginTop: 4, listStyleType: 'disc' }}>
-        <li>水果：1 個拳頭大小 ≈ 1 份 (約 100g - 150g)</li>
-        <li>熟蔬菜：1 個拳頭 (或半碗) ≈ 1 份 (約 100g)</li>
-        <li>飯/麵：1 個拳頭熟飯/麵 ≈ 150g - 160g</li>
-      </ul>
-    </li>
-
-    {/* 手掌心 (Palm) */}
-    <li style={{ marginTop: 8 }}>
-      <strong>手掌心 (Palm) ✋ (不含手指)：</strong>
-      <ul style={{ paddingLeft: 20, marginTop: 4, listStyleType: 'disc' }}>
-        <li>肉類/魚類：手掌大、小指厚 ≈ 3 份 (熟重 90g - 100g)</li>
-        <li style={{ color: '#666', fontSize: '0.9em' }}>
-          註：女生手掌較小，約為 2-3 份
-        </li>
-      </ul>
-    </li>
-
-    {/* 大拇指 (Thumb) */}
-    <li style={{ marginTop: 8 }}>
-      <strong>大拇指 (Thumb) 👍：</strong>
-      <ul style={{ paddingLeft: 20, marginTop: 4, listStyleType: 'disc' }}>
-        <li>油脂/堅果：1 個大拇指節 ≈ 1 茶匙 (5g)</li>
-      </ul>
-    </li>
-
-  </ul>
-</details>
+            
 
           
 
@@ -2529,7 +2494,42 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
     </div>
   </details>
 )}
+{/* ✅ 常見食物重量參考 */}
+<details style={{ marginTop: 8 }}>
+  <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>常見食物重量參考</summary>
+  <ul className="met-list">
+    
+    {/* 拳頭 (Fist) */}
+    <li style={{ marginTop: 8 }}>
+      <strong>拳頭 (Fist) 👊：</strong>
+      <ul style={{ paddingLeft: 20, marginTop: 4, listStyleType: 'disc' }}>
+        <li>水果：1 個拳頭大小 ≈ 1 份 (約 100g - 150g)</li>
+        <li>熟蔬菜：1 個拳頭 (或半碗) ≈ 1 份 (約 100g)</li>
+        <li>飯/麵：1 個拳頭熟飯/麵 ≈ 150g - 160g</li>
+      </ul>
+    </li>
 
+    {/* 手掌心 (Palm) */}
+    <li style={{ marginTop: 8 }}>
+      <strong>手掌心 (Palm) ✋ (不含手指)：</strong>
+      <ul style={{ paddingLeft: 20, marginTop: 4, listStyleType: 'disc' }}>
+        <li>肉類/魚類：手掌大、小指厚 ≈ 3 份 (熟重 90g - 100g)</li>
+        <li style={{ color: '#666', fontSize: '0.9em' }}>
+          註：女生手掌較小，約為 2-3 份
+        </li>
+      </ul>
+    </li>
+
+    {/* 大拇指 (Thumb) */}
+    <li style={{ marginTop: 8 }}>
+      <strong>大拇指 (Thumb) 👍：</strong>
+      <ul style={{ paddingLeft: 20, marginTop: 4, listStyleType: 'disc' }}>
+        <li>油脂/堅果：1 個大拇指節 ≈ 1 茶匙 (5g)</li>
+      </ul>
+    </li>
+
+  </ul>
+</details>
               {/* 🆕 常用組合清單 (根據搜尋結果顯示，且收納在 details 內) */}
               {/* 修正：合併條件渲染，避免結構錯誤 */}
               {/* 🆕 常用組合清單 (根據搜尋結果顯示，且收納在 details 內) */}
@@ -2767,15 +2767,7 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
                             </div>
                           )}
 
-                          <label>
-                            份量 (份)
-                            <input
-                              type="number"
-                              value={fallbackServings}
-                              onChange={(e) => setFallbackServings(e.target.value)}
-                              placeholder="例如:1 或 1.5"
-                            />
-                          </label>
+                        
 
                           <label>
   份量 (份)
@@ -2787,36 +2779,108 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
     onChange={(e) => setFallbackServings(e.target.value)}
     placeholder="例如:1 或 1.5"
   />
+
+  {/* UX-07：份量輸入 DEC / FRAC 切換 */}
   <div
     style={{
       marginTop: 4,
       display: 'flex',
-      flexWrap: 'wrap',
-      gap: 4,
+      alignItems: 'center',
+      gap: 8,
       fontSize: 12,
     }}
   >
-    {['1/8','2/8','3/8','4/8','5/8','6/8','7/8'].map((f) => (
+    {/* DEC / FRAC 小開關 */}
+    <div
+      style={{
+        display: 'inline-flex',
+        borderRadius: 999,
+        border: '1px solid var(--line, #ccc)',
+        overflow: 'hidden',
+      }}
+    >
       <button
-        key={f}
         type="button"
-        className="small"
-        style={{ padding: '2px 6px' }}
-        onClick={() => {
-          const [n, d] = f.split('/').map(Number);
-          if (!d) return;
-          const value = (n / d)
-            .toFixed(3)
-            .replace(/0+$/, '')
-            .replace(/\.$/, '');
-          setFallbackServings(value);
+        onClick={() => setServingsInputMode('dec')}
+        style={{
+          padding: '2px 10px',
+          border: 'none',
+          background:
+            servingsInputMode === 'dec' ? '#1e88e5' : 'transparent',
+          color: servingsInputMode === 'dec' ? '#fff' : 'inherit',
+          fontSize: 12,
         }}
       >
-        {f}
+        DEC
       </button>
-    ))}
+      <button
+        type="button"
+        onClick={() => setServingsInputMode('frac')}
+        style={{
+          padding: '2px 10px',
+          border: 'none',
+          borderLeft: '1px solid var(--line, #ccc)',
+          background:
+            servingsInputMode === 'frac' ? '#1e88e5' : 'transparent',
+          color: servingsInputMode === 'frac' ? '#fff' : 'inherit',
+          fontSize: 12,
+        }}
+      >
+        FRAC
+      </button>
+    </div>
+
+    <span className="sub">
+      {servingsInputMode === 'dec'
+        ? '直接輸入 1.5、2.25 等小數'
+        : '從常用分數中選擇，會自動換算成小數'}
+    </span>
   </div>
+
+  {/* 只有在 FRAC 模式時，才顯示分數快捷鍵 */}
+  {servingsInputMode === 'frac' && (
+    <div
+      style={{
+        marginTop: 4,
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 4,
+        fontSize: 12,
+      }}
+    >
+      {[
+        '1/8',
+        '1/4',
+        '1/3',
+        '3/8',
+        '1/2',
+        '5/8',
+        '2/3',
+        '3/4',
+        '7/8',
+      ].map((f) => (
+        <button
+          key={f}
+          type="button"
+          className="small"
+          style={{ padding: '2px 6px' }}
+          onClick={() => {
+            const [n, d] = f.split('/').map(Number);
+            if (!d) return;
+            const value = (n / d)
+              .toFixed(3)
+              .replace(/0+$/, '')
+              .replace(/\.$/, '');
+            setFallbackServings(value);
+          }}
+        >
+          {f}
+        </button>
+      ))}
+    </div>
+  )}
 </label>
+
                         </>
                       )}
 
