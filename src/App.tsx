@@ -209,10 +209,10 @@ const STORAGE_KEYS = {
 } as const;
 
 const CSV_DEFAULT_URLS = {
-  TYPE_TABLE: '/ju-smile-app/data/Type_Table.csv',
-  UNIT_MAP: '/ju-smile-app/data/Unit_Map.csv',
-  FOOD_DB: '/ju-smile-app/data/Food_DB.csv',
-  EXERCISE_MET: '/ju-smile-app/data/Exercise_Met.csv',
+  TYPE_TABLE: 'data/Type_Table.csv',
+  UNIT_MAP: 'data/Unit_Map.csv',
+  FOOD_DB: 'data/Food_DB.csv',
+  EXERCISE_MET: 'data/Exercise_Met.csv',
 } as const;
 
 // 🔹 App 版本（之後要改版本號可以只改這裡）
