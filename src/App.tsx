@@ -250,11 +250,14 @@ function normalizeText(v: unknown): string {
   return String(v).trim().toLowerCase();
 }
 
-// App 部署的 base 路徑：
-// 如果你的 GitHub Pages 網址是 https://jusmilespace.github.io/ju-smile-app/
-// 那 base 就會是 "/ju-smile-app/"
+// App 部署的 base 路徑：依照實際網域決定
+// - 在 GitHub Pages（jusmilespace.github.io）底下：用 "/ju-smile-app/"
+// - 在本機開發（localhost）：用 "/"
 const APP_BASE_URL =
-  (import.meta as any).env?.BASE_URL || '/ju-smile-app/';
+  typeof window !== 'undefined' && window.location.hostname === 'jusmilespace.github.io'
+    ? '/ju-smile-app/'
+    : '/';
+
 
 // 把呼叫傳進來的字串，轉成真正要拿去 fetch 的 URL
 function resolveCsvUrl(input: string): string {
