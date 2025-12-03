@@ -111,6 +111,14 @@ type MealCombo = {
 
 
 // ======== 常數 & 工具 ========
+// After：新增一個小工具函式（放在 component 外面或前面就好）
+function sanitizeCsvSrc(saved: string | null, fallback: string): string {
+  if (!saved) return fallback;
+  // 如果舊設定裡含有 "ju-smile-calorie-app"，視為無效，改用預設
+  if (saved.includes('ju-smile-calorie-app')) return fallback;
+  return saved;
+}
+
 // 可客製字體大小的下拉，且互斥展開（選了值/打開時會關閉其他）
 type BigOption = { value: string; label: string };
 // App.tsx 約 55 行附近，替換整個 BigSelect 元件的定義
@@ -812,18 +820,35 @@ useEffect(() => {
   const [csvLoading, setCsvLoading] = useState(false);
   const [csvError, setCsvError] = useState<string | null>(null);
 
-  const [srcType, setSrcType] = useState<string>(
-    () => localStorage.getItem('JU_SRC_TYPE') || CSV_DEFAULT_URLS.TYPE_TABLE
-  );
-  const [srcUnit, setSrcUnit] = useState<string>(
-    () => localStorage.getItem('JU_SRC_UNIT') || CSV_DEFAULT_URLS.UNIT_MAP
-  );
-  const [srcFood, setSrcFood] = useState<string>(
-    () => localStorage.getItem('JU_SRC_FOOD') || CSV_DEFAULT_URLS.FOOD_DB
-  );
-  const [srcMet, setSrcMet] = useState<string>(
-    () => localStorage.getItem('JU_SRC_MET') || CSV_DEFAULT_URLS.EXERCISE_MET
-  );
+  // After（只改初始化邏輯，其他都不動）
+const [srcType, setSrcType] = useState<string>(
+  () =>
+    sanitizeCsvSrc(
+      localStorage.getItem('JU_SRC_TYPE'),
+      CSV_DEFAULT_URLS.TYPE_TABLE
+    )
+);
+const [srcUnit, setSrcUnit] = useState<string>(
+  () =>
+    sanitizeCsvSrc(
+      localStorage.getItem('JU_SRC_UNIT'),
+      CSV_DEFAULT_URLS.UNIT_MAP
+    )
+);
+const [srcFood, setSrcFood] = useState<string>(
+  () =>
+    sanitizeCsvSrc(
+      localStorage.getItem('JU_SRC_FOOD'),
+      CSV_DEFAULT_URLS.FOOD_DB
+    )
+);
+const [srcMet, setSrcMet] = useState<string>(
+  () =>
+    sanitizeCsvSrc(
+      localStorage.getItem('JU_SRC_MET'),
+      CSV_DEFAULT_URLS.EXERCISE_MET
+    )
+);
 
   // 初始載入 CSV
   useEffect(() => {
