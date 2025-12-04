@@ -1,6 +1,51 @@
-import React, { useEffect, useMemo, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import Papa from 'papaparse';
 import dayjs from 'dayjs';
+// 🆕 ===== Toast 動畫樣式（加在這裡）=====
+// 使用 useEffect 確保在元件掛載後注入樣式
+const ToastStyles: React.FC = () => {
+  useEffect(() => {
+    const styleId = 'toast-animations-styles';
+    
+    // 避免重複加入
+    if (document.getElementById(styleId)) {
+      return;
+    }
+
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+      @keyframes slideIn {
+        from {
+          transform: translateX(400px);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes slideOut {
+        from {
+          transform: translateX(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateX(400px);
+          opacity: 0;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    console.log('✅ Toast 動畫樣式已加入');
+  }, []);
+
+  return null;
+};
+
+
 
 // ======== 型別定義 ========
 
@@ -107,6 +152,14 @@ type MealCombo = {
   id: string;
   name: string;
   items: ComboItem[];
+};
+
+type ToastType = 'success' | 'error' | 'warning' | 'info';
+
+type ToastMessage = {
+  id: string;
+  type: ToastType;
+  message: string;
 };
 
 
@@ -258,13 +311,12 @@ function normalizeText(v: unknown): string {
   return String(v).trim().toLowerCase();
 }
 
-// App 部署的 base 路徑：依照實際網域決定
-// - 在 GitHub Pages（jusmilespace.github.io）底下：用 "/ju-smile-app/"
-// - 在本機開發（localhost）：用 "/"
-const APP_BASE_URL =
-  typeof window !== 'undefined' && window.location.hostname === 'jusmilespace.github.io'
-    ? '/ju-smile-app/'
-    : '/';
+// 用 Vite 提供的 BASE_URL，確保 dev / build / GitHub Pages 一致
+// 例如：
+// - 本機 dev + base 設定為 /ju-smile-app/ 時：  import.meta.env.BASE_URL === '/ju-smile-app/'
+// - GitHub Pages：                           同樣是 '/ju-smile-app/'
+const APP_BASE_URL = import.meta.env.BASE_URL || '/';
+
 
 
 // 把呼叫傳進來的字串，轉成真正要拿去 fetch 的 URL
@@ -667,13 +719,137 @@ const AboutPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 };
 
 
+// Toast 元件（放在 App 元件外面）
+const ToastContainer: React.FC<{
+  toasts: ToastMessage[];
+  onDismiss: (id: string) => void;
+}> = ({ toasts, onDismiss }) => {
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: 20,
+        right: 20,
+        zIndex: 9999,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+        maxWidth: '90vw',
+        width: 320,
+      }}
+    >
+      {toasts.map((toast) => (
+        <Toast key={toast.id} {...toast} onDismiss={onDismiss} />
+      ))}
+    </div>
+  );
+};
 
+const Toast: React.FC<ToastMessage & { onDismiss: (id: string) => void }> = ({
+  id,
+  type,
+  message,
+  onDismiss,
+}) => {
+  const [isExiting, setIsExiting] = React.useState(false);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsExiting(true);
+      setTimeout(() => onDismiss(id), 300);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [id, onDismiss]);
+
+  const bgColors = {
+    success: '#10b981',
+    error: '#ef4444',
+    warning: '#f59e0b',
+    info: '#3b82f6',
+  };
+
+  const icons = {
+    success: '✓',
+    error: '✕',
+    warning: '⚠',
+    info: 'ℹ',
+  };
+
+  return (
+    <div
+      style={{
+        background: bgColors[type],
+        color: '#fff',
+        padding: '12px 16px',
+        borderRadius: 8,
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        fontSize: 14,
+        animation: isExiting
+          ? 'slideOut 0.3s ease-out forwards'
+          : 'slideIn 0.3s ease-out',
+        cursor: 'pointer',
+      }}
+      onClick={() => {
+        setIsExiting(true);
+        setTimeout(() => onDismiss(id), 300);
+      }}
+    >
+      <div
+        style={{
+          width: 20,
+          height: 20,
+          borderRadius: '50%',
+          background: 'rgba(255,255,255,0.2)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontWeight: 'bold',
+          flexShrink: 0,
+        }}
+      >
+        {icons[type]}
+      </div>
+      <div style={{ flex: 1 }}>{message}</div>
+    </div>
+  );
+};
 
 // ======== App 主元件 ========
+// ======== Toast Context（放在 App 元件之前）========
 
-const App: React.FC = () => {
+// 建立 Context
+const ToastContext = React.createContext<{
+  showToast: (type: ToastType, message: string) => void;
+}>({
+  showToast: () => {},
+});
+
+
+
+
+
+  const App: React.FC = () => {
   const [tab, setTab] = useState<Tab>('today');
   const [showUpdateBar, setShowUpdateBar] = useState(false);
+
+  // 🆕 在這裡加入 Toast 狀態
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  // 🆕 Toast 工具函數
+  const showToast = useCallback((type: ToastType, message: string) => {
+    const id = uuid();
+    setToasts((prev) => [...prev, { id, type, message }]);
+  }, []);
+
+  const dismissToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+
 
   const [recordDefaultMealType, setRecordDefaultMealType] =
     useState<'早餐' | '午餐' | '晚餐' | '點心'>('早餐');
@@ -683,6 +859,7 @@ const App: React.FC = () => {
   const [settings, setSettings] = useState<Settings>(() =>
     loadJSON<Settings>(STORAGE_KEYS.SETTINGS, {})
   );
+
 
     // 🔔 監聽 Service Worker 是否有安裝新版本
   useEffect(() => {
@@ -925,33 +1102,39 @@ const [srcMet, setSrcMet] = useState<string>(
   // ======== CSV 同步 ========
 
   async function syncCsv() {
-    try {
-      setCsvLoading(true);
-      setCsvError(null);
+  try {
+    setCsvLoading(true);
+    setCsvError(null);
+    
+    const [types, units, foods, mets] = await Promise.all([
+      fetchCsv<TypeRow>(srcType),
+      fetchCsv<UnitMapRow>(srcUnit),
+      fetchCsv<FoodDbRow>(srcFood),
+      fetchCsv<ExerciseMetRow>(srcMet),
+    ]);
 
-      const [types, units, foods, mets] = await Promise.all([
-        fetchCsv<TypeRow>(srcType),
-        fetchCsv<UnitMapRow>(srcUnit),
-        fetchCsv<FoodDbRow>(srcFood),
-        fetchCsv<ExerciseMetRow>(srcMet),
-      ]);
+    setTypeTable(types);
+    setUnitMap(units);
+    setFoodDb(foods);
+    setExerciseMet(mets);
 
-      setTypeTable(types);
-      setUnitMap(units);
-      setFoodDb(foods);
-      setExerciseMet(mets);
-
-      localStorage.setItem('JU_SRC_TYPE', srcType);
-      localStorage.setItem('JU_SRC_UNIT', srcUnit);
-      localStorage.setItem('JU_SRC_FOOD', srcFood);
-      localStorage.setItem('JU_SRC_MET', srcMet);
-    } catch (err: any) {
-      console.error(err);
-      setCsvError('同步 CSV 發生錯誤，請檢查 URL 或稍後再試。');
-    } finally {
-      setCsvLoading(false);
-    }
+    localStorage.setItem('JU_SRC_TYPE', srcType);
+    localStorage.setItem('JU_SRC_UNIT', srcUnit);
+    localStorage.setItem('JU_SRC_FOOD', srcFood);
+    localStorage.setItem('JU_SRC_MET', srcMet);
+    
+    // 🆕 成功時顯示 Toast
+    showToast('success', '精準資料同步完成');
+  } catch (err: any) {
+    console.error(err);
+    setCsvError('同步 CSV 發生錯誤,請檢查 URL 或稍後再試。');
+    // 🆕 失敗時也顯示 Toast
+    showToast('error', '同步 CSV 發生錯誤,請檢查 URL 或稍後再試');
+  } finally {
+    setCsvLoading(false);
   }
+}
+
 
   // ======== 喝水 ========
 
@@ -1097,6 +1280,7 @@ const [srcMet, setSrcMet] = useState<string>(
   };
 
   const TodayPage: React.FC<TodayPageProps> = ({ onAddExercise }) => {
+    const { showToast } = React.useContext(ToastContext);
     const todaySummary = getDay(todayLocal);
 
     const [wInput, setWInput] = useState<string>('');
@@ -1266,14 +1450,14 @@ const calorieGoal =
         bodyFat: bfInput ? Number(bfInput) : undefined,
         visceralFat: vfInput ? Number(vfInput) : undefined,
       });
-      alert('已儲存今日身體紀錄');
+      showToast('success','已儲存今日身體紀錄');
     }
 
     function addWaterManual() {
       if (!waterInput.trim()) return;
       const value = Number(waterInput);
       if (isNaN(value) || value <= 0) {
-        alert('請輸入大於 0 的數字');
+        showToast('error', '請輸入大於 0 的數字');
         return;
       }
       addWater(value);
@@ -1717,6 +1901,8 @@ const calorieGoal =
     setRecordTab: (tab: RecordSubTab) => void;
     defaultMealType: '早餐' | '午餐' | '晚餐' | '點心';
   }> = ({ recordTab, setRecordTab, defaultMealType }) => {
+    const { showToast } = React.useContext(ToastContext);
+
 
     const [selectedDate, setSelectedDate] = useState(todayLocal);
 
@@ -2075,7 +2261,7 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
 
     function saveMeal() {
       if (!foodName.trim()) {
-        alert('請先輸入食物名稱');
+        showToast('error', '請先輸入食物名稱');
         return;
       }
 
@@ -2092,7 +2278,7 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
 
       if (usingAuto) {
         if (!autoFoodInfo.kcal || isNaN(autoFoodInfo.kcal)) {
-          alert('請先輸入正確的份量 / 克數 / 份量,才能計算熱量。');
+          showToast('請先輸入正確的份量 / 克數 / 份量,才能計算熱量。');
           return;
         }
         kcal = autoFoodInfo.kcal;
@@ -2102,12 +2288,12 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
         amountText = autoFoodInfo.amountText;
       } else {
         if (!manualFoodKcal.trim()) {
-          alert('請先輸入估算總熱量(kcal)。');
+          showToast('error', '請先輸入估算總熱量(kcal)。');
           return;
         }
         kcal = Number(manualFoodKcal);
         if (!kcal || isNaN(kcal)) {
-          alert('請輸入正確的熱量數字。');
+          showToast('error', '請輸入正確的熱量數字。');
           return;
         }
       }
@@ -2180,11 +2366,11 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
     // 🆕 儲存為常用組合
     function handleSaveCombo() {
       if (!selectedMealIds.length) {
-        alert('請先選擇至少一個飲食紀錄品項');
+        showToast('warning', '請先選擇至少一個飲食紀錄品項');
         return;
       }
       if (!comboNameInput.trim()) {
-        alert('請為常用組合命名');
+        showToast('error', '請為常用組合命名');
         return;
       }
 
@@ -2209,7 +2395,7 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
       setSelectedMealIds([]);
       setComboNameInput('');
       setShowSaveComboModal(false);
-      alert(`已成功儲存常用組合: ${newCombo.name}`);
+      showToast('success',`已成功儲存常用組合: ${newCombo.name}`);
     }
 
     // 🆕 載入常用組合
@@ -2230,7 +2416,7 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
 
       setMeals((prev) => [...prev, ...newEntries]);
       setTab('today'); // 紀錄完成後自動跳回首頁
-      alert(`已將組合「${combo.name}」加入 ${foodMealType}。`);
+      showToast('success',`已將組合「${combo.name}」加入 ${foodMealType}。`);
     }
     
     // 運動搜尋
@@ -2265,15 +2451,15 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
 
     function addExercise() {
       if (!exName.trim()) {
-        alert('請先輸入運動名稱');
+        showToast('error', '請先輸入運動名稱');
         return;
       }
       if (!usedMet) {
-        alert('請先選擇一項運動或輸入自訂 MET。');
+        showToast('error', '請先選擇一項運動或輸入自訂 MET。');
         return;
       }
       if (!autoExerciseKcal) {
-        alert('請先填寫體重與時間(分鐘),才能計算熱量。');
+        showToast('error', '請先填寫體重與時間(分鐘),才能計算熱量。');
         return;
       }
 
@@ -3627,6 +3813,7 @@ type SettingsPageProps = {
 };
 
 const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
+  const { showToast } = React.useContext(ToastContext);
   const [localSettings, setLocalSettings] = useState<Settings>(settings);
 
   // 🆕 新增編輯常用組合的狀態
@@ -3666,7 +3853,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
     });
   }
 
-  alert('已儲存目標設定');
+  showToast('success','已儲存目標設定');
 }
 
 
@@ -3675,7 +3862,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
     if (!editingCombo || !editingComboName.trim()) return;
 
     if (editingComboItems.length === 0) {
-      alert('組合中必須至少包含一項食物明細。');
+      showToast('error', '組合中必須至少包含一項食物明細。');
       return;
     }
 
@@ -3698,15 +3885,17 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
     setEditingComboName('');
     setEditingComboItems([]);
 
-    alert(`組合「${oldName}」已更新並更名為「${newName}」`);
+    showToast('success',`組合「${oldName}」已更新並更名為「${newName}」`);
   }
 
   // 🆕 刪除常用組合
-  function deleteCombo(id: string) {
-    if (window.confirm('確定要刪除這個常用組合嗎？')) {
-      setCombos((prev) => prev.filter((c) => c.id !== id));
-    }
+ function deleteCombo(id: string) {
+  if (window.confirm('確定要刪除這個常用組合嗎？')) {
+    setCombos((prev) => prev.filter((c) => c.id !== id));
+    showToast('success', '已刪除常用組合');
   }
+}
+
 
   function handleExportJson() {
     const data = {
@@ -3745,9 +3934,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
         if (obj.meals) setMeals(obj.meals);
         if (obj.exercises) setExercises(obj.exercises);
         if (obj.combos) setCombos(obj.combos);
-        alert('匯入完成');
+        showToast('success','匯入完成');
       } catch {
-        alert('匯入失敗:JSON 格式不正確');
+        showToast('error', '匯入失敗:JSON 格式不正確');
       }
     };
     reader.readAsText(file);
@@ -4295,6 +4484,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
 
   // ======== Plan 頁 ========
   const PlanPage: React.FC = () => {
+    const { showToast } = React.useContext(ToastContext);
     // 這是用來關閉下拉選單的小工具
     const closeDropdown = (e: React.MouseEvent) => {
       const details = e.currentTarget.closest('details');
@@ -4553,15 +4743,17 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
               className="btn primary"
               disabled={!selectedGoal || !bmr}
               onClick={() => {
-                if (!selectedGoal || !bmr) return;
-                try {
-                  localStorage.setItem('JU_PLAN_BMR', String(bmr));
-                  localStorage.setItem('JU_PLAN_TDEE', String(tdee || 0));
-                  localStorage.setItem('JU_PLAN_GOAL_KCAL', String(selectedGoal));
-                  document.dispatchEvent(new CustomEvent('ju:set-goal-kcal', { detail: selectedGoal }));
-                  alert(`已加入目標熱量：${selectedGoal} kcal`);
-                } catch { }
-              }}
+  if (!selectedGoal || !bmr) return;
+  try {
+    localStorage.setItem('JU_PLAN_BMR', String(bmr));
+    localStorage.setItem('JU_PLAN_TDEE', String(tdee || 0));
+    localStorage.setItem('JU_PLAN_GOAL_KCAL', String(selectedGoal));
+    document.dispatchEvent(new CustomEvent('ju:set-goal-kcal', { detail: selectedGoal }));
+    showToast('success', `已加入目標熱量：${selectedGoal} kcal`);
+  } catch {
+    showToast('error', '設定目標熱量時發生錯誤');
+  }
+}}
               style={{ padding: '10px 16px', borderRadius: 10, border: 'none', background: '#5c9c84', color: '#fff', fontSize: 16 }}
             >
               加入目標熱量
@@ -4577,8 +4769,13 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
   };
   // ======== App Root Render ========
 
-  return (
+return (
+  <ToastContext.Provider value={{ showToast }}>
+    <ToastStyles />
+    
     <div className="app">
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+
       {tab === 'today' && (
         <TodayPage onAddExercise={goToExerciseRecord} />
       )}
@@ -4592,10 +4789,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
       )}
 
       {tab === 'settings' && (
-  <SettingsPage
-    onOpenAbout={() => setTab('about')}
-    />
-)}
+        <SettingsPage onOpenAbout={() => setTab('about')} />
+      )}
+
       {tab === 'plan' && <PlanPage />}
       {tab === 'about' && <AboutPage onBack={() => setTab('settings')} />}
 
@@ -4621,7 +4817,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
           <div className="nav-icon">🦋</div>
           <div className="nav-label">我的</div>
         </button>
-
         <button
           className={tab === 'plan' ? 'active' : ''}
           onClick={() => setTab('plan')}
@@ -4630,43 +4825,44 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
           <div className="nav-label">Plan</div>
         </button>
       </nav>
-          {showUpdateBar && (
-      <div
-        style={{
-          position: 'fixed',
-          left: 0,
-          right: 0,
-          bottom: 0,
-          padding: '8px 12px',
-          background: '#222',
-          color: '#fff',
-          fontSize: 13,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 8,
-          zIndex: 50,
-        }}
-      >
-        <span>Ju Smile App 有新版本，請重新載入取得最新功能。</span>
-        <button
-          type="button"
-          onClick={handleReloadForUpdate}
+
+      {showUpdateBar && (
+        <div
           style={{
-            borderRadius: 999,
-            border: 'none',
-            padding: '6px 10px',
-            fontSize: 12,
-            cursor: 'pointer',
+            position: 'fixed',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            padding: '8px 12px',
+            background: '#222',
+            color: '#fff',
+            fontSize: 13,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 8,
+            zIndex: 50,
           }}
         >
-          立即更新
-        </button>
-      </div>
-    )}
-
+          <span>Ju Smile App 有新版本，請重新載入取得最新功能。</span>
+          <button
+            type="button"
+            onClick={handleReloadForUpdate}
+            style={{
+              borderRadius: 999,
+              border: 'none',
+              padding: '6px 10px',
+              fontSize: 12,
+              cursor: 'pointer',
+            }}
+          >
+            立即更新
+          </button>
+        </div>
+      )}
     </div>
-  );
+  </ToastContext.Provider>
+);
 };
 
 export default App;
