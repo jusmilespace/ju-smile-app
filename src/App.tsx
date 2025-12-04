@@ -861,43 +861,85 @@ const ToastContext = React.createContext<{
   );
 
 
-    // 🔔 監聽 Service Worker 是否有安裝新版本
-  useEffect(() => {
-    if (!('serviceWorker' in navigator)) return;
-
-    navigator.serviceWorker
-      .getRegistration()
-      .then((reg) => {
-        if (!reg) return;
-
-        reg.addEventListener('updatefound', () => {
-          const newWorker = reg.installing;
-          if (!newWorker) return;
-
-          newWorker.addEventListener('statechange', () => {
-            // 有舊 SW 在控制頁面，且新 SW 安裝完成 → 有「新版本」
-            if (
-              newWorker.state === 'installed' &&
-              navigator.serviceWorker.controller
-            ) {
-              setShowUpdateBar(true);
-            }
-          });
-        });
-      })
-      .catch(() => {
-        // 忽略錯誤
-      });
-  }, []);
-
-    function handleReloadForUpdate() {
-    // 告訴 SW：可以跳過 waiting，直接啟用新版本
-    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
-    }
-    // 重新載入頁面，載入最新版
-    window.location.reload();
+// 🔔 監聽 Service Worker 是否有安裝新版本
+useEffect(() => {
+  if (!('serviceWorker' in navigator)) {
+    console.warn('⚠️ 此瀏覽器不支援 Service Worker');
+    return;
   }
+
+  navigator.serviceWorker
+    .getRegistration()
+    .then((reg) => {
+      if (!reg) {
+        console.warn('⚠️ 沒有找到 Service Worker 註冊');
+        return;
+      }
+
+      console.log('✅ Service Worker 已就緒，開始監聽更新');
+
+      // 🆕 每 60 秒檢查一次更新
+      const updateInterval = setInterval(() => {
+        console.log('🔄 定期檢查更新...');
+        reg.update();
+      }, 60000);
+
+      // 監聽更新
+      reg.addEventListener('updatefound', () => {
+        console.log('🆕 發現新的 Service Worker');
+        const newWorker = reg.installing;
+        if (!newWorker) return;
+
+        newWorker.addEventListener('statechange', () => {
+          console.log('📦 Service Worker 狀態:', newWorker.state);
+          
+          // 有舊 SW 在控制頁面，且新 SW 安裝完成 → 有「新版本」
+          if (
+            newWorker.state === 'installed' &&
+            navigator.serviceWorker.controller
+          ) {
+            console.log('✅ 新版本已安裝，顯示更新提示');
+            setShowUpdateBar(true);
+          }
+        });
+      });
+
+      // 🆕 清理函數
+      return () => {
+        clearInterval(updateInterval);
+      };
+    })
+    .catch((err) => {
+      console.error('❌ Service Worker 錯誤:', err);
+    });
+
+  // 🆕 監聽 Service Worker 控制權變更
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    console.log('🔄 Service Worker 控制權已變更');
+    if (!refreshing) {
+      refreshing = true;
+      console.log('♻️ 自動重新整理頁面');
+      window.location.reload();
+    }
+  });
+}, []);
+
+function handleReloadForUpdate() {
+  console.log('🔄 使用者點擊更新按鈕');
+  
+  // 告訴 SW：可以跳過 waiting，直接啟用新版本
+  if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+    console.log('📨 發送 SKIP_WAITING 訊息');
+    navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+  }
+  
+  // 給 Service Worker 一點時間處理
+  setTimeout(() => {
+    console.log('♻️ 重新載入頁面');
+    window.location.reload();
+  }, 100);
+}
   // 監聽 Plan 頁送來的目標熱量：
   // 1) 更新「我的」頁的目標攝取熱量 (作為未來新日期的預設值)
   // 2) 只更新「今天這一天」的日目標，不改舊日期

@@ -96,6 +96,7 @@ self.addEventListener('fetch', (event) => {
 // 收到前端的 SKIP_WAITING 訊息 → 立刻啟用新版 SW
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
+    console.log('📨 收到 SKIP_WAITING 訊息');
     self.skipWaiting();
   }
 });
