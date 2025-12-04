@@ -853,6 +853,10 @@ const ToastContext = React.createContext<{
 
   const [recordDefaultMealType, setRecordDefaultMealType] =
     useState<'早餐' | '午餐' | '晚餐' | '點心'>('早餐');
+  
+  // 🆕 持久化使用者在 Records 頁面選擇的餐別
+  const [currentFoodMealType, setCurrentFoodMealType] =
+    useState<'早餐' | '午餐' | '晚餐' | '點心'>(recordDefaultMealType);
 
   const [recordTab, setRecordTab] = useState<RecordSubTab>('food');
 
@@ -1739,6 +1743,7 @@ const calorieGoal =
             fat={breakfastFat}
             onAdd={() => {
               setRecordDefaultMealType('早餐');
+              setCurrentFoodMealType('早餐');
               setTab('records');
               setRecordTab('food');
               // 🆕 增加滾動到頂部
@@ -1755,6 +1760,7 @@ const calorieGoal =
             fat={lunchFat}
             onAdd={() => {
               setRecordDefaultMealType('午餐');
+              setCurrentFoodMealType('午餐');
               setTab('records');
               setRecordTab('food');
               // 🆕 增加滾動到頂部
@@ -1771,6 +1777,7 @@ const calorieGoal =
             fat={dinnerFat}
             onAdd={() => {
               setRecordDefaultMealType('晚餐');
+              setCurrentFoodMealType('晚餐');
               setTab('records');
               setRecordTab('food');
               // 🆕 增加滾動到頂部
@@ -1787,6 +1794,7 @@ const calorieGoal =
             fat={snackFat}
             onAdd={() => {
               setRecordDefaultMealType('點心');
+              setCurrentFoodMealType('點心');
               setTab('records');
               setRecordTab('food');
               // 🆕 增加滾動到頂部
@@ -1973,19 +1981,28 @@ const COMMON_EXERCISES = [
     recordTab: RecordSubTab;
     setRecordTab: (tab: RecordSubTab) => void;
     defaultMealType: '早餐' | '午餐' | '晚餐' | '點心';
-  }> = ({ recordTab, setRecordTab, defaultMealType }) => {
+    foodMealType: '早餐' | '午餐' | '晚餐' | '點心';
+    setFoodMealType: (type: '早餐' | '午餐' | '晚餐' | '點心') => void;
+  }> = ({ recordTab, setRecordTab, defaultMealType, foodMealType, setFoodMealType }) => {
     const { showToast } = React.useContext(ToastContext);
 
 
     const [selectedDate, setSelectedDate] = useState(todayLocal);
 
-    // 飲食表單
-    const [foodMealType, setFoodMealType] =
-      useState<'早餐' | '午餐' | '晚餐' | '點心'>('早餐');
+    // 🔧 修正：移除 local state，改用從 App 傳入的 props
+    // 這樣餐別就不會在切換頁籤時消失
     
- useEffect(() => {
-  setFoodMealType(defaultMealType);
-}, [defaultMealType]);
+    // 🔧 只在從 Today 頁面點擊不同餐別進入時才更新餐別
+    // 使用 useRef 追蹤上一次的 defaultMealType，避免每次 render 都觸發
+    const prevDefaultMealTypeRef = useRef(defaultMealType);
+    
+    useEffect(() => {
+      // 只有當 defaultMealType 真的改變時才更新（例如從 Today 點擊不同餐別進入）
+      if (prevDefaultMealTypeRef.current !== defaultMealType) {
+        setFoodMealType(defaultMealType);
+        prevDefaultMealTypeRef.current = defaultMealType;
+      }
+    }, [defaultMealType, setFoodMealType]); 
 
 
     const [foodName, setFoodName] = useState('');
@@ -2439,6 +2456,15 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
       setSelectedUnitFood(null);
       setSelectedFoodDbRow(null);
       setFoodName(''); // 清空搜尋欄位
+
+      // 🆕 清空類別估算相關欄位
+  setFallbackType('');
+  setFallbackServings('');
+  setFallbackQty('');
+  setFallbackProtPerServ('');
+  setFallbackCarbPerServ('');
+  setFallbackFatPerServ('');
+  setFallbackKcalPerServ('');
     }
 
     function startEditMeal(m: MealEntry) {
@@ -3572,81 +3598,115 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
 
 {selectedUnitFood && (
   <>
-    <label>
+      <label>
       數量({selectedUnitFood.Unit})
       <input
         type="number"
         value={unitQuantity}
         onChange={(e) => setUnitQuantity(e.target.value)}
-        placeholder="例如:1"
+        placeholder="例如:1 或 1.5"
       />
-      {/* UX-07：數量分數快捷鍵 1/8～7/8 */}
+
+      {/* UX-07：數量輸入 DEC / FRAC 切換 */}
       <div
         style={{
           marginTop: 4,
           display: 'flex',
-          flexWrap: 'wrap',
-          gap: 4,
+          alignItems: 'center',
+          gap: 8,
           fontSize: 12,
         }}
       >
-        {[
-  '1/8',
-  '1/4',
-  '1/3',
-  '3/8',
-  '1/2',
-  '5/8',
-  '2/3',
-  '3/4',
-  '7/8',
-].map((f: string) => (
+        {/* DEC / FRAC 小開關 */}
+        <div
+          style={{
+            display: 'inline-flex',
+            borderRadius: 999,
+            border: '1px solid var(--line, #ccc)',
+            overflow: 'hidden',
+          }}
+        >
           <button
-            key={f}
             type="button"
-            className="small"
-            style={{ padding: '2px 6px' }}
-            onClick={() => {
-              const [n, d] = f.split('/').map(Number);
-              if (!d) return;
-              const value = (n / d)
-                .toFixed(3)
-                .replace(/0+$/, '')
-                .replace(/\.$/, '');
-              setUnitQuantity(value);
+            onClick={() => setUnitQtyInputMode('dec')}
+            style={{
+              padding: '2px 10px',
+              border: 'none',
+              background:
+                unitQtyInputMode === 'dec' ? '#1e88e5' : 'transparent',
+              color: unitQtyInputMode === 'dec' ? '#fff' : 'inherit',
+              fontSize: 12,
             }}
           >
-            {f}
+            DEC
           </button>
-        ))}
+          <button
+            type="button"
+            onClick={() => setUnitQtyInputMode('frac')}
+            style={{
+              padding: '2px 10px',
+              border: 'none',
+              borderLeft: '1px solid var(--line, #ccc)',
+              background:
+                unitQtyInputMode === 'frac' ? '#1e88e5' : 'transparent',
+              color: unitQtyInputMode === 'frac' ? '#fff' : 'inherit',
+              fontSize: 12,
+            }}
+          >
+            FRAC
+          </button>
+        </div>
+
+        <span className="sub">
+          {unitQtyInputMode === 'dec'
+            ? '直接輸入 1.5、2.25 等小數'
+            : '從常用分數中選擇，會自動換算成小數'}
+        </span>
       </div>
+
+      {/* 只有在 FRAC 模式時，才顯示數量分數快捷鍵 */}
+      {unitQtyInputMode === 'frac' && (
+        <div
+          style={{
+            marginTop: 4,
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 4,
+            fontSize: 12,
+          }}
+        >
+          {[
+            '1/8',
+            '1/4',
+            '1/3',
+            '3/8',
+            '1/2',
+            '5/8',
+            '2/3',
+            '3/4',
+            '7/8',
+          ].map((f: string) => (
+            <button
+              key={f}
+              type="button"
+              className="small"
+              style={{ padding: '2px 6px' }}
+              onClick={() => {
+                const [n, d] = f.split('/').map(Number);
+                if (!d) return;
+                const value = (n / d)
+                  .toFixed(3)
+                  .replace(/0+$/, '')
+                  .replace(/\.$/, '');
+                setUnitQuantity(value);
+              }}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+      )}
     </label>
-
-    <div className="hint">
-      目前估算熱量:約 {autoFoodInfo.kcal || 0} kcal
-    </div>
-    {selectedUnitFood.Notes && (
-      <div className="hint">
-        備註：{selectedUnitFood.Notes}
-      </div>
-    )}
-  </>
-)}
-
-
-              {selectedFoodDbRow && (
-                <>
-                  <label>
-                    食用重量 (g)
-                    <input
-                      type="number"
-                      value={foodAmountG}
-                      onChange={(e) =>
-                        setFoodAmountG(e.target.value)
-                      }
-                      placeholder="例如:80"
-                    />
-                  </label>
                   <div className="hint">
                     目前估算熱量:約 {autoFoodInfo.kcal || 0} kcal
                   </div>
@@ -5251,6 +5311,8 @@ return (
           recordTab={recordTab}
           setRecordTab={setRecordTab}
           defaultMealType={recordDefaultMealType}
+          foodMealType={currentFoodMealType}
+          setFoodMealType={setCurrentFoodMealType}
         />
       )}
 
