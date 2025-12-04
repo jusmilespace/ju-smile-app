@@ -2944,15 +2944,26 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
               {/* 修正：修正條件，確保在沒有選取 Unit/FoodDB 時才顯示搜尋結果列表 */}
               {/* 搜尋結果：只顯示 Unit Map 或 Food DB 的匹配清單 */}
               {foodName.trim() &&
-                !selectedUnitFood &&
-                !selectedFoodDbRow && 
-                (foodSearchResults.historyMatches.length > 0 ||
- foodSearchResults.unitMatches.length > 0 || 
- foodSearchResults.foodMatches.length > 0) && (
-                  <div className="search-results" style={{ marginBottom: '12px' }}>
-                    {/* 🆕 歷史記錄搜尋結果 */}
+  !selectedUnitFood &&
+  !selectedFoodDbRow && 
+  (foodSearchResults.historyMatches.length > 0 ||
+   foodSearchResults.unitMatches.length > 0 || 
+   foodSearchResults.foodMatches.length > 0) && (
+    <div
+      className="search-results"
+      style={{
+        marginTop: 8,
+        marginBottom: '12px',
+        padding: '8px 8px',
+        borderRadius: 12,
+        background: '#f9fafb',
+        border: '1px solid #e5e7eb',
+      }}
+    >
+      {/* 🆕 歷史記錄搜尋結果 */}
       {foodSearchResults.historyMatches.length > 0 && (
         <>
+
           <div className="result-title" style={{ 
             display: 'flex', 
             alignItems: 'center', 
@@ -2966,71 +2977,95 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
             <span>我的歷史紀錄 ({foodSearchResults.historyMatches.length})</span>
           </div>
           {foodSearchResults.historyMatches.map((m, i) => (
-            <div
-              key={i}
-              className="list-item clickable"
-              style={{
-                borderLeft: '4px solid #3b82f6',
-                background: '#fff',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#eff6ff';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = '#fff';
-              }}
-            >
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600 }}>{m.label}</div>
-                <div className="sub" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <span style={{ 
-                    padding: '2px 8px', 
-                    borderRadius: 999, 
-                    background: '#3b82f6',
-                    color: '#fff',
-                    fontSize: 10,
-                    fontWeight: 600,
-                  }}>
-                    歷史
-                  </span>
-                  {m.amountText && <span>{m.amountText}</span>}
-                  <span>{m.kcal} kcal</span>
-                  {m.protein > 0 && <span>P: {round1(m.protein)}g</span>}
-                  {m.carb > 0 && <span>C: {round1(m.carb)}g</span>}
-                  {m.fat > 0 && <span>F: {round1(m.fat)}g</span>}
-                </div>
-                <div className="sub" style={{ fontSize: 11, color: '#999', marginTop: 2 }}>
-                  最近記錄：{m.date} · {m.mealType}
-                </div>
-              </div>
-              <button
-                type="button"
-                className="primary small"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // 複製歷史記錄，加入到今天
-                  const copied: MealEntry = {
-                    ...m,
-                    id: uuid(),
-                    date: selectedDate,
-                    mealType: foodMealType, // 使用目前選擇的餐別
-                  };
-                  setMeals((prev) => [...prev, copied]);
-                  showToast('success', `已加入 ${m.label}`);
-                  // 清空搜尋
-                  setFoodName('');
-                }}
-                style={{
-                  padding: '8px 16px',
-                  fontSize: 13,
-                  flexShrink: 0,
-                }}
-              >
-                快速加入
-              </button>
-            </div>
-          ))}
+  <div
+    key={i}
+    className="list-item clickable"
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '8px 12px',
+      marginBottom: 6,
+      borderRadius: 8,
+      borderLeft: '4px solid #3b82f6',
+      background: '#fff',
+      transition: 'all 0.2s',
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.background = '#eff6ff';
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.background = '#fff';
+    }}
+  >
+    <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ fontWeight: 600, marginBottom: 2 }}>{m.label}</div>
+      <div
+        className="sub"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          flexWrap: 'wrap',
+          fontSize: 12,
+        }}
+      >
+        <span
+          style={{
+            padding: '2px 8px',
+            borderRadius: 999,
+            background: '#3b82f6',
+            color: '#fff',
+            fontSize: 10,
+            fontWeight: 600,
+          }}
+        >
+          歷史
+        </span>
+        {m.amountText && <span>{m.amountText}</span>}
+        <span>{m.kcal} kcal</span>
+        {m.protein > 0 && <span>P: {round1(m.protein)}g</span>}
+        {m.carb > 0 && <span>C: {round1(m.carb)}g</span>}
+        {m.fat > 0 && <span>F: {round1(m.fat)}g</span>}
+      </div>
+      <div
+        className="sub"
+        style={{ fontSize: 11, color: '#999', marginTop: 2, whiteSpace: 'nowrap' }}
+      >
+        最近記錄：{m.date} · {m.mealType}
+      </div>
+    </div>
+
+    <button
+      type="button"
+      className="primary small"
+      onClick={(e) => {
+        e.stopPropagation();
+        const copied: MealEntry = {
+          ...m,
+          id: uuid(),
+          date: selectedDate,
+          mealType: foodMealType,
+        };
+        setMeals((prev) => [...prev, copied]);
+        showToast('success', `已加入 ${m.label}`);
+        setFoodName('');
+      }}
+      style={{
+        padding: '6px 10px',
+        fontSize: 13,
+        flexShrink: 0,
+        width: 'auto',          // 🟢 關鍵：不要吃掉整行
+        minWidth: 84,
+        whiteSpace: 'nowrap',
+        alignSelf: 'center',
+      }}
+    >
+      快速加入
+    </button>
+  </div>
+))}
+
           
           {/* 分隔線：只有當歷史記錄後面還有其他搜尋結果時才顯示 */}
 {foodSearchResults.historyMatches.length > 0 &&
