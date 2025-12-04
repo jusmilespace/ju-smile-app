@@ -1915,14 +1915,14 @@ const COMMON_EXERCISES = [
   { name: '散步', met: 2.5 },
   { name: '走路', met: 3.0 },
   { name: '瑜珈', met: 3.0 },
+  { name: '快走', met: 4.3 },
   { name: '有氧運動', met: 4.5 },
-  { name: '快走', met: 4.5 },
   { name: '騎自行車', met: 5.5 },
   { name: '重訓', met: 6.0 },
   { name: '爬山', met: 6.5 },
   { name: '游泳', met: 7.0 },
   { name: '飛輪有氧', met: 7.5 },
-  { name: '跑步', met: 8.0 },
+  { name: '慢跑', met: 8.0 },
   { name: 'HIIT', met: 8.5 },
 ];
   // ======== 記錄頁 ========
