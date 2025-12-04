@@ -3703,158 +3703,173 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
     </div>
 
     {/* ========== 快速記錄模式 ========== */}
-    {recordMode === 'quick' && (
-      <div className="form-section">
-        <label style={{ marginBottom: 12, fontSize: 15, fontWeight: 600 }}>
-          選擇運動類型
-        </label>
+{recordMode === 'quick' && (
+  <div className="form-section">
+    <label style={{ marginBottom: 12, fontSize: 15, fontWeight: 600 }}>
+      選擇運動類型
+    </label>
+    
+    {/* 🆕 常見運動快速選擇（帶 MET 視覺化） */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+      {COMMON_EXERCISES.map((ex) => {
+        const intensity = getIntensityInfo(ex.met);
+        const isSelected = quickExercise?.name === ex.name;
         
-        {/* 🆕 常見運動快速選擇（帶 MET 視覺化） */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
-          {COMMON_EXERCISES.map((ex) => {
-            const intensity = getIntensityInfo(ex.met);
-            const isSelected = quickExercise?.name === ex.name;
-            
-            return (
-              <div
-                key={ex.name}
-                onClick={() => {
-                  setQuickExercise(ex);
-                  setExName(ex.name);
-                  setCustomMet(String(ex.met));
-                  setSelectedMetRow(null);
-                }}
-                style={{
-                  padding: '14px 16px',
-                  border: `2px solid ${isSelected ? intensity.color : '#e5e7eb'}`,
-                  borderRadius: 10,
-                  cursor: 'pointer',
-                  background: isSelected ? `${intensity.color}10` : '#fff',
-                  transition: 'all 0.2s',
-                  boxShadow: isSelected ? `0 2px 8px ${intensity.color}40` : '0 1px 3px rgba(0,0,0,0.1)',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ 
-                      fontWeight: isSelected ? 700 : 600, 
-                      fontSize: 16, 
-                      marginBottom: 6,
-                      color: isSelected ? intensity.color : '#333',
-                    }}>
-                      {ex.name}
-                    </div>
-                    <div style={{ fontSize: 13, color: '#666', display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span 
-                        style={{ 
-                          padding: '3px 10px', 
-                          borderRadius: 999, 
-                          background: intensity.color,
-                          color: '#fff',
-                          fontSize: 11,
-                          fontWeight: 700,
-                          letterSpacing: '0.5px',
-                        }}
-                      >
-                        {intensity.label}
-                      </span>
-                      <span style={{ fontWeight: 500 }}>{ex.met} MET</span>
-                    </div>
-                  </div>
-                  
-                  {/* MET 視覺化進度條 */}
-                  <div style={{ width: 70, marginLeft: 16 }}>
-                    <div style={{ 
-                      height: 8, 
-                      background: '#e5e7eb', 
-                      borderRadius: 4,
-                      overflow: 'hidden',
-                    }}>
-                      <div style={{ 
-                        height: '100%', 
-                        width: `${Math.min(100, (ex.met / 10) * 100)}%`,
-                        background: intensity.color,
-                        transition: 'width 0.3s ease',
-                        borderRadius: 4,
-                      }} />
-                    </div>
-                    <div style={{ 
-                      fontSize: 10, 
-                      color: '#999', 
-                      textAlign: 'right', 
-                      marginTop: 2 
-                    }}>
-                      {Math.round((ex.met / 10) * 100)}%
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <label>
-          體重 (kg)
-          <input
-            type="number"
-            value={exWeight}
-            onChange={(e) => setExWeight(e.target.value)}
-            placeholder="例如:70"
-          />
-        </label>
-
-        <label>
-          運動時間 (分鐘)
-          <input
-            type="number"
-            value={exMinutes}
-            onChange={(e) => setExMinutes(e.target.value)}
-            placeholder="例如:30"
-          />
-        </label>
-
-        <div className="hint" style={{ 
-          padding: '12px 16px', 
-          background: '#f0f9ff', 
-          borderRadius: 8,
-          border: '1px solid #bae6fd',
-          marginTop: 12,
-        }}>
-          <span style={{ fontWeight: 600, color: '#0369a1' }}>預估消耗:</span>
-          <span style={{ fontSize: 18, fontWeight: 700, color: '#0369a1', marginLeft: 8 }}>
-            約 {autoExerciseKcal || 0} kcal
-          </span>
-        </div>
-
-        <button 
-          className="primary" 
-          onClick={addExercise}
-          disabled={!quickExercise || !exWeight || !exMinutes}
-          style={{
-            opacity: (!quickExercise || !exWeight || !exMinutes) ? 0.5 : 1,
-            cursor: (!quickExercise || !exWeight || !exMinutes) ? 'not-allowed' : 'pointer',
-          }}
-        >
-          {editingExerciseId ? '更新運動記錄' : '加入運動記錄'}
-        </button>
-        
-        {editingExerciseId && (
-          <button
+        return (
+          <div
+            key={ex.name}
             onClick={() => {
-              setEditingExerciseId(null);
-              setExName('');
-              setExMinutes('');
-              setCustomMet('');
+              setQuickExercise(ex);
+              setExName(ex.name);
+              setCustomMet(String(ex.met));
               setSelectedMetRow(null);
-              setQuickExercise(null);
+              
+              // 🆕 選擇後自動捲動到輸入區域
+              setTimeout(() => {
+                const weightInput = document.querySelector('#exercise-weight-input') as HTMLInputElement;
+                if (weightInput) {
+                  weightInput.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                  });
+                  // 如果體重還沒填，自動聚焦到體重輸入框
+                  if (!exWeight) {
+                    weightInput.focus();
+                  }
+                }
+              }, 150); // 延遲 150ms 讓動畫更順暢
+            }}
+            style={{
+              padding: '14px 16px',
+              border: `2px solid ${isSelected ? intensity.color : '#e5e7eb'}`,
+              borderRadius: 10,
+              cursor: 'pointer',
+              background: isSelected ? `${intensity.color}10` : '#fff',
+              transition: 'all 0.2s',
+              boxShadow: isSelected ? `0 2px 8px ${intensity.color}40` : '0 1px 3px rgba(0,0,0,0.1)',
             }}
           >
-            取消編輯
-          </button>
-        )}
-      </div>
-    )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ 
+                  fontWeight: isSelected ? 700 : 600, 
+                  fontSize: 16, 
+                  marginBottom: 6,
+                  color: isSelected ? intensity.color : '#333',
+                }}>
+                  {ex.name}
+                </div>
+                <div style={{ fontSize: 13, color: '#666', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span 
+                    style={{ 
+                      padding: '3px 10px', 
+                      borderRadius: 999, 
+                      background: intensity.color,
+                      color: '#fff',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      letterSpacing: '0.5px',
+                    }}
+                  >
+                    {intensity.label}
+                  </span>
+                  <span style={{ fontWeight: 500 }}>{ex.met} MET</span>
+                </div>
+              </div>
+              
+              {/* MET 視覺化進度條 */}
+              <div style={{ width: 70, marginLeft: 16 }}>
+                <div style={{ 
+                  height: 8, 
+                  background: '#e5e7eb', 
+                  borderRadius: 4,
+                  overflow: 'hidden',
+                }}>
+                  <div style={{ 
+                    height: '100%', 
+                    width: `${Math.min(100, (ex.met / 10) * 100)}%`,
+                    background: intensity.color,
+                    transition: 'width 0.3s ease',
+                    borderRadius: 4,
+                  }} />
+                </div>
+                <div style={{ 
+                  fontSize: 10, 
+                  color: '#999', 
+                  textAlign: 'right', 
+                  marginTop: 2 
+                }}>
+                  {Math.round((ex.met / 10) * 100)}%
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
 
+    <label>
+      體重 (kg)
+      <input
+        id="exercise-weight-input"  
+        type="number"
+        value={exWeight}
+        onChange={(e) => setExWeight(e.target.value)}
+        placeholder="例如:70"
+      />
+    </label>
+
+    <label>
+      運動時間 (分鐘)
+      <input
+        type="number"
+        value={exMinutes}
+        onChange={(e) => setExMinutes(e.target.value)}
+        placeholder="例如:30"
+      />
+    </label>
+
+    <div className="hint" style={{ 
+      padding: '12px 16px', 
+      background: '#f0f9ff', 
+      borderRadius: 8,
+      border: '1px solid #bae6fd',
+      marginTop: 12,
+    }}>
+      <span style={{ fontWeight: 600, color: '#0369a1' }}>預估消耗:</span>
+      <span style={{ fontSize: 18, fontWeight: 700, color: '#0369a1', marginLeft: 8 }}>
+        約 {autoExerciseKcal || 0} kcal
+      </span>
+    </div>
+
+    <button 
+      className="primary" 
+      onClick={addExercise}
+      disabled={!quickExercise || !exWeight || !exMinutes}
+      style={{
+        opacity: (!quickExercise || !exWeight || !exMinutes) ? 0.5 : 1,
+        cursor: (!quickExercise || !exWeight || !exMinutes) ? 'not-allowed' : 'pointer',
+      }}
+    >
+      {editingExerciseId ? '更新運動記錄' : '加入運動記錄'}
+    </button>
+    
+    {editingExerciseId && (
+      <button
+        onClick={() => {
+          setEditingExerciseId(null);
+          setExName('');
+          setExMinutes('');
+          setCustomMet('');
+          setSelectedMetRow(null);
+          setQuickExercise(null);
+        }}
+      >
+        取消編輯
+      </button>
+    )}
+  </div>
+)}
     {/* ========== 精確記錄模式（原本的功能） ========== */}
     {recordMode === 'detail' && (
       <div className="form-section">
