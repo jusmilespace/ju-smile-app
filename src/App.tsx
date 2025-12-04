@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import Papa from 'papaparse';
 import dayjs from 'dayjs';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 // 🆕 ===== Toast 動畫樣式（加在這裡）=====
 // 使用 useEffect 確保在元件掛載後注入樣式
 const ToastStyles: React.FC = () => {
@@ -94,6 +95,7 @@ type DaySummary = {
   weight?: number;
   bodyFat?: number;
   visceralFat?: number;
+  skeletalMuscle?: number; // 🆕 骨骼肌率
   waterMl: number;
   /** 當日的目標攝取熱量（kcal），只影響這一天，不會改到其他日期 */
   calorieGoalKcal?: number;
@@ -128,12 +130,13 @@ type Settings = {
   waterGoalMl?: number;
   bodyFatGoal?: number;
   visceralFatGoal?: number;
+  skeletalMuscleGoal?: number; // 🆕 骨骼肌率目標
   exerciseMinutesGoal?: number;
   startDate?: string;
   targetDate?: string;
 };
 
-type Tab = 'today' | 'records' | 'settings' | 'plan' | 'about';
+type Tab = 'today' | 'records' | 'settings' | 'plan' | 'trends' | 'about';
 type RecordSubTab = 'food' | 'exercise';
 
 // 🆕 新增：常用組合結構
@@ -751,9 +754,9 @@ const Toast: React.FC<ToastMessage & { onDismiss: (id: string) => void }> = ({
   message,
   onDismiss,
 }) => {
-  const [isExiting, setIsExiting] = React.useState(false);
+  const [isExiting, setIsExiting] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const timer = setTimeout(() => {
       setIsExiting(true);
       setTimeout(() => onDismiss(id), 300);
@@ -1332,8 +1335,10 @@ const [srcMet, setSrcMet] = useState<string>(
     const [wInput, setWInput] = useState<string>('');
     const [bfInput, setBfInput] = useState<string>('');
     const [vfInput, setVfInput] = useState<string>('');
+    const [smInput, setSmInput] = useState<string>(''); // 🆕 骨骼肌率輸入
     const [waterInput, setWaterInput] = useState<string>('');
     const [showBodyModal, setShowBodyModal] = useState(false);
+    const [bodyMetricsExpanded, setBodyMetricsExpanded] = useState(false); // 身體指標預設收起
 
     useEffect(() => {
       setWInput(
@@ -1347,7 +1352,12 @@ const [srcMet, setSrcMet] = useState<string>(
           ? String(todaySummary.visceralFat)
           : ''
       );
-    }, [todaySummary.weight, todaySummary.bodyFat, todaySummary.visceralFat]);
+      setSmInput(
+        todaySummary.skeletalMuscle != null
+          ? String(todaySummary.skeletalMuscle)
+          : ''
+      );
+    }, [todaySummary.weight, todaySummary.bodyFat, todaySummary.visceralFat, todaySummary.skeletalMuscle]);
     // 取得依日期排序過的紀錄
     const sortedDays = [...days].sort((a, b) =>
       a.date.localeCompare(b.date)
@@ -1358,6 +1368,9 @@ const [srcMet, setSrcMet] = useState<string>(
     const firstVisceralFatDay = sortedDays.find(
       (d) => d.visceralFat != null
     );
+    const firstSkeletalMuscleDay = sortedDays.find(
+      (d) => d.skeletalMuscle != null
+    ); // 🆕 骨骼肌率最早紀錄日
 
     // 以減重起始日期作為「起始值」，若沒有就用最早有紀錄的一天，再不行才用今日數值
     const startDay = settings.startDate
@@ -1378,6 +1391,11 @@ const [srcMet, setSrcMet] = useState<string>(
       startDay?.visceralFat ??
       firstVisceralFatDay?.visceralFat ??
       todaySummary.visceralFat;
+
+    const startSkeletalMuscle =
+      startDay?.skeletalMuscle ??
+      firstSkeletalMuscleDay?.skeletalMuscle ??
+      todaySummary.skeletalMuscle; // 🆕 骨骼肌率起始值
 
     const todayMeals = meals.filter((m) => m.date === todayLocal);
     const todayExercises = exercises.filter((e) => e.date === todayLocal);
@@ -1494,6 +1512,7 @@ const calorieGoal =
       updateDay(todayLocal, {
         weight: wInput ? Number(wInput) : undefined,
         bodyFat: bfInput ? Number(bfInput) : undefined,
+        skeletalMuscle: smInput ? Number(smInput) : undefined, // 🆕 骨骼肌率
         visceralFat: vfInput ? Number(vfInput) : undefined,
       });
       showToast('success','已儲存今日身體紀錄');
@@ -1667,44 +1686,68 @@ const calorieGoal =
           </div>
         </section>
 
-        {/* 🔵 身體指標進度（放在今日飲水上方） */}
+        {/* 🔵 身體指標進度（可收合，預設收起） */}
         <section className="card rings-card">
-          <h2>身體指標進度</h2>
           <div
-            className="rings-row"
+            onClick={() => setBodyMetricsExpanded(!bodyMetricsExpanded)}
             style={{
+              cursor: 'pointer',
               display: 'flex',
-              gap: 12,
               justifyContent: 'space-between',
-              alignItems: 'stretch',
+              alignItems: 'center',
+              marginBottom: bodyMetricsExpanded ? 12 : 0,
             }}
           >
-            <BodyRing
-              label="體重"
-              start={startWeight}
-              current={todaySummary.weight}
-              target={settings.targetWeight}
-              unit="kg"
-              onClick={() => setShowBodyModal(true)}
-            />
-            <BodyRing
-              label="體脂率"
-              start={startBodyFat}
-              current={todaySummary.bodyFat}
-              target={settings.bodyFatGoal}
-              unit="%"
-              onClick={() => setShowBodyModal(true)}
-            />
-            <BodyRing
-              label="內臟脂肪"
-              start={startVisceralFat}
-              current={todaySummary.visceralFat}
-              target={settings.visceralFatGoal}
-              unit=""
-              onClick={() => setShowBodyModal(true)}
-            />
+            <h2 style={{ margin: 0 }}>身體指標進度</h2>
+            <span style={{ fontSize: 20 }}>{bodyMetricsExpanded ? '▲' : '▼'}</span>
           </div>
-          <div className="hint">點擊圓環可快速編輯今日身體紀錄</div>
+
+          {bodyMetricsExpanded && (
+            <>
+              <div
+                className="rings-row"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: 12,
+                }}
+              >
+                <BodyRing
+                  label="體重"
+                  start={startWeight}
+                  current={todaySummary.weight}
+                  target={settings.targetWeight}
+                  unit="kg"
+                  onClick={() => setShowBodyModal(true)}
+                />
+                <BodyRing
+                  label="體脂率"
+                  start={startBodyFat}
+                  current={todaySummary.bodyFat}
+                  target={settings.bodyFatGoal}
+                  unit="%"
+                  onClick={() => setShowBodyModal(true)}
+                />
+                <BodyRing
+                  label="骨骼肌率"
+                  start={startSkeletalMuscle}
+                  current={todaySummary.skeletalMuscle}
+                  target={settings.skeletalMuscleGoal}
+                  unit="%"
+                  onClick={() => setShowBodyModal(true)}
+                />
+                <BodyRing
+                  label="內臟脂肪"
+                  start={startVisceralFat}
+                  current={todaySummary.visceralFat}
+                  target={settings.visceralFatGoal}
+                  unit=""
+                  onClick={() => setShowBodyModal(true)}
+                />
+              </div>
+              <div className="hint">點擊圓環可快速編輯今日身體紀錄</div>
+            </>
+          )}
         </section>
 
         <section className="card">
@@ -1854,6 +1897,15 @@ const calorieGoal =
               />
             </label>
             <label>
+              骨骼肌率 (%)
+              <input
+                type="number"
+                value={smInput}
+                onChange={(e) => setSmInput(e.target.value)}
+                placeholder="例如:25"
+              />
+            </label>
+            <label>
               內臟脂肪指數
               <input
                 type="number"
@@ -1911,6 +1963,15 @@ const calorieGoal =
                     value={bfInput}
                     onChange={(e) => setBfInput(e.target.value)}
                     placeholder="例如:30"
+                  />
+                </label>
+                <label>
+                  骨骼肌率 (%)
+                  <input
+                    type="number"
+                    value={smInput}
+                    onChange={(e) => setSmInput(e.target.value)}
+                    placeholder="例如:25"
                   />
                 </label>
                 <label>
@@ -4604,6 +4665,26 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
           </label>
 
           <label>
+            骨骼肌率目標 (%)
+            <div className="hint">
+              男性健康骨骼肌率：約 33–39%。<br />
+              女性健康骨骼肌率：約 24–30%。
+            </div>
+            <input
+              type="number"
+              value={localSettings.skeletalMuscleGoal ?? ''}
+              onChange={(e) =>
+                setLocalSettings((s) => ({
+                  ...s,
+                  skeletalMuscleGoal: e.target.value
+                    ? Number(e.target.value)
+                    : undefined,
+                }))
+              }
+            />
+          </label>
+
+          <label>
             內臟脂肪指數目標
             <div className="hint">建議目標 ≤ 9</div>
             <input
@@ -5293,6 +5374,508 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
       </div>
     );
   };
+
+  // ======== TrendsPage (趨勢分析頁面) ========
+  const TrendsPage: React.FC = () => {
+    const [period, setPeriod] = useState<'week' | 'longTerm' | 'yearly'>('week');
+    const [metric, setMetric] = useState<'bodyComposition' | 'weight' | 'bodyFat' | 'skeletalMuscle' | 'calories' | 'protein'>('bodyComposition');
+
+    // 🆕 檢查是否有足夠的長期數據（90 天以上）
+    const hasLongTermData = useMemo(() => {
+      const oldestDate = days.reduce((oldest, day) => {
+        return !oldest || day.date < oldest ? day.date : oldest;
+      }, '');
+      
+      if (!oldestDate) return false;
+      
+      const daysSinceFirst = dayjs().diff(dayjs(oldestDate), 'day');
+      return daysSinceFirst >= 90;
+    }, [days]);
+
+    // 準備圖表數據
+    const chartData = useMemo(() => {
+      const data: any[] = [];
+      const today = dayjs();
+
+      if (period === 'week') {
+        // 週報：固定顯示最近 7 天（連續）
+        for (let i = 6; i >= 0; i--) {
+          const currentDate = today.subtract(i, 'day');
+          const dateStr = currentDate.format('YYYY-MM-DD');
+          const day = days.find(d => d.date === dateStr);
+          const dayMeals = meals.filter(m => m.date === dateStr);
+          const dayExercises = exercises.filter(e => e.date === dateStr);
+
+          const totalKcal = dayMeals.reduce((sum, m) => sum + (m.kcal || 0), 0);
+          const burnedKcal = dayExercises.reduce((sum, e) => sum + (e.kcal || 0), 0);
+          const netKcal = totalKcal - burnedKcal;
+          const totalProtein = dayMeals.reduce((sum, m) => sum + (m.protein || 0), 0);
+
+          data.push({
+            date: currentDate.format('MM/DD'),
+            fullDate: dateStr,
+            weight: day?.weight ?? null,
+            bodyFat: day?.bodyFat ?? null,
+            skeletalMuscle: day?.skeletalMuscle ?? null,
+            calories: totalKcal > 0 ? netKcal : null,
+            protein: totalProtein > 0 ? totalProtein : null,
+          });
+        }
+      } else if (period === 'longTerm') {
+        // 90天趨勢：固定顯示 13 個點，每個點間隔 7 天
+        for (let i = 12; i >= 0; i--) {
+          const targetDate = today.subtract(i * 7, 'day');
+          const dateStr = targetDate.format('YYYY-MM-DD');
+          const day = days.find(d => d.date === dateStr);
+          const dayMeals = meals.filter(m => m.date === dateStr);
+          const dayExercises = exercises.filter(e => e.date === dateStr);
+
+          const totalKcal = dayMeals.reduce((sum, m) => sum + (m.kcal || 0), 0);
+          const burnedKcal = dayExercises.reduce((sum, e) => sum + (e.kcal || 0), 0);
+          const netKcal = totalKcal - burnedKcal;
+          const totalProtein = dayMeals.reduce((sum, m) => sum + (m.protein || 0), 0);
+
+          data.push({
+            date: targetDate.format('MM/DD'),
+            fullDate: dateStr,
+            weight: day?.weight ?? null,
+            bodyFat: day?.bodyFat ?? null,
+            skeletalMuscle: day?.skeletalMuscle ?? null,
+            calories: totalKcal > 0 ? netKcal : null,
+            protein: totalProtein > 0 ? totalProtein : null,
+          });
+        }
+      
+      } else if (period === 'yearly') {
+        // 🆕 年趨勢：顯示最近 12 個月，每月取樣一次（每月 1 號或最接近的日期）
+        for (let i = 11; i >= 0; i--) {
+          const targetDate = today.subtract(i, 'month').startOf('month'); // 每月 1 號
+          const dateStr = targetDate.format('YYYY-MM-DD');
+          const day = days.find(d => d.date === dateStr);
+          const dayMeals = meals.filter(m => m.date === dateStr);
+          const dayExercises = exercises.filter(e => e.date === dateStr);
+
+          const totalKcal = dayMeals.reduce((sum, m) => sum + (m.kcal || 0), 0);
+          const burnedKcal = dayExercises.reduce((sum, e) => sum + (e.kcal || 0), 0);
+          const netKcal = totalKcal - burnedKcal;
+          const totalProtein = dayMeals.reduce((sum, m) => sum + (m.protein || 0), 0);
+
+          data.push({
+            date: targetDate.format('M月'),  // X 軸：1月, 2月, 3月...
+            fullDate: dateStr,
+            weight: day?.weight ?? null,
+            bodyFat: day?.bodyFat ?? null,
+            skeletalMuscle: day?.skeletalMuscle ?? null,
+            calories: totalKcal > 0 ? netKcal : null,
+            protein: totalProtein > 0 ? totalProtein : null,
+          });
+        }
+      }
+
+      return data;
+    }, [period, days, meals, exercises]);
+
+    // 🐛 DEBUG: 檢查 chartData
+    useEffect(() => {
+      console.log('=== ChartData Debug ===');
+      console.log('Period:', period);
+      console.log('Metric:', metric);
+      console.log('ChartData length:', chartData.length);
+      console.log('ChartData:', chartData);
+      console.log('======================');
+    }, [chartData, period, metric]);
+
+    // 數據洞察計算
+    const insights = useMemo(() => {
+      // 🆕 身體組成模式不顯示洞察
+      if (metric === 'bodyComposition') return null;
+
+      const validData = chartData.filter(d => d[metric] != null);
+      if (validData.length < 2) return null;
+
+      const firstValue = validData[0][metric];
+      const lastValue = validData[validData.length - 1][metric];
+      const change = lastValue - firstValue;
+      const changePercent = ((change / firstValue) * 100).toFixed(1);
+
+      // 計算平均值
+      const avg = validData.reduce((sum, d) => sum + d[metric], 0) / validData.length;
+
+      // 計算趨勢（上升/下降/穩定）
+      let trend = '穩定';
+      let emoji = '➡️';
+      if (Math.abs(change) > 0.5) {
+        if (change > 0) {
+          trend = '上升';
+          emoji = '📈';
+        } else {
+          trend = '下降';
+          emoji = '📉';
+        }
+      }
+
+      // 個性化建議
+      let suggestion = '';
+      if (metric === 'weight') {
+        if (change < -0.5) {
+          suggestion = '太棒了！體重下降中,繼續保持！💪';
+        } else if (change > 0.5) {
+          suggestion = '體重略有上升,檢視一下飲食是否超標。';
+        } else {
+          suggestion = '體重維持穩定,繼續保持良好習慣。';
+        }
+      } else if (metric === 'bodyFat') {
+        if (change < -0.3) {
+          suggestion = '體脂率下降中,運動與飲食控制效果顯著！🔥';
+        } else if (change > 0.3) {
+          suggestion = '體脂率上升,建議增加運動並控制碳水攝取。';
+        } else {
+          suggestion = '體脂率穩定,保持目前的訓練與飲食計畫。';
+        }
+      } else if (metric === 'skeletalMuscle') {
+        // 🆕 骨骼肌率建議
+        if (change > 0.3) {
+          suggestion = '骨骼肌率上升中,肌力訓練有成效！💪';
+        } else if (change < -0.3) {
+          suggestion = '骨骼肌率下降,建議增加蛋白質攝取與肌力訓練。';
+        } else {
+          suggestion = '骨骼肌率穩定,繼續保持訓練與飲食計畫。';
+        }
+      } else if (metric === 'calories') {
+        const goal = settings.calorieGoal || 0;
+        if (avg > goal + 200) {
+          suggestion = '平均熱量攝取偏高,建議控制每餐份量。';
+        } else if (avg < goal - 200 && goal > 0) {
+          suggestion = '熱量攝取偏低,小心身體代謝下降。';
+        } else {
+          suggestion = '熱量攝取在目標範圍內,繼續保持！';
+        }
+      } else if (metric === 'protein') {
+        const goal = settings.proteinGoal || 0;
+        if (avg >= goal) {
+          suggestion = '蛋白質攝取充足,有助於肌肉維持！💪';
+        } else {
+          suggestion = '蛋白質攝取不足,建議增加豆魚蛋肉類攝取。';
+        }
+      }
+
+      return {
+        firstValue: firstValue.toFixed(1),
+        lastValue: lastValue.toFixed(1),
+        change: change.toFixed(1),
+        changePercent,
+        avg: avg.toFixed(1),
+        trend,
+        emoji,
+        suggestion,
+      };
+    }, [chartData, metric, settings]);
+
+    // 圖表配置
+    const metricConfig: Record<string, any> = {
+      bodyComposition: { label: '身體組成', unit: '', color: '#5c9c84' }, // 🆕 合併圖表
+      weight: { label: '體重', unit: 'kg', color: '#5c9c84', yAxisDomain: [50, 80] },
+      bodyFat: { label: '體脂率', unit: '%', color: '#e68a3a', yAxisDomain: [10, 40] },
+      skeletalMuscle: { label: '骨骼肌率', unit: '%', color: '#10b981', yAxisDomain: [20, 40] }, // 🆕
+      calories: { label: '淨熱量', unit: 'kcal', color: '#4a90e2', yAxisDomain: [0, 3000] },
+      protein: { label: '蛋白質', unit: 'g', color: '#d64545', yAxisDomain: [0, 150] },
+    };
+
+    const config = metricConfig[metric];
+
+    return (
+      <div className="page" style={{ padding: 16, paddingBottom: '96px' }}>
+        <h1 style={{ fontSize: 22, marginBottom: 16 }}>📊 數據趨勢分析</h1>
+
+        {/* 數據洞察卡片（身體組成模式不顯示） */}
+        {insights && metric !== 'bodyComposition' && (
+          <section className="card" style={{ background: 'linear-gradient(135deg, #f6fbff 0%, #fffaf6 100%)', border: '1px solid var(--line)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <span style={{ fontSize: 24 }}>{insights.emoji}</span>
+              <h2 style={{ margin: 0, fontSize: 18 }}>數據洞察</h2>
+            </div>
+            <div style={{ fontSize: 15, lineHeight: 1.6 }}>
+              <p style={{ margin: '4px 0' }}>
+                <b>{period === 'week' ? '本週' : period === 'longTerm' ? '90 天' : '年度'}{config.label}趨勢：{insights.trend}</b>
+              </p>
+              <p style={{ margin: '4px 0', color: 'var(--text-sub)' }}>
+                從 <b>{insights.firstValue}</b> {config.unit} → <b>{insights.lastValue}</b> {config.unit}
+                （{insights.change > 0 ? '+' : ''}{insights.change} {config.unit}，{insights.changePercent > 0 ? '+' : ''}{insights.changePercent}%）
+              </p>
+              <p style={{ margin: '4px 0', color: 'var(--text-sub)' }}>
+                平均值：<b>{insights.avg}</b> {config.unit}
+              </p>
+              <div style={{ marginTop: 12, padding: 10, background: '#fff', borderRadius: 8, border: '1px solid #e0e0e0' }}>
+                💡 <b>{insights.suggestion}</b>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* 切換按鈕 */}
+        <section className="card">
+          {/* 第一排：週報 + 90天趨勢 */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+            <button
+              onClick={() => setPeriod('week')}
+              style={{
+                flex: 1,
+                padding: '10px',
+                borderRadius: 8,
+                border: period === 'week' ? '2px solid #5c9c84' : '1px solid var(--line)',
+                background: period === 'week' ? '#f0f8f4' : '#fff',
+                fontWeight: period === 'week' ? 700 : 400,
+                cursor: 'pointer',
+              }}
+            >
+              週報 (7天)
+            </button>
+            <button
+              onClick={() => setPeriod('longTerm')}
+              style={{
+                flex: 1,
+                padding: '10px',
+                borderRadius: 8,
+                border: period === 'longTerm' ? '2px solid #5c9c84' : '1px solid var(--line)',
+                background: period === 'longTerm' ? '#f0f8f4' : '#fff',
+                fontWeight: period === 'longTerm' ? 700 : 400,
+                cursor: 'pointer',
+              }}
+            >
+              90 天趨勢
+            </button>
+          </div>
+
+          {/* 🆕 第二排：年趨勢（動態顯示：只在有 90 天以上數據時顯示） */}
+          {hasLongTermData && (
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+              <button
+                onClick={() => setPeriod('yearly')}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  borderRadius: 8,
+                  border: period === 'yearly' ? '2px solid #5c9c84' : '1px solid var(--line)',
+                  background: period === 'yearly' ? '#f0f8f4' : '#fff',
+                  fontWeight: period === 'yearly' ? 700 : 400,
+                  cursor: 'pointer',
+                }}
+              >
+                📅 年趨勢 (365天)
+              </button>
+            </div>
+          )}
+
+          {/* 如果沒有年趨勢按鈕，增加 marginBottom */}
+          {!hasLongTermData && <div style={{ marginBottom: 8 }} />}
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            {/* 🆕 身體組成合併圖表按鈕 */}
+            <button
+              onClick={() => setMetric('bodyComposition')}
+              style={{
+                padding: '10px',
+                borderRadius: 8,
+                border: metric === 'bodyComposition' ? '2px solid #5c9c84' : '1px solid var(--line)',
+                background: metric === 'bodyComposition' ? 'linear-gradient(135deg, #f0f8f4 0%, #fffaf6 100%)' : '#fff',
+                fontWeight: metric === 'bodyComposition' ? 700 : 400,
+                cursor: 'pointer',
+                gridColumn: '1 / -1', // 佔滿整行
+              }}
+            >
+              📊 身體組成
+            </button>
+            <button
+              onClick={() => setMetric('weight')}
+              style={{
+                padding: '10px',
+                borderRadius: 8,
+                border: metric === 'weight' ? '2px solid #5c9c84' : '1px solid var(--line)',
+                background: metric === 'weight' ? '#f0f8f4' : '#fff',
+                fontWeight: metric === 'weight' ? 700 : 400,
+                cursor: 'pointer',
+              }}
+            >
+              體重
+            </button>
+            <button
+              onClick={() => setMetric('bodyFat')}
+              style={{
+                padding: '10px',
+                borderRadius: 8,
+                border: metric === 'bodyFat' ? '2px solid #e68a3a' : '1px solid var(--line)',
+                background: metric === 'bodyFat' ? '#fffaf6' : '#fff',
+                fontWeight: metric === 'bodyFat' ? 700 : 400,
+                cursor: 'pointer',
+              }}
+            >
+              體脂率
+            </button>
+            <button
+              onClick={() => setMetric('skeletalMuscle')}
+              style={{
+                padding: '10px',
+                borderRadius: 8,
+                border: metric === 'skeletalMuscle' ? '2px solid #10b981' : '1px solid var(--line)',
+                background: metric === 'skeletalMuscle' ? '#f0fdf4' : '#fff',
+                fontWeight: metric === 'skeletalMuscle' ? 700 : 400,
+                cursor: 'pointer',
+              }}
+            >
+              骨骼肌率
+            </button>
+            <button
+              onClick={() => setMetric('calories')}
+              style={{
+                padding: '10px',
+                borderRadius: 8,
+                border: metric === 'calories' ? '2px solid #4a90e2' : '1px solid var(--line)',
+                background: metric === 'calories' ? '#f6fbff' : '#fff',
+                fontWeight: metric === 'calories' ? 700 : 400,
+                cursor: 'pointer',
+              }}
+            >
+              淨熱量
+            </button>
+            <button
+              onClick={() => setMetric('protein')}
+              style={{
+                padding: '10px',
+                borderRadius: 8,
+                border: metric === 'protein' ? '2px solid #d64545' : '1px solid var(--line)',
+                background: metric === 'protein' ? '#fff6f6' : '#fff',
+                fontWeight: metric === 'protein' ? 700 : 400,
+                cursor: 'pointer',
+              }}
+            >
+              蛋白質
+            </button>
+          </div>
+        </section>
+
+        {/* 趨勢圖 */}
+        <section className="card">
+          <h2 style={{ marginBottom: 16 }}>{config.label}趨勢</h2>
+          
+          {/* 🆕 身體組成合併圖表（雙 Y 軸） */}
+          {metric === 'bodyComposition' ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={chartData} margin={{ top: 5, right: 40, left: -20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                <XAxis 
+                  dataKey="date" 
+                  style={{ fontSize: 12 }}
+                  interval={0}
+                  tick={{ fontSize: 10 }}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                />
+                {/* 左側 Y 軸：體重 */}
+                <YAxis
+                  yAxisId="left"
+                  domain={['auto', 'auto']}
+                  style={{ fontSize: 12 }}
+                  label={{ value: '體重 (kg)', angle: -90, position: 'insideLeft', style: { fontSize: 12 } }}
+                />
+                {/* 右側 Y 軸：體脂率 & 骨骼肌率 */}
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  domain={['auto', 'auto']}
+                  style={{ fontSize: 12 }}
+                  label={{ value: '百分比 (%)', angle: 90, position: 'insideRight', style: { fontSize: 12 } }}
+                />
+                <Tooltip
+                  contentStyle={{ background: '#fff', border: '1px solid #ccc', borderRadius: 8 }}
+                  formatter={(value: any, name: string) => {
+                    if (name === 'weight') return [`${Number(value).toFixed(1)} kg`, '體重'];
+                    if (name === 'bodyFat') return [`${Number(value).toFixed(1)}%`, '體脂率'];
+                    if (name === 'skeletalMuscle') return [`${Number(value).toFixed(1)}%`, '骨骼肌率'];
+                    return [value, name];
+                  }}
+                />
+                <Legend />
+                {/* 體重線（實線） */}
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="weight"
+                  name="體重"
+                  stroke="#5c9c84"
+                  strokeWidth={3}
+                  dot={{ r: 4, fill: '#5c9c84' }}
+                  activeDot={{ r: 6 }}
+                  connectNulls
+                />
+                {/* 體脂率線（虛線） */}
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="bodyFat"
+                  name="體脂率"
+                  stroke="#e68a3a"
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                  dot={{ r: 3, fill: '#e68a3a' }}
+                  activeDot={{ r: 5 }}
+                  connectNulls
+                />
+                {/* 骨骼肌率線（點線） */}
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="skeletalMuscle"
+                  name="骨骼肌率"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  strokeDasharray="2 2"
+                  dot={{ r: 3, fill: '#10b981' }}
+                  activeDot={{ r: 5 }}
+                  connectNulls
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            // 單一指標圖表
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={chartData} margin={{ top: 5, right: 20, left: -20, bottom: 60 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                <XAxis 
+                  dataKey="date" 
+                  style={{ fontSize: 12 }}
+                  interval={0}
+                  tick={{ fontSize: 10 }}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                />
+                <YAxis
+                  domain={config.yAxisDomain}
+                  style={{ fontSize: 12 }}
+                  tickFormatter={(value) => `${value}`}
+                />
+                <Tooltip
+                  contentStyle={{ background: '#fff', border: '1px solid #ccc', borderRadius: 8 }}
+                  formatter={(value: any) => [`${Number(value).toFixed(1)} ${config.unit}`, config.label]}
+                />
+                <Line
+                  type="monotone"
+                  dataKey={metric}
+                  stroke={config.color}
+                  strokeWidth={3}
+                  dot={{ r: 4, fill: config.color }}
+                  activeDot={{ r: 6 }}
+                  connectNulls
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </section>
+      </div>
+    );
+  };
+
   // ======== App Root Render ========
 
 return (
@@ -5316,6 +5899,10 @@ return (
         />
       )}
 
+      {tab === 'trends' && (
+        <TrendsPage />
+      )}
+
       {tab === 'settings' && (
         <SettingsPage onOpenAbout={() => setTab('about')} />
       )}
@@ -5337,6 +5924,13 @@ return (
         >
           <div className="nav-icon">📋</div>
           <div className="nav-label">記錄</div>
+        </button>
+        <button
+          className={tab === 'trends' ? 'active' : ''}
+          onClick={() => setTab('trends')}
+        >
+          <div className="nav-icon">📈</div>
+          <div className="nav-label">趨勢</div>
         </button>
         <button
           className={tab === 'settings' ? 'active' : ''}
