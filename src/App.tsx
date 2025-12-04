@@ -5757,120 +5757,134 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
         <section className="card">
           <h2 style={{ marginBottom: 16 }}>{config.label}趨勢</h2>
           
-          {/* 🆕 身體組成合併圖表（雙 Y 軸） */}
-          {metric === 'bodyComposition' ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={chartData} margin={{ top: 5, right: 40, left: -20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                <XAxis 
-                  dataKey="date" 
-                  style={{ fontSize: 12 }}
-                  interval={0}
-                  tick={{ fontSize: 10 }}
-                  angle={-45}
-                  textAnchor="end"
-                  height={60}
-                />
-                {/* 左側 Y 軸：體重 */}
-                <YAxis
-                  yAxisId="left"
-                  domain={['auto', 'auto']}
-                  style={{ fontSize: 12 }}
-                  label={{ value: '體重 (kg)', angle: -90, position: 'insideLeft', style: { fontSize: 12 } }}
-                />
-                {/* 右側 Y 軸：體脂率 & 骨骼肌率 */}
-                <YAxis
-                  yAxisId="right"
-                  orientation="right"
-                  domain={['auto', 'auto']}
-                  style={{ fontSize: 12 }}
-                  label={{ value: '百分比 (%)', angle: 90, position: 'insideRight', style: { fontSize: 12 } }}
-                />
-                <Tooltip
-                  contentStyle={{ background: '#fff', border: '1px solid #ccc', borderRadius: 8 }}
-                  formatter={(value: any, name: string) => {
-                    if (name === 'weight') return [`${Number(value).toFixed(1)} kg`, '體重'];
-                    if (name === 'bodyFat') return [`${Number(value).toFixed(1)}%`, '體脂率'];
-                    if (name === 'skeletalMuscle') return [`${Number(value).toFixed(1)}%`, '骨骼肌率'];
-                    return [value, name];
-                  }}
-                />
-                <Legend />
-                {/* 體重線（實線） */}
-                <Line
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="weight"
-                  name="體重"
-                  stroke="#5c9c84"
-                  strokeWidth={3}
-                  dot={{ r: 4, fill: '#5c9c84' }}
-                  activeDot={{ r: 6 }}
-                  connectNulls
-                />
-                {/* 體脂率線（虛線） */}
-                <Line
-                  yAxisId="right"
-                  type="monotone"
-                  dataKey="bodyFat"
-                  name="體脂率"
-                  stroke="#e68a3a"
-                  strokeWidth={2}
-                  strokeDasharray="5 5"
-                  dot={{ r: 3, fill: '#e68a3a' }}
-                  activeDot={{ r: 5 }}
-                  connectNulls
-                />
-                {/* 骨骼肌率線（點線） */}
-                <Line
-                  yAxisId="right"
-                  type="monotone"
-                  dataKey="skeletalMuscle"
-                  name="骨骼肌率"
-                  stroke="#10b981"
-                  strokeWidth={2}
-                  strokeDasharray="2 2"
-                  dot={{ r: 3, fill: '#10b981' }}
-                  activeDot={{ r: 5 }}
-                  connectNulls
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            // 單一指標圖表
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={chartData} margin={{ top: 5, right: 20, left: -20, bottom: 60 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                <XAxis 
-                  dataKey="date" 
-                  style={{ fontSize: 12 }}
-                  interval={0}
-                  tick={{ fontSize: 10 }}
-                  angle={-45}
-                  textAnchor="end"
-                  height={60}
-                />
-                <YAxis
-                  domain={config.yAxisDomain}
-                  style={{ fontSize: 12 }}
-                  tickFormatter={(value) => `${value}`}
-                />
-                <Tooltip
-                  contentStyle={{ background: '#fff', border: '1px solid #ccc', borderRadius: 8 }}
-                  formatter={(value: any) => [`${Number(value).toFixed(1)} ${config.unit}`, config.label]}
-                />
-                <Line
-                  type="monotone"
-                  dataKey={metric}
-                  stroke={config.color}
-                  strokeWidth={3}
-                  dot={{ r: 4, fill: config.color }}
-                  activeDot={{ r: 6 }}
-                  connectNulls
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          )}
+          {/* 🆕 優化：外層加入橫向捲動容器，避免 X 軸過擠 */}
+          <div style={{ width: '100%', overflowX: 'auto', paddingBottom: 10 }}>
+            {/* 設定 minWidth，資料多時自動變寬讓使用者滑動 */}
+            <div style={{ minWidth: chartData.length > 10 ? 600 : '100%', height: 300 }}>
+              
+              {/* 🆕 身體組成合併圖表（雙 Y 軸） */}
+              {metric === 'bodyComposition' ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                    <XAxis 
+                      dataKey="date" 
+                      style={{ fontSize: 12 }}
+                      interval="preserveStartEnd" 
+                      tick={{ fontSize: 11 }}
+                      angle={-45} // 傾斜標籤避免重疊
+                      textAnchor="end"
+                      height={60}
+                    />
+                    {/* 左側 Y 軸：體重 (顯示單位 kg) */}
+                    <YAxis
+                      yAxisId="left"
+                      domain={['auto', 'auto']}
+                      style={{ fontSize: 11 }}
+                      tickFormatter={(v) => `${v}kg`} 
+                      width={50} // 預留寬度給單位
+                    />
+                    {/* 右側 Y 軸：體脂率 & 骨骼肌率 (顯示單位 %) */}
+                    <YAxis
+                      yAxisId="right"
+                      orientation="right"
+                      domain={['auto', 'auto']}
+                      style={{ fontSize: 11 }}
+                      tickFormatter={(v) => `${v}%`}
+                      width={45} // 預留寬度給單位
+                    />
+                    <Tooltip
+                      contentStyle={{ background: '#fff', border: '1px solid #ccc', borderRadius: 8 }}
+                      formatter={(value: any, name: string) => {
+                        if (name === 'weight') return [`${Number(value).toFixed(1)} kg`, '體重'];
+                        if (name === 'bodyFat') return [`${Number(value).toFixed(1)}%`, '體脂率'];
+                        if (name === 'skeletalMuscle') return [`${Number(value).toFixed(1)}%`, '骨骼肌率'];
+                        return [value, name];
+                      }}
+                    />
+                    <Legend verticalAlign="top" height={36}/>
+                    <Line
+                      yAxisId="left"
+                      type="monotone"
+                      dataKey="weight"
+                      name="體重"
+                      stroke="#5c9c84"
+                      strokeWidth={3}
+                      dot={{ r: 4, fill: '#5c9c84' }}
+                      activeDot={{ r: 6 }}
+                      connectNulls
+                    />
+                    <Line
+                      yAxisId="right"
+                      type="monotone"
+                      dataKey="bodyFat"
+                      name="體脂率"
+                      stroke="#e68a3a"
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      dot={{ r: 3, fill: '#e68a3a' }}
+                      activeDot={{ r: 5 }}
+                      connectNulls
+                    />
+                    <Line
+                      yAxisId="right"
+                      type="monotone"
+                      dataKey="skeletalMuscle"
+                      name="骨骼肌率"
+                      stroke="#10b981"
+                      strokeWidth={2}
+                      strokeDasharray="2 2"
+                      dot={{ r: 3, fill: '#10b981' }}
+                      activeDot={{ r: 5 }}
+                      connectNulls
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                // 單一指標圖表
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                    <XAxis 
+                      dataKey="date" 
+                      style={{ fontSize: 12 }}
+                      interval="preserveStartEnd"
+                      tick={{ fontSize: 11 }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                    />
+                    {/* Y 軸加上單位 */}
+                    <YAxis
+                      domain={config.yAxisDomain}
+                      style={{ fontSize: 11 }}
+                      tickFormatter={(value) => `${value}${config.unit}`}
+                      width={55}
+                    />
+                    <Tooltip
+                      contentStyle={{ background: '#fff', border: '1px solid #ccc', borderRadius: 8 }}
+                      formatter={(value: any) => [`${Number(value).toFixed(1)} ${config.unit}`, config.label]}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey={metric}
+                      stroke={config.color}
+                      strokeWidth={3}
+                      dot={{ r: 4, fill: config.color }}
+                      activeDot={{ r: 6 }}
+                      connectNulls
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+            {/* 底部提示 */}
+            {(period === 'longTerm' || period === 'yearly') && (
+               <div style={{ textAlign: 'center', fontSize: 12, color: '#999', marginTop: 4 }}>
+                 ← 左右滑動查看更多數據 →
+               </div>
+            )}
+          </div>
         </section>
       </div>
     );
