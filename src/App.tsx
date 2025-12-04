@@ -1893,7 +1893,38 @@ const calorieGoal =
       </div>
     );
   };
+// ======== 運動記錄工具函數 ========
 
+// 🆕 MET 強度視覺化工具函數
+function getIntensityInfo(met: number): {
+  color: string;
+  label: string;
+  level: 'low' | 'medium' | 'high';
+} {
+  if (met < 3) {
+    return { color: '#10b981', label: '低強度', level: 'low' };
+  }
+  if (met < 6) {
+    return { color: '#f59e0b', label: '中強度', level: 'medium' };
+  }
+  return { color: '#ef4444', label: '高強度', level: 'high' };
+}
+
+// 🆕 更新的常見運動列表（由低到高排序）
+const COMMON_EXERCISES = [
+  { name: '散步', met: 2.5 },
+  { name: '走路', met: 3.0 },
+  { name: '瑜珈', met: 3.0 },
+  { name: '有氧運動', met: 4.5 },
+  { name: '快走', met: 4.5 },
+  { name: '騎自行車', met: 5.5 },
+  { name: '重訓', met: 6.0 },
+  { name: '爬山', met: 6.5 },
+  { name: '游泳', met: 7.0 },
+  { name: '飛輪有氧', met: 7.5 },
+  { name: '跑步', met: 8.0 },
+  { name: 'HIIT', met: 8.5 },
+];
   // ======== 記錄頁 ========
 
   const RecordsPage: React.FC<{
@@ -1977,6 +2008,16 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
     const [comboNameInput, setComboNameInput] = useState('');
     const [showSaveComboModal, setShowSaveComboModal] = useState(false);
 
+// ======== 運動相關 state ========
+  
+  // 🆕 運動記錄模式（快速 vs 精確）
+  const [recordMode, setRecordMode] = useState<'quick' | 'detail'>('quick');
+  
+  // 🆕 快速記錄選中的運動
+  const [quickExercise, setQuickExercise] = useState<{
+    name: string;
+    met: number;
+  } | null>(null);
 
     // 運動表單
     const [exName, setExName] = useState('');
@@ -1991,16 +2032,6 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
     const [editingExerciseId, setEditingExerciseId] =
       useState<string | null>(null);
 
-    // 🚴‍♀️ 常見運動快速選擇（由低 MET 排到高）
-    const COMMON_EXERCISES = [
-      { name: '走路', met: 3.0 },
-      { name: '有氧運動', met: 4.5 },
-      { name: '騎自行車', met: 5.5 },
-      { name: '重訓', met: 6.0 },
-      { name: '爬山', met: 6.5 },
-      { name: '游泳', met: 7.0 },
-      { name: '飛輪有氧', met: 7.0 },
-    ];
 
     // 運動體重預帶當日體重
     useEffect(() => {
@@ -3571,241 +3602,461 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
         )}
 
         {/* 運動 */}
-        {recordTab === 'exercise' && (
-          <div className="card">
-            <details open>
-              <summary>什麼是 MET?</summary>
-              <p>
-                MET(代謝當量)用來表示活動強度,1 MET 約等於安靜坐著時的消耗。
-                <br />
-                消耗熱量 ≈ MET × 體重(kg) × 時間(小時)
-                <br />
-                例如:快走 4.3 MET,60kg,30 分鐘 ≈ 129 kcal。
-              </p>
-            </details>
+{recordTab === 'exercise' && (
+  <div className="card">
+    <details open>
+      <summary>什麼是 MET?</summary>
+      <p>
+        MET(代謝當量)用來表示活動強度,1 MET 約等於安靜坐著時的消耗。
+        <br />
+        消耗熱量 ≈ MET × 體重(kg) × 時間(小時)
+        <br />
+        例如:快走 4.3 MET,60kg,30 分鐘 ≈ 129 kcal。
+      </p>
+    </details>
 
-            <div className="form-section">
-              <label>
-                運動名稱
-                <input
-                  id="exercise-name-input"
-                  value={exName}
-                  onChange={(e) => {
-                    setExName(e.target.value);
-                    setSelectedMetRow(null);
-                  }}
-                  placeholder="輸入關鍵字,例如:快走、重訓…"
-                />
-              </label>
+    {/* 🆕 記錄模式切換 */}
+    <div style={{ 
+      display: 'flex', 
+      gap: 8, 
+      marginBottom: 16,
+      marginTop: 12,
+    }}>
+      <button
+        type="button"
+        style={{
+          flex: 1,
+          padding: '12px',
+          border: 'none',
+          borderBottom: recordMode === 'quick' ? '3px solid var(--mint-dark, #5c9c84)' : '1px solid #ddd',
+          background: 'transparent',
+          cursor: 'pointer',
+          fontWeight: recordMode === 'quick' ? 600 : 400,
+          color: recordMode === 'quick' ? 'var(--mint-dark, #5c9c84)' : '#666',
+          fontSize: 15,
+          transition: 'all 0.2s',
+        }}
+        onClick={() => setRecordMode('quick')}
+      >
+        ⚡ 快速記錄
+      </button>
+      <button
+        type="button"
+        style={{
+          flex: 1,
+          padding: '12px',
+          border: 'none',
+          borderBottom: recordMode === 'detail' ? '3px solid var(--mint-dark, #5c9c84)' : '1px solid #ddd',
+          background: 'transparent',
+          cursor: 'pointer',
+          fontWeight: recordMode === 'detail' ? 600 : 400,
+          color: recordMode === 'detail' ? 'var(--mint-dark, #5c9c84)' : '#666',
+          fontSize: 15,
+          transition: 'all 0.2s',
+        }}
+        onClick={() => setRecordMode('detail')}
+      >
+        🔍 精確記錄
+      </button>
+    </div>
 
-              {/* ✅ 常見運動快速選擇 */}
-              <div className="chips-row">
-                {COMMON_EXERCISES.map((ex) => (
-                  <button
-                    key={ex.name}
-                    className="chip"
-                    type="button"
-                    onClick={() => {
-                      setExName(ex.name);
-                      setCustomMet(String(ex.met));
-                      setSelectedMetRow(null);
-                    }}
-                  >
-                    {ex.name}（{ex.met} MET）
-                  </button>
-                ))}
-              </div>
-
-              {/* 有輸入名稱時才顯示搜尋結果；選到一筆後收起來 */}
-              {exName.trim() && !selectedMetRow && (
-                <div className="search-results">
-                  {exerciseMatches.length === 0 ? (
-                    <>
-                      <div className="hint">
-                        找不到相符的運動,可以在下方輸入自訂 MET。
-                      </div>
-
-                      <details className="met-ref">
-                        <summary>展開常見活動 MET 參考</summary>
-
-                        <div className="result-title">
-                          🟢 低強度活動 (約 2–3 MET)
-                        </div>
-                        <ul className="met-list">
-                          <li>散步 / 日常走路：約 2–3 MET</li>
-                          <li>輕度家事：約 2.5 MET</li>
-                        </ul>
-
-                        <div className="result-title">
-                          🟡 中強度活動 (約 3–6 MET)
-                        </div>
-                        <ul className="met-list">
-                          <li>快走：約 4.3 MET</li>
-                          <li>有氧運動 (輕～中等)：約 4.5～5 MET</li>
-                          <li>騎自行車 (一般速度)：約 5.5～6 MET</li>
-                        </ul>
-
-                        <div className="result-title">
-                          🔴 高強度活動 (6 以上)
-                        </div>
-                        <ul className="met-list">
-                          <li>重訓 (中等強度)：約 6 MET</li>
-                          <li>爬山：約 6.5 MET</li>
-                          <li>持續游泳：約 7 MET 以上</li>
-                        </ul>
-                      </details>
-                    </>
-                  ) : (
-                    <>
-                      <div className="result-title">
-                        從資料表找到的活動
-                      </div>
-                      {exerciseMatches.map((row, i) => (
-                        <div
-                          key={i}
-                          className="list-item clickable"
-                          onClick={() => {
-                            setSelectedMetRow(row);
-                            setCustomMet(String(row.MET ?? ''));  // ← 自動把該活動的 MET 填到輸入框
-                            // ✅ 選擇後把資料表中的活動名稱帶回輸入框，覆蓋原本關鍵字
-                            setExName(row.活動 || '');
-                          }}
-                        >
-                          <div>
-                            <div>{row.活動}</div>
-                            <div className="sub">
-                              強度:{row.intensity} · MET:{row.MET}
-                            </div>
-                          </div>
-                          <span className="tag">
-                            {selectedMetRow === row ? '已選' : '選擇'}
-                          </span>
-                        </div>
-                      ))}
-                    </>
-                  )}
-                </div>
-              )}
-
-              <label>
-                MET
-                <input
-                  type="number"
-                  value={customMet}
-                  onChange={(e) => {
-                    setCustomMet(e.target.value);
-                    if (e.target.value) {
-                      setSelectedMetRow(null);
-                    }
-                  }}
-                  placeholder="例如:4.3"
-                />
-              </label>
-
-              <label>
-                體重 (kg)
-                <input
-                  type="number"
-                  value={exWeight}
-                  onChange={(e) => setExWeight(e.target.value)}
-                  placeholder="例如:70"
-                />
-              </label>
-              <label>
-                時間 (分鐘)
-                <input
-                  type="number"
-                  value={exMinutes}
-                  onChange={(e) => setExMinutes(e.target.value)}
-                  placeholder="例如:30"
-                />
-              </label>
-
-              <div className="hint">
-                目前估算消耗:約 {autoExerciseKcal || 0} kcal
-              </div>
-
-              <button className="primary" onClick={addExercise}>
-                {editingExerciseId ? '更新運動記錄' : '加入運動記錄'}
-              </button>
-              {editingExerciseId && (
-                <button
-                  onClick={() => {
-                    setEditingExerciseId(null);
-                    setExName('');
-                    setExMinutes('');
-                    setCustomMet('');
-                    setSelectedMetRow(null);
-                  }}
-                >
-                  取消編輯
-                </button>
-              )}
-
-            </div>
-
-            <div className="list-section">
-              <h3>{selectedDate} 運動明細</h3>
-              {dayExercises.length === 0 && (
-                <div className="hint">尚未記錄運動</div>
-              )}
-              {dayExercises.map((e) => (
-                <div key={e.id} className="list-item">
-                  <div>
-                    <div>{e.name}</div>
-                    <div className="sub">
-                      {e.minutes != null ? `${e.minutes} 分鐘 · ` : ''}
-                      {e.kcal} kcal
+    {/* ========== 快速記錄模式 ========== */}
+    {recordMode === 'quick' && (
+      <div className="form-section">
+        <label style={{ marginBottom: 12, fontSize: 15, fontWeight: 600 }}>
+          選擇運動類型
+        </label>
+        
+        {/* 🆕 常見運動快速選擇（帶 MET 視覺化） */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+          {COMMON_EXERCISES.map((ex) => {
+            const intensity = getIntensityInfo(ex.met);
+            const isSelected = quickExercise?.name === ex.name;
+            
+            return (
+              <div
+                key={ex.name}
+                onClick={() => {
+                  setQuickExercise(ex);
+                  setExName(ex.name);
+                  setCustomMet(String(ex.met));
+                  setSelectedMetRow(null);
+                }}
+                style={{
+                  padding: '14px 16px',
+                  border: `2px solid ${isSelected ? intensity.color : '#e5e7eb'}`,
+                  borderRadius: 10,
+                  cursor: 'pointer',
+                  background: isSelected ? `${intensity.color}10` : '#fff',
+                  transition: 'all 0.2s',
+                  boxShadow: isSelected ? `0 2px 8px ${intensity.color}40` : '0 1px 3px rgba(0,0,0,0.1)',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ 
+                      fontWeight: isSelected ? 700 : 600, 
+                      fontSize: 16, 
+                      marginBottom: 6,
+                      color: isSelected ? intensity.color : '#333',
+                    }}>
+                      {ex.name}
+                    </div>
+                    <div style={{ fontSize: 13, color: '#666', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span 
+                        style={{ 
+                          padding: '3px 10px', 
+                          borderRadius: 999, 
+                          background: intensity.color,
+                          color: '#fff',
+                          fontSize: 11,
+                          fontWeight: 700,
+                          letterSpacing: '0.5px',
+                        }}
+                      >
+                        {intensity.label}
+                      </span>
+                      <span style={{ fontWeight: 500 }}>{ex.met} MET</span>
                     </div>
                   </div>
-                  <div className="btn-row">
-                    <button onClick={() => startEditExercise(e)}>
-                      編輯
-                    </button>
-                    <button
-                      onClick={() =>
-                        setExercises((prev) =>
-                          prev.filter((x) => x.id !== e.id)
-                        )
-                      }
-                    >
-                      刪除
-                    </button>
+                  
+                  {/* MET 視覺化進度條 */}
+                  <div style={{ width: 70, marginLeft: 16 }}>
+                    <div style={{ 
+                      height: 8, 
+                      background: '#e5e7eb', 
+                      borderRadius: 4,
+                      overflow: 'hidden',
+                    }}>
+                      <div style={{ 
+                        height: '100%', 
+                        width: `${Math.min(100, (ex.met / 10) * 100)}%`,
+                        background: intensity.color,
+                        transition: 'width 0.3s ease',
+                        borderRadius: 4,
+                      }} />
+                    </div>
+                    <div style={{ 
+                      fontSize: 10, 
+                      color: '#999', 
+                      textAlign: 'right', 
+                      marginTop: 2 
+                    }}>
+                      {Math.round((ex.met / 10) * 100)}%
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <label>
+          體重 (kg)
+          <input
+            type="number"
+            value={exWeight}
+            onChange={(e) => setExWeight(e.target.value)}
+            placeholder="例如:70"
+          />
+        </label>
+
+        <label>
+          運動時間 (分鐘)
+          <input
+            type="number"
+            value={exMinutes}
+            onChange={(e) => setExMinutes(e.target.value)}
+            placeholder="例如:30"
+          />
+        </label>
+
+        <div className="hint" style={{ 
+          padding: '12px 16px', 
+          background: '#f0f9ff', 
+          borderRadius: 8,
+          border: '1px solid #bae6fd',
+          marginTop: 12,
+        }}>
+          <span style={{ fontWeight: 600, color: '#0369a1' }}>預估消耗:</span>
+          <span style={{ fontSize: 18, fontWeight: 700, color: '#0369a1', marginLeft: 8 }}>
+            約 {autoExerciseKcal || 0} kcal
+          </span>
+        </div>
+
+        <button 
+          className="primary" 
+          onClick={addExercise}
+          disabled={!quickExercise || !exWeight || !exMinutes}
+          style={{
+            opacity: (!quickExercise || !exWeight || !exMinutes) ? 0.5 : 1,
+            cursor: (!quickExercise || !exWeight || !exMinutes) ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {editingExerciseId ? '更新運動記錄' : '加入運動記錄'}
+        </button>
+        
+        {editingExerciseId && (
+          <button
+            onClick={() => {
+              setEditingExerciseId(null);
+              setExName('');
+              setExMinutes('');
+              setCustomMet('');
+              setSelectedMetRow(null);
+              setQuickExercise(null);
+            }}
+          >
+            取消編輯
+          </button>
+        )}
+      </div>
+    )}
+
+    {/* ========== 精確記錄模式（原本的功能） ========== */}
+    {recordMode === 'detail' && (
+      <div className="form-section">
+        <label>
+          運動名稱
+          <input
+            id="exercise-name-input"
+            value={exName}
+            onChange={(e) => {
+              setExName(e.target.value);
+              setSelectedMetRow(null);
+              setQuickExercise(null);
+            }}
+            placeholder="輸入關鍵字,例如:快走、重訓…"
+          />
+        </label>
+
+        {/* 有輸入名稱時才顯示搜尋結果；選到一筆後收起來 */}
+        {exName.trim() && !selectedMetRow && (
+          <div className="search-results">
+            {exerciseMatches.length === 0 ? (
+              <>
+                <div className="hint">
+                  找不到相符的運動,可以在下方輸入自訂 MET。
+                </div>
+
+                <details className="met-ref">
+                  <summary>展開常見活動 MET 參考</summary>
+
+                  <div className="result-title">
+                    🟢 低強度活動 (約 2–3 MET)
+                  </div>
+                  <ul className="met-list">
+                    <li>散步 / 日常走路：約 2–3 MET</li>
+                    <li>輕度家事：約 2.5 MET</li>
+                  </ul>
+
+                  <div className="result-title">
+                    🟡 中強度活動 (約 3–6 MET)
+                  </div>
+                  <ul className="met-list">
+                    <li>快走：約 4.3 MET</li>
+                    <li>有氧運動 (輕～中等)：約 4.5～5 MET</li>
+                    <li>騎自行車 (一般速度)：約 5.5～6 MET</li>
+                  </ul>
+
+                  <div className="result-title">
+                    🔴 高強度活動 (6 以上)
+                  </div>
+                  <ul className="met-list">
+                    <li>重訓 (中等強度)：約 6 MET</li>
+                    <li>爬山：約 6.5 MET</li>
+                    <li>持續游泳：約 7 MET 以上</li>
+                  </ul>
+                </details>
+              </>
+            ) : (
+              <>
+                <div className="result-title">
+                  從資料表找到的活動
+                </div>
+                {exerciseMatches.map((row, i) => {
+                  const intensity = getIntensityInfo(Number(row.MET || 0));
+                  
+                  return (
+                    <div
+                      key={i}
+                      className="list-item clickable"
+                      onClick={() => {
+                        setSelectedMetRow(row);
+                        setCustomMet(String(row.MET ?? ''));
+                        setExName(row.活動 || '');
+                      }}
+                      style={{
+                        borderLeft: `4px solid ${intensity.color}`,
+                        background: selectedMetRow === row ? `${intensity.color}10` : '#fff',
+                      }}
+                    >
+                      <div style={{ flex: 1 }}>
+                        <div>{row.活動}</div>
+                        <div className="sub" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span>強度:{row.intensity}</span>
+                          <span 
+                            style={{ 
+                              padding: '2px 8px', 
+                              borderRadius: 999, 
+                              background: intensity.color,
+                              color: '#fff',
+                              fontSize: 10,
+                              fontWeight: 700,
+                            }}
+                          >
+                            {intensity.label}
+                          </span>
+                          <span>MET:{row.MET}</span>
+                        </div>
+                      </div>
+                      <span className="tag">
+                        {selectedMetRow === row ? '已選' : '選擇'}
+                      </span>
+                    </div>
+                  );
+                })}
+              </>
+            )}
           </div>
         )}
-        {/* 🆕 浮動常用組合動作列 (當有選取項目時才顯示) -- 請將以下代碼塊貼到這裡 */}
-        {selectedMealIds.length > 0 && (
-          <div className="fixed-combo-bar">
-            <div className="combo-summary">
-              已選取 <b>{selectedMealIds.length}</b> 個品項
-            </div>
-            <div className="btn-row">
-              <button
-                className="secondary"
-                onClick={() => setSelectedMealIds([])}
-                style={{ padding: '8px 16px' }}
-              >
-                取消選取
-              </button>
-              <button
-                className="primary"
-                onClick={() => setShowSaveComboModal(true)}
-                style={{ padding: '8px 16px' }}
-              >
-                存為組合
-              </button>
+
+        <label>
+          MET
+          <input
+            type="number"
+            value={customMet}
+            onChange={(e) => {
+              setCustomMet(e.target.value);
+              if (e.target.value) {
+                setSelectedMetRow(null);
+              }
+            }}
+            placeholder="例如:4.3"
+          />
+        </label>
+
+        <label>
+          體重 (kg)
+          <input
+            type="number"
+            value={exWeight}
+            onChange={(e) => setExWeight(e.target.value)}
+            placeholder="例如:70"
+          />
+        </label>
+
+        <label>
+          時間 (分鐘)
+          <input
+            type="number"
+            value={exMinutes}
+            onChange={(e) => setExMinutes(e.target.value)}
+            placeholder="例如:30"
+          />
+        </label>
+
+        <div className="hint">
+          目前估算消耗:約 {autoExerciseKcal || 0} kcal
+        </div>
+
+        <button className="primary" onClick={addExercise}>
+          {editingExerciseId ? '更新運動記錄' : '加入運動記錄'}
+        </button>
+        {editingExerciseId && (
+          <button
+            onClick={() => {
+              setEditingExerciseId(null);
+              setExName('');
+              setExMinutes('');
+              setCustomMet('');
+              setSelectedMetRow(null);
+              setQuickExercise(null);
+            }}
+          >
+            取消編輯
+          </button>
+        )}
+      </div>
+    )}
+
+    {/* 運動明細列表 */}
+    <div className="list-section">
+      <h3>{selectedDate} 運動明細</h3>
+      {dayExercises.length === 0 && (
+        <div className="hint">尚未記錄運動</div>
+      )}
+      {dayExercises.map((e) => (
+        <div key={e.id} className="list-item">
+          <div>
+            <div>{e.name}</div>
+            <div className="sub">
+              {e.minutes != null ? `${e.minutes} 分鐘 · ` : ''}
+              {e.kcal} kcal
             </div>
           </div>
-        )}
-        {/* 浮動動作列代碼塊貼到這裡結束 */}
+          <div className="btn-row">
+            <button onClick={() => startEditExercise(e)}>
+              編輯
+            </button>
+            <button
+              onClick={() =>
+                setExercises((prev) =>
+                  prev.filter((x) => x.id !== e.id)
+                )
+              }
+            >
+              刪除
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
+{/* 🆕 浮動按鈕：儲存常用組合 */}
+{recordTab === 'food' && selectedMealIds.length > 0 && (
+  <div
+    className="fixed-combo-bar"
+    style={{
+      position: 'fixed',
+      bottom: '80px',
+      left: 0,
+      right: 0,
+      background: 'var(--mint-dark, #5c9c84)',
+      padding: '12px 16px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 12,
+      boxShadow: '0 -2px 8px rgba(0,0,0,0.1)',
+      zIndex: 10,
+    }}
+  >
+    <div style={{ flex: 1, color: '#fff', fontWeight: 600 }}>
+      已選擇 {selectedMealIds.length} 項
+    </div>
+    <button
+      className="primary"
+      onClick={() => setShowSaveComboModal(true)}
+      style={{
+        padding: '8px 16px',
+        background: '#fff',
+        color: 'var(--mint-dark, #5c9c84)',
+        border: 'none',
+        borderRadius: 8,
+        fontWeight: 600,
+        cursor: 'pointer',
+      }}
+    >
+      儲存為常用組合
+    </button>
+  </div>
+)}
+
       </div>
     );
   };
-
   // ======== 我的頁 ========
 
 type SettingsPageProps = {
