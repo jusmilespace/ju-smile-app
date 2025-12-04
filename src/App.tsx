@@ -2098,33 +2098,59 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
 
     // 飲食搜尋：Unit_Map + Food_DB
     const foodSearchResults = useMemo(() => {
-      const kw = foodName.trim().toLowerCase();
-    
+  const kw = foodName.trim().toLowerCase();
 
-      // 🆕 常用組合搜尋
-      const comboMatches = combos.filter(c =>
-        normalizeText(c.name).includes(kw)
-      );
+  // 🆕 從歷史記錄中搜尋（排除今天的記錄）
+  const historyMatches = kw
+    ? meals
+        .filter((m) => {
+          // 排除今天的記錄
+          if (m.date === selectedDate) return false;
+          // 搜尋名稱
+          return normalizeText(m.label).includes(kw);
+        })
+        // 去重：相同名稱+份量+熱量只顯示一次
+        .reduce((acc, m) => {
+          const key = `${m.label}|${m.amountText || ''}|${m.kcal}`;
+          if (!acc.some((item) => `${item.label}|${item.amountText || ''}|${item.kcal}` === key)) {
+            acc.push(m);
+          }
+          return acc;
+        }, [] as MealEntry[])
+        // 按日期排序，最近的在前面
+        .sort((a, b) => b.date.localeCompare(a.date))
+        .slice(0, 10) // 最多顯示 10 筆
+    : [];
 
-      // 如果沒有關鍵字，則顯示全部常用組合，但不顯示 food/unit 搜尋結果
-      if (!kw) {
-        return {
-          unitMatches: [] as UnitMapRow[],
-          foodMatches: [] as FoodDbRow[],
-          comboMatches: combos, 
-        };
-      }
-      
-      const unitMatches = unitMap.filter((u) =>
-        normalizeText(u.Food).includes(kw)
-      );
-      const foodMatches = foodDb.filter((f) =>
-        normalizeText(f.food).includes(kw)
-      );
+  // 🆕 常用組合搜尋
+  const comboMatches = combos.filter((c) =>
+    normalizeText(c.name).includes(kw)
+  );
 
-      // 如果有關鍵字，則顯示搜尋到的常用組合、unitMatches、foodMatches
-      return { unitMatches, foodMatches, comboMatches };
-    }, [foodName, unitMap, foodDb, combos]);
+  // 如果沒有關鍵字，則顯示全部常用組合
+  if (!kw) {
+    return {
+      unitMatches: [] as UnitMapRow[],
+      foodMatches: [] as FoodDbRow[],
+      comboMatches: combos,
+      historyMatches: [], // 沒有關鍵字時不顯示歷史
+    };
+  }
+
+  const unitMatches = unitMap.filter((u) =>
+    normalizeText(u.Food).includes(kw)
+  );
+  const foodMatches = foodDb.filter((f) =>
+    normalizeText(f.food).includes(kw)
+  );
+
+  return { 
+    unitMatches, 
+    foodMatches, 
+    comboMatches,
+    historyMatches, // 🆕 加入歷史記錄
+  };
+}, [foodName, unitMap, foodDb, combos, meals, selectedDate]);
     
     const typeOptions = useMemo(
       () => Array.from(new Set(typeTable.map((t) => t.Type))),
@@ -2920,8 +2946,105 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
               {foodName.trim() &&
                 !selectedUnitFood &&
                 !selectedFoodDbRow && 
-                (foodSearchResults.unitMatches.length > 0 || foodSearchResults.foodMatches.length > 0) && (
+                (foodSearchResults.historyMatches.length > 0 ||
+ foodSearchResults.unitMatches.length > 0 || 
+ foodSearchResults.foodMatches.length > 0) && (
                   <div className="search-results" style={{ marginBottom: '12px' }}>
+                    {/* 🆕 歷史記錄搜尋結果 */}
+      {foodSearchResults.historyMatches.length > 0 && (
+        <>
+          <div className="result-title" style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 8,
+            background: '#f0f9ff',
+            padding: '8px 12px',
+            borderRadius: 6,
+            marginBottom: 8,
+          }}>
+            <span style={{ fontSize: 18 }}>📝</span>
+            <span>我的歷史紀錄 ({foodSearchResults.historyMatches.length})</span>
+          </div>
+          {foodSearchResults.historyMatches.map((m, i) => (
+            <div
+              key={i}
+              className="list-item clickable"
+              style={{
+                borderLeft: '4px solid #3b82f6',
+                background: '#fff',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#eff6ff';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = '#fff';
+              }}
+            >
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 600 }}>{m.label}</div>
+                <div className="sub" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <span style={{ 
+                    padding: '2px 8px', 
+                    borderRadius: 999, 
+                    background: '#3b82f6',
+                    color: '#fff',
+                    fontSize: 10,
+                    fontWeight: 600,
+                  }}>
+                    歷史
+                  </span>
+                  {m.amountText && <span>{m.amountText}</span>}
+                  <span>{m.kcal} kcal</span>
+                  {m.protein > 0 && <span>P: {round1(m.protein)}g</span>}
+                  {m.carb > 0 && <span>C: {round1(m.carb)}g</span>}
+                  {m.fat > 0 && <span>F: {round1(m.fat)}g</span>}
+                </div>
+                <div className="sub" style={{ fontSize: 11, color: '#999', marginTop: 2 }}>
+                  最近記錄：{m.date} · {m.mealType}
+                </div>
+              </div>
+              <button
+                type="button"
+                className="primary small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // 複製歷史記錄，加入到今天
+                  const copied: MealEntry = {
+                    ...m,
+                    id: uuid(),
+                    date: selectedDate,
+                    mealType: foodMealType, // 使用目前選擇的餐別
+                  };
+                  setMeals((prev) => [...prev, copied]);
+                  showToast('success', `已加入 ${m.label}`);
+                  // 清空搜尋
+                  setFoodName('');
+                }}
+                style={{
+                  padding: '8px 16px',
+                  fontSize: 13,
+                  flexShrink: 0,
+                }}
+              >
+                快速加入
+              </button>
+            </div>
+          ))}
+          
+          {/* 分隔線：只有當歷史記錄後面還有其他搜尋結果時才顯示 */}
+{foodSearchResults.historyMatches.length > 0 &&
+  (foodSearchResults.unitMatches.length > 0 || 
+   foodSearchResults.foodMatches.length > 0) && (
+  <div style={{ 
+    height: 1, 
+    background: '#e5e7eb', 
+    margin: '12px 0' 
+  }} />
+)}
+        </>
+      )}
+
                     {/* A：Unit_Map 有資料 */}
                     {foodSearchResults.unitMatches.length > 0 && (
                       <>
