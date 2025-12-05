@@ -2896,7 +2896,7 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
 )}
 {/* ✅ 常見食物重量參考 */}
 <details style={{ marginTop: 8 }}>
-  <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>常見食物重量參考</summary>
+  <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>🖐️ 手掌份量估算法 & 常見食物重量參考</summary>
   <ul className="met-list">
     
     {/* 拳頭 (Fist) */}
