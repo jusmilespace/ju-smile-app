@@ -2837,6 +2837,7 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
                     setEditingMealId(null);
                   }}
                   placeholder="輸入關鍵字,例如:白飯、雞蛋、午餐組合…"
+                  autoComplete="off"
                 />
               </label>
 
@@ -4185,6 +4186,7 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
               setQuickExercise(null);
             }}
             placeholder="輸入關鍵字,例如:快走、重訓…"
+            autoComplete="off"
           />
         </label>
 
