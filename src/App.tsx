@@ -2838,6 +2838,8 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
                   }}
                   placeholder="輸入關鍵字,例如:白飯、雞蛋、午餐組合…"
                   autoComplete="off"
+                  name="search-food"
+    data-form-type="other"
                 />
               </label>
 
@@ -4187,6 +4189,8 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
             }}
             placeholder="輸入關鍵字,例如:快走、重訓…"
             autoComplete="off"
+            name="search-exercise"
+    data-form-type="other"
           />
         </label>
 
