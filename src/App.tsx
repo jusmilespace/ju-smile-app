@@ -2827,24 +2827,22 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
               </label>
 
               <label>
-                食物名稱
-                <input
-                  value={foodName}
-                  onChange={(e) => {
-                    setFoodName(e.target.value);
-                    setSelectedUnitFood(null);
-                    setSelectedFoodDbRow(null);
-                    setEditingMealId(null);
-                  }}
-                  placeholder="輸入關鍵字,例如:白飯、雞蛋、午餐組合…"
-                  value={searchTerm}
-  onChange={(e) => setSearchTerm(e.target.value)}
-  name="foodSearchQuery"  // 防止瀏覽器猜測這是人名
-  autoComplete="off"      // 關閉自動完成
-  autoCorrect="off"       // 關閉自動校正
-  spellCheck="false"      // 關閉拼字檢查
-                />
-              </label>
+  食物名稱
+  <input
+    value={foodName}
+    onChange={(e) => {
+      setFoodName(e.target.value);
+      setSelectedUnitFood(null);
+      setSelectedFoodDbRow(null);
+      setEditingMealId(null);
+    }}
+    placeholder="輸入關鍵字,例如:白飯、雞蛋、午餐組合…"
+    name="foodSearchQuery"
+    autoComplete="off"
+    autoCorrect="off"
+    spellCheck="false"
+  />
+</label>
 
               {/* UX-05：從歷史紀錄快速加入（新版，版型比照「飲食明細」） */}
 {recentMealsForQuickAdd.length > 0 && (
