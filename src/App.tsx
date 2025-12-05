@@ -2903,9 +2903,9 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
     <li style={{ marginTop: 8 }}>
       <strong>拳頭 (Fist) 👊：</strong>
       <ul style={{ paddingLeft: 20, marginTop: 4, listStyleType: 'disc' }}>
-        <li>水果：1 個拳頭大小 ≈ 1 份 (約 100g - 150g)</li>
-        <li>熟蔬菜：1 個拳頭 (或半碗) ≈ 1 份 (約 100g)</li>
-        <li>飯/麵：1 個拳頭熟飯/麵 ≈ 150g - 160g</li>
+        <li>水果：1 個拳頭大小 ≈ 1 份 (約 130g)</li>
+        <li>熟蔬菜：1 個拳頭 ≈ 1 份 (約 100g)</li>
+        <li>飯/麵：1 個拳頭熟飯/麵 ≈ 4 份 (約 160g)</li>
       </ul>
     </li>
 
@@ -2913,7 +2913,7 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
     <li style={{ marginTop: 8 }}>
       <strong>手掌心 (Palm) ✋ (不含手指)：</strong>
       <ul style={{ paddingLeft: 20, marginTop: 4, listStyleType: 'disc' }}>
-        <li>肉類/魚類：手掌大、小指厚 ≈ 3 份 (熟重 90g - 100g)</li>
+        <li>肉類/魚類：手掌大、小指厚 ≈ 3 份 (約 100g)</li>
         <li style={{ color: '#666', fontSize: '0.9em' }}>
           註：女生手掌較小，約為 2-3 份
         </li>
@@ -2924,7 +2924,7 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
     <li style={{ marginTop: 8 }}>
       <strong>大拇指 (Thumb) 👍：</strong>
       <ul style={{ paddingLeft: 20, marginTop: 4, listStyleType: 'disc' }}>
-        <li>油脂/堅果：1 個大拇指節 ≈ 1 茶匙 (5g)</li>
+        <li>油脂/堅果：1 個大拇指節 ≈ 1 份 (5g)</li>
       </ul>
     </li>
 
