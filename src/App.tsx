@@ -2837,9 +2837,12 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
                     setEditingMealId(null);
                   }}
                   placeholder="輸入關鍵字,例如:白飯、雞蛋、午餐組合…"
-                  autoComplete="off"
-                  name="search-food"
-    data-form-type="other"
+                  value={searchTerm}
+  onChange={(e) => setSearchTerm(e.target.value)}
+  name="foodSearchQuery"  // 防止瀏覽器猜測這是人名
+  autoComplete="off"      // 關閉自動完成
+  autoCorrect="off"       // 關閉自動校正
+  spellCheck="false"      // 關閉拼字檢查
                 />
               </label>
 
@@ -4188,9 +4191,12 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
               setQuickExercise(null);
             }}
             placeholder="輸入關鍵字,例如:快走、重訓…"
-            autoComplete="off"
-            name="search-exercise"
-    data-form-type="other"
+            value={exSearch}
+  onChange={(e) => setExSearch(e.target.value)}
+  name="exerciseSearchQuery" // 防止瀏覽器猜測這是人名
+  autoComplete="off"         // 關閉自動完成
+  autoCorrect="off"
+  spellCheck="false"
           />
         </label>
 
