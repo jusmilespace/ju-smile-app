@@ -3654,6 +3654,28 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
                     )}
                   </div>
                 )}
+{/* 🆕 Food_DB 選中後：顯示公克數輸入框 */}
+              {selectedFoodDbRow && (
+                <>
+                  <label>
+                    重量 (g)
+                    <input
+                      type="number"
+                      value={foodAmountG}
+                      onChange={(e) => setFoodAmountG(e.target.value)}
+                      placeholder="例如:100"
+                    />
+                  </label>
+                  <div className="hint">
+                    {selectedFoodDbRow.food}：{selectedFoodDbRow.kcal} kcal / 100g
+                  </div>
+                  {autoFoodInfo.kcal > 0 && (
+                    <div className="hint">
+                      目前估算熱量:約 {autoFoodInfo.kcal} kcal
+                    </div>
+                  )}
+                </>
+              )}
 
 
 
