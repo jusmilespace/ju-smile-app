@@ -2153,14 +2153,27 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
       useState<string | null>(null);
 
 
-    // 運動體重預帶當日體重
-    useEffect(() => {
-      if (exWeight) return;
-      const day = days.find((d) => d.date === selectedDate);
-      if (day && day.weight != null) {
-        setExWeight(String(day.weight));
-      }
-    }, [selectedDate, days, exWeight]);
+    // 運動體重預帶當日體重，若無則預帶最後一次體重
+useEffect(() => {
+  if (exWeight) return;
+  const day = days.find((d) => d.date === selectedDate);
+  
+  // 優先使用當日體重
+  if (day && day.weight != null) {
+    setExWeight(String(day.weight));
+    return;
+  }
+  
+  // 🆕 當日沒有體重時，找最後一次輸入的體重
+  // 將 days 按日期排序（由近到遠），找到第一個有體重的紀錄
+  const daysWithWeight = days
+    .filter((d) => d.weight != null)
+    .sort((a, b) => dayjs(b.date).diff(dayjs(a.date)));
+  
+  if (daysWithWeight.length > 0) {
+    setExWeight(String(daysWithWeight[0].weight));
+  }
+}, [selectedDate, days, exWeight]);
 
     function startEditExercise(e: ExerciseEntry) {
       setSelectedDate(e.date);
