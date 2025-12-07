@@ -1490,89 +1490,56 @@ const [srcMet, setSrcMet] = useState<string>(
     return (
       <div className="page page-today" style={{ paddingBottom: '90px' }}>
         <header className="top-bar">
-          <div className="date-text" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-            {/* 月份標題 */}
+          <button
+            type="button"
+            onClick={() => setTodayLocal(dayjs(todayLocal).subtract(7, 'day').format('YYYY-MM-DD'))}
+            style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', padding: '4px 8px' }}
+          >
+            ◀
+          </button>
+
+          <div className="date-text" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
             <div 
               style={{ fontSize: 13, color: '#666', fontWeight: 500, cursor: 'pointer' }}
               onClick={openTodayDatePicker}
             >
-              {dayjs(todayLocal).format('MMMM, YYYY')}
-              <span style={{ marginLeft: 4 }}>▼</span>
+              {dayjs(todayLocal).format('dddd, MMM D')} {todayLocal === dayjs().format('YYYY-MM-DD') && '▼'}
             </div>
-            
-            {/* 滑動式日期選擇器 */}
-            <div style={{ 
-              width: '100%',
-              maxWidth: '100vw',
-              overflowX: 'auto',
-              overflowY: 'hidden',
-              WebkitOverflowScrolling: 'touch',
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none',
-            }}>
-              <style>{`
-                .date-slider::-webkit-scrollbar {
-                  display: none;
-                }
-              `}</style>
-              <div 
-                className="date-slider"
-                style={{ 
-                  display: 'flex', 
-                  gap: 8,
-                  padding: '0 8px',
-                  minWidth: 'max-content',
-                }}
-              >
-                {Array.from({ length: 14 }).map((_, i) => {
-                  const date = dayjs(todayLocal).subtract(6, 'day').add(i, 'day');
-                  const dateStr = date.format('YYYY-MM-DD');
-                  const isSelected = dateStr === todayLocal;
-                  const isToday = dateStr === dayjs().format('YYYY-MM-DD');
-                  
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => setTodayLocal(dateStr)}
-                      style={{
-                        minWidth: 44,
-                        height: 56,
-                        borderRadius: 10,
-                        border: isSelected ? '2px solid #97d0ba' : (isToday ? '2px solid #d1f0e3' : '1px solid #e9ecef'),
-                        background: isSelected ? '#97d0ba' : (isToday ? '#fff' : 'transparent'),
-                        color: isSelected ? '#fff' : (isToday ? '#97d0ba' : '#333'),
-                        cursor: 'pointer',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 2,
-                        boxShadow: isSelected ? '0 2px 8px rgba(151, 208, 186, 0.3)' : 'none',
-                        transition: 'all 0.2s ease',
-                        padding: '6px 2px',
-                      }}
-                    >
-                      {/* 星期縮寫 */}
-                      <span style={{ 
-                        fontSize: 10, 
-                        fontWeight: 500,
-                        opacity: isSelected ? 1 : 0.7,
-                      }}>
-                        {date.format('ddd')}
-                      </span>
-                      {/* 日期數字 */}
-                      <span style={{ 
-                        fontSize: 16, 
-                        fontWeight: isSelected ? 700 : (isToday ? 600 : 500),
-                      }}>
-                        {date.format('D')}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+            <div style={{ display: 'flex', gap: 4 }}>
+              {Array.from({ length: 7 }).map((_, i) => {
+                const date = dayjs(todayLocal).startOf('week').add(i, 'day');
+                const dateStr = date.format('YYYY-MM-DD');
+                const isSelected = dateStr === todayLocal;
+                const isToday = dateStr === dayjs().format('YYYY-MM-DD');
+                return (
+                  <button
+                    key={i}
+                    onClick={() => setTodayLocal(dateStr)}
+                    style={{
+                      width: 32, height: 32, borderRadius: 8,
+                      border: isSelected ? '2px solid #97d0ba' : (isToday ? '2px solid #d1f0e3' : '1px solid #e9ecef'),
+                      background: isSelected ? '#97d0ba' : (isToday ? '#fff' : 'transparent'),
+                      color: isSelected ? '#fff' : (isToday ? '#97d0ba' : '#333'),
+                      fontSize: 14, fontWeight: isSelected ? 700 : (isToday ? 600 : 400),
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      boxShadow: isSelected ? '0 2px 4px rgba(151, 208, 186, 0.3)' : 'none',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    {date.format('D')}
+                  </button>
+                );
+              })}
             </div>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setTodayLocal(dayjs(todayLocal).add(7, 'day').format('YYYY-MM-DD'))}
+            style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', padding: '4px 8px' }}
+          >
+            ▶
+          </button>
 
           <input
             ref={todayDateInputRef}
@@ -2527,6 +2494,26 @@ useEffect(() => {
         style={{ paddingBottom: '90px' }}
       >
 <header className="top-bar">
+  <button
+    type="button"
+    onClick={() =>
+      setSelectedDate(
+        dayjs(selectedDate)
+          .subtract(7, 'day')
+          .format('YYYY-MM-DD')
+      )
+    }
+    style={{
+      background: 'none',
+      border: 'none',
+      fontSize: 18,
+      cursor: 'pointer',
+      padding: '4px 8px',
+    }}
+  >
+    ◀
+  </button>
+
   <div
     className="date-text"
     style={{
@@ -2534,10 +2521,10 @@ useEffect(() => {
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      gap: 6,
+      gap: 8,
     }}
   >
-    {/* 月份標題：點這一行會開 date picker */}
+    {/* 週標題：點這一行會開 date picker */}
     <div
       style={{
         fontSize: 13,
@@ -2547,83 +2534,79 @@ useEffect(() => {
       }}
       onClick={openRecordsDatePicker}
     >
-      {dayjs(selectedDate).format('MMMM, YYYY')}
+      {dayjs(selectedDate).format('dddd, MMM D')}
       <span style={{ marginLeft: 4 }}>▼</span>
     </div>
 
-    {/* 滑動式日期選擇器 */}
-    <div style={{ 
-      width: '100%',
-      maxWidth: '100vw',
-      overflowX: 'auto',
-      overflowY: 'hidden',
-      WebkitOverflowScrolling: 'touch',
-      scrollbarWidth: 'none',
-      msOverflowStyle: 'none',
-    }}>
-      <style>{`
-        .date-slider::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
-      <div 
-        className="date-slider"
-        style={{ 
-          display: 'flex', 
-          gap: 8,
-          padding: '0 8px',
-          minWidth: 'max-content',
-        }}
-      >
-        {Array.from({ length: 14 }).map((_, i) => {
-          const date = dayjs(selectedDate).subtract(6, 'day').add(i, 'day');
-          const dateStr = date.format('YYYY-MM-DD');
-          const isSelected = dateStr === selectedDate;
-          const isToday = dateStr === dayjs().format('YYYY-MM-DD');
-          
-          return (
-            <button
-              key={i}
-              onClick={() => setSelectedDate(dateStr)}
-              style={{
-                minWidth: 44,
-                height: 56,
-                borderRadius: 10,
-                border: isSelected ? '2px solid #97d0ba' : (isToday ? '2px solid #d1f0e3' : '1px solid #e9ecef'),
-                background: isSelected ? '#97d0ba' : (isToday ? '#fff' : 'transparent'),
-                color: isSelected ? '#fff' : (isToday ? '#97d0ba' : '#333'),
-                cursor: 'pointer',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 2,
-                boxShadow: isSelected ? '0 2px 8px rgba(151, 208, 186, 0.3)' : 'none',
-                transition: 'all 0.2s ease',
-                padding: '6px 2px',
-              }}
-            >
-              {/* 星期縮寫 */}
-              <span style={{ 
-                fontSize: 10, 
-                fontWeight: 500,
-                opacity: isSelected ? 1 : 0.7,
-              }}>
-                {date.format('ddd')}
-              </span>
-              {/* 日期數字 */}
-              <span style={{ 
-                fontSize: 16, 
-                fontWeight: isSelected ? 700 : (isToday ? 600 : 500),
-              }}>
-                {date.format('D')}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+    {/* 7天日期選擇器 */}
+    <div style={{ display: 'flex', gap: 4 }}>
+      {Array.from({ length: 7 }).map((_, i) => {
+        const date = dayjs(selectedDate).startOf('week').add(i, 'day');
+        const dateStr = date.format('YYYY-MM-DD');
+        const isSelected = dateStr === selectedDate;
+        const isToday = dateStr === dayjs().format('YYYY-MM-DD');
+
+        return (
+          <button
+            key={i}
+            onClick={() => setSelectedDate(dateStr)}
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              border: isSelected
+                ? '2px solid #97d0ba'
+                : isToday
+                ? '2px solid #d1f0e3'
+                : '1px solid #e9ecef',
+              background: isSelected
+                ? '#97d0ba'
+                : isToday
+                ? '#fff'
+                : 'transparent',
+              color: isSelected
+                ? '#fff'
+                : isToday
+                ? '#97d0ba'
+                : '#333',
+              fontSize: 14,
+              fontWeight: isSelected ? 700 : isToday ? 600 : 400,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: isSelected
+                ? '0 2px 4px rgba(151, 208, 186, 0.3)'
+                : 'none',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            {date.format('D')}
+          </button>
+        );
+      })}
     </div>
   </div>
+
+  <button
+    type="button"
+    onClick={() =>
+      setSelectedDate(
+        dayjs(selectedDate)
+          .add(7, 'day')
+          .format('YYYY-MM-DD')
+      )
+    }
+    style={{
+      background: 'none',
+      border: 'none',
+      fontSize: 18,
+      cursor: 'pointer',
+      padding: '4px 8px',
+    }}
+  >
+    ▶
+  </button>
 
   {/* 隱藏的 date input，用來打開原生日期選擇器 */}
   <input
