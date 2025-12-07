@@ -1332,19 +1332,6 @@ const [srcMet, setSrcMet] = useState<string>(
   const TodayPage: React.FC<TodayPageProps> = ({ onAddExercise }) => {
     const { showToast } = React.useContext(ToastContext);
     const todaySummary = getDay(todayLocal);
-// 🆕 點標題日期時打開原生 date picker
-  const todayDateInputRef = useRef<HTMLInputElement | null>(null);
-  const openTodayDatePicker = () => {
-    const input = todayDateInputRef.current;
-    if (!input) return;
-    const withPicker = input as HTMLInputElement & { showPicker?: () => void };
-    if (withPicker.showPicker) {
-      withPicker.showPicker();
-    } else {
-      input.focus();
-      input.click();
-    }
-  };
 
     const [wInput, setWInput] = useState<string>('');
     const [bfInput, setBfInput] = useState<string>('');
@@ -1579,20 +1566,11 @@ const calorieGoal =
       gap: 8,
     }}
   >
-    {/* 週標題：點這一行會開 date picker */}
-    <div
-      style={{
-        fontSize: 13,
-        color: '#666',
-        fontWeight: 500,
-        cursor: 'pointer',
-      }}
-      onClick={openTodayDatePicker}
-    >
-      {dayjs(todayLocal).format('dddd, MMM D')}
-      <span style={{ marginLeft: 4 }}>▼</span>
+    {/* 週標題：例如 Monday, Jan 11 */}
+    <div style={{ fontSize: 13, color: '#666', fontWeight: 500 }}>
+      {dayjs(todayLocal).format('dddd, MMM D')} {todayLocal === dayjs().format('YYYY-MM-DD') && '▼'}
     </div>
-
+    
     {/* 7天日期選擇器 */}
     <div style={{ display: 'flex', gap: 4 }}>
       {Array.from({ length: 7 }).map((_, i) => {
@@ -1600,7 +1578,7 @@ const calorieGoal =
         const dateStr = date.format('YYYY-MM-DD');
         const isSelected = dateStr === todayLocal;
         const isToday = dateStr === dayjs().format('YYYY-MM-DD');
-
+        
         return (
           <button
             key={i}
@@ -1609,31 +1587,15 @@ const calorieGoal =
               width: 32,
               height: 32,
               borderRadius: 8,
-              border: isSelected
-                ? '2px solid #97d0ba'
-                : isToday
-                ? '2px solid #d1f0e3'
-                : '1px solid #e9ecef',
-              background: isSelected
-                ? '#97d0ba'
-                : isToday
-                ? '#fff'
-                : 'transparent',
-              color: isSelected
-                ? '#fff'
-                : isToday
-                ? '#97d0ba'
-                : '#333',
+              border: 'none',
+              background: isSelected ? '#97d0ba' : (isToday ? '#f0f9f6' : 'transparent'),
+              color: isSelected ? '#fff' : '#333',
               fontSize: 14,
-              fontWeight: isSelected ? 700 : isToday ? 600 : 400,
+              fontWeight: isSelected ? 600 : 400,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: isSelected
-                ? '0 2px 4px rgba(151, 208, 186, 0.3)'
-                : 'none',
-              transition: 'all 0.2s ease',
             }}
           >
             {date.format('D')}
@@ -1662,25 +1624,7 @@ const calorieGoal =
   >
     ▶
   </button>
-
-  {/* 隱藏的 date input，用來打開原生日期選擇器 */}
-  <input
-    ref={todayDateInputRef}
-    type="date"
-    value={todayLocal}
-    onChange={(e) => {
-      if (!e.target.value) return;
-      setTodayLocal(e.target.value);
-    }}
-    style={{
-      position: 'absolute',
-      opacity: 0,
-      width: 1,
-      height: 1,
-    }}
-  />
 </header>
-
 
 
         <section className="card">
@@ -2145,19 +2089,7 @@ const COMMON_EXERCISES = [
     };
 
     const [selectedDate, setSelectedDate] = useState(todayLocal);
-// 🆕 點標題日期時打開原生 date picker
-  const recordsDateInputRef = useRef<HTMLInputElement | null>(null);
-  const openRecordsDatePicker = () => {
-    const input = recordsDateInputRef.current;
-    if (!input) return;
-    const withPicker = input as HTMLInputElement & { showPicker?: () => void };
-    if (withPicker.showPicker) {
-      withPicker.showPicker();
-    } else {
-      input.focus();
-      input.click();
-    }
-  };
+
     // 🔧 修正：移除 local state，改用從 App 傳入的 props
     // 這樣餐別就不會在切換頁籤時消失
     
@@ -2831,20 +2763,11 @@ useEffect(() => {
       gap: 8,
     }}
   >
-    {/* 週標題：點這一行會開 date picker */}
-    <div
-      style={{
-        fontSize: 13,
-        color: '#666',
-        fontWeight: 500,
-        cursor: 'pointer',
-      }}
-      onClick={openRecordsDatePicker}
-    >
-      {dayjs(selectedDate).format('dddd, MMM D')}
-      <span style={{ marginLeft: 4 }}>▼</span>
+    {/* 週標題：例如 Monday, Jan 11 */}
+    <div style={{ fontSize: 13, color: '#666', fontWeight: 500 }}>
+      {dayjs(selectedDate).format('dddd, MMM D')} {selectedDate === dayjs().format('YYYY-MM-DD') && '▼'}
     </div>
-
+    
     {/* 7天日期選擇器 */}
     <div style={{ display: 'flex', gap: 4 }}>
       {Array.from({ length: 7 }).map((_, i) => {
@@ -2852,7 +2775,7 @@ useEffect(() => {
         const dateStr = date.format('YYYY-MM-DD');
         const isSelected = dateStr === selectedDate;
         const isToday = dateStr === dayjs().format('YYYY-MM-DD');
-
+        
         return (
           <button
             key={i}
@@ -2861,31 +2784,15 @@ useEffect(() => {
               width: 32,
               height: 32,
               borderRadius: 8,
-              border: isSelected
-                ? '2px solid #97d0ba'
-                : isToday
-                ? '2px solid #d1f0e3'
-                : '1px solid #e9ecef',
-              background: isSelected
-                ? '#97d0ba'
-                : isToday
-                ? '#fff'
-                : 'transparent',
-              color: isSelected
-                ? '#fff'
-                : isToday
-                ? '#97d0ba'
-                : '#333',
+              border: 'none',
+              background: isSelected ? '#97d0ba' : (isToday ? '#f0f9f6' : 'transparent'),
+              color: isSelected ? '#fff' : '#333',
               fontSize: 14,
-              fontWeight: isSelected ? 700 : isToday ? 600 : 400,
+              fontWeight: isSelected ? 600 : 400,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: isSelected
-                ? '0 2px 4px rgba(151, 208, 186, 0.3)'
-                : 'none',
-              transition: 'all 0.2s ease',
             }}
           >
             {date.format('D')}
@@ -2914,25 +2821,7 @@ useEffect(() => {
   >
     ▶
   </button>
-
-  {/* 隱藏的 date input，用來打開原生日期選擇器 */}
-  <input
-    ref={recordsDateInputRef}
-    type="date"
-    value={selectedDate}
-    onChange={(e) => {
-      if (!e.target.value) return;
-      setSelectedDate(e.target.value);
-    }}
-    style={{
-      position: 'absolute',
-      opacity: 0,
-      width: 1,
-      height: 1,
-    }}
-  />
 </header>
-
 
         <div className="subtabs">
           <button
@@ -3005,7 +2894,89 @@ useEffect(() => {
               </button>
             </div>
 
-            
+            <details>
+              <summary>如何記錄飲食?</summary>
+              
+              {/* 🆕 根據模式顯示不同說明 */}
+              {foodInputMode === 'search' && (
+                <p>
+                  <strong>🔍 快速搜尋</strong>
+                  <br />
+                  適合知道精確食物名稱或想查詢資料庫的情況。
+                  <br />
+                  <br />
+                  1. **常用組合**：點擊搜尋框下方的
+                  <span 
+                    style={{
+                      display: 'inline-block',
+                      width: '16px',
+                      height: '16px',
+                      borderRadius: '50%',
+                      background: 'var(--mint-dark, #5c9c84)',
+                      color: '#fff',
+                      textAlign: 'center',
+                      lineHeight: '16px',
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      margin: '0 4px',
+                      verticalAlign: 'middle',
+                    }}
+                  >
+                    +
+                  </span>
+                  鈕**一鍵加入**。
+                  <br />
+                  2. **食物搜尋**：輸入食物名稱（如「雞胸肉」「白飯」），選擇結果並填入份量/克數。
+                  <br />
+                  3. **類別估算**：若無資料，可切換「類別/估算模式」，選擇食物類型後輸入份數。
+                  <br />
+                  <br />
+                  🔥 **祕訣：** 點選已記錄的品項，可選取多項儲存為「常用組合」。
+                </p>
+              )}
+
+              {foodInputMode === 'palm' && (
+                <p>
+                  <strong>🖐️ 手掌法</strong>
+                  <br />
+                  適合外食、聚餐或不方便秤重的情況，用視覺化方式快速估算。
+                  <br />
+                  <br />
+                  <strong>使用步驟：</strong>
+                  <br />
+                  1. 輸入食物名稱（例如「午餐便當」「雞胸肉沙拉」）
+                  <br />
+                  2. 用手勢估算份量，依照參考值輸入份數：
+                  <br />
+                  &nbsp;&nbsp;&nbsp;&nbsp;• 豆魚肉蛋類 ✋：肉類 1手掌 ≈ 3份 | 1顆蛋 ≈ 1份
+                  <br />
+                  &nbsp;&nbsp;&nbsp;&nbsp;• 蔬菜類 👊：1拳頭 ≈ 1份
+                  <br />
+                  &nbsp;&nbsp;&nbsp;&nbsp;• 全穀雜糧類 👊：飯 1拳頭 ≈ 4份 | 麵 1拳頭 ≈ 2份
+                  <br />
+                  &nbsp;&nbsp;&nbsp;&nbsp;• 水果類 👊：1拳頭 ≈ 1份 | 1根香蕉 ≈ 2份
+                  <br />
+                  &nbsp;&nbsp;&nbsp;&nbsp;• 油脂類 👍：5粒堅果 ≈ 1份
+                  <br />
+                  &nbsp;&nbsp;&nbsp;&nbsp;• 乳品類 🥛：牛奶 1杯 ≈ 1份
+                  <br />
+                  3. 點擊「加入記錄」完成（系統自動計算營養成分）
+                  <br />
+                  <br />
+                  💡 <strong>範例</strong>：吃了 1個手掌大的雞胸肉 + 1拳頭青菜 + 1拳頭飯
+                  <br />
+                  → 豆魚肉蛋類選 3份、蔬菜類選 1份、全穀雜糧類選 4份
+                </p>
+              )}
+
+              {/* 🛑 修正：將 hr 移到 <p> 之外，避免 DOM 嵌套錯誤 */}
+              <div style={{ marginTop: '8px' }}> 
+                <hr style={{ margin: '0', border: 'none', borderTop: '1px solid #e9ecef' }} />
+                <p style={{ marginTop: '8px', fontSize: '13px', color: '#666' }}> 
+                  💡 **資料說明：** App 中的食物數據庫 (精選食物類型、份量代換、Food DB) 是由 Ju Smile 團隊**精選整合**，提供您快速、可靠的熱量與營養素參考。
+                </p>
+              </div>
+            </details>
 
             {/* 🆕 快速搜尋模式 */}
             {foodInputMode === 'search' && (
@@ -3082,7 +3053,42 @@ useEffect(() => {
     </div>
   </details>
 )}
+{/* ✅ 常見食物重量參考 */}
+<details style={{ marginTop: 8 }}>
+  <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>🖐️ 手掌份量估算法 & 常見食物重量參考</summary>
+  <ul className="met-list">
+    
+    {/* 拳頭 (Fist) */}
+    <li style={{ marginTop: 8 }}>
+      <strong>拳頭 (Fist) 👊：</strong>
+      <ul style={{ paddingLeft: 20, marginTop: 4, listStyleType: 'disc' }}>
+        <li>水果：1 個拳頭大小 ≈ 1 份 (約 130g)</li>
+        <li>熟蔬菜：1 個拳頭 ≈ 1 份 (約 100g)</li>
+        <li>飯/麵：1 個拳頭熟飯/麵 ≈ 4 份 (約 160g)</li>
+      </ul>
+    </li>
 
+    {/* 手掌心 (Palm) */}
+    <li style={{ marginTop: 8 }}>
+      <strong>手掌心 (Palm) ✋ (不含手指)：</strong>
+      <ul style={{ paddingLeft: 20, marginTop: 4, listStyleType: 'disc' }}>
+        <li>肉類/魚類：手掌大、小指厚 ≈ 3 份 (約 100g)</li>
+        <li style={{ color: '#666', fontSize: '0.9em' }}>
+          註：女生手掌較小，約為 2-3 份
+        </li>
+      </ul>
+    </li>
+
+    {/* 大拇指 (Thumb) */}
+    <li style={{ marginTop: 8 }}>
+      <strong>大拇指 (Thumb) 👍：</strong>
+      <ul style={{ paddingLeft: 20, marginTop: 4, listStyleType: 'disc' }}>
+        <li>油脂/堅果：1 個大拇指節 ≈ 1 份 (5g)</li>
+      </ul>
+    </li>
+
+  </ul>
+</details>
               {/* 🆕 常用組合清單 (根據搜尋結果顯示，且收納在 details 內) */}
               {/* 修正：合併條件渲染，避免結構錯誤 */}
               {/* 🆕 常用組合清單 (根據搜尋結果顯示，且收納在 details 內) */}
@@ -5002,54 +5008,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
           ))}
         </div>
       </section>
-{/* 📖 使用說明與參考 (從紀錄頁搬移過來) */}
-      <section className="card">
-        <h2>📖 使用說明與參考</h2>
-        <details>
-          <summary>如何記錄飲食？</summary>
-          <div className="form-section" style={{ fontSize: 14, lineHeight: 1.6, color: '#444' }}>
-            <p>
-              <strong>🔍 快速搜尋模式</strong><br />
-              1. <b>常用組合</b>：搜尋框下方顯示，點擊 <b>+</b> 一鍵加入。<br />
-              2. <b>食物搜尋</b>：輸入名稱（如「雞胸肉」），選取結果並填入份量。<br />
-              3. <b>類別估算</b>：若無資料，切換「類別/估算模式」，選食物類型輸入份數。
-            </p>
-            <p style={{ marginTop: 12 }}>
-              <strong>🖐️ 手掌法模式</strong><br />
-              適合外食或不方便秤重時使用。<br />
-              1. 輸入食物名稱。<br />
-              2. 依照下方「手掌份量參考」輸入份數。<br />
-              3. 系統自動計算營養成分。
-            </p>
-          </div>
-        </details>
 
-        <details style={{ marginTop: 12 }}>
-          <summary>🖐️ 手掌份量估算法 & 常見食物重量</summary>
-          <ul className="met-list" style={{ marginTop: 8 }}>
-            <li>
-              <strong>拳頭 (Fist) 👊：</strong>
-              <ul style={{ paddingLeft: 20, marginTop: 4, listStyleType: 'disc' }}>
-                <li>水果：1 個拳頭 ≈ 1 份 (約 130g)</li>
-                <li>熟蔬菜：1 個拳頭 ≈ 1 份 (約 100g)</li>
-                <li>飯/麵：1 個拳頭熟飯 ≈ 4 份 (約 160g)</li>
-              </ul>
-            </li>
-            <li style={{ marginTop: 8 }}>
-              <strong>手掌心 (Palm) ✋：</strong>
-              <ul style={{ paddingLeft: 20, marginTop: 4, listStyleType: 'disc' }}>
-                <li>肉/魚：手掌大、小指厚 ≈ 3 份 (約 100g)</li>
-              </ul>
-            </li>
-            <li style={{ marginTop: 8 }}>
-              <strong>大拇指 (Thumb) 👍：</strong>
-              <ul style={{ paddingLeft: 20, marginTop: 4, listStyleType: 'disc' }}>
-                <li>油脂/堅果：1 指節 ≈ 1 份 (5g)</li>
-              </ul>
-            </li>
-          </ul>
-        </details>
-      </section>
       {/* 編輯常用組合彈窗 */}
       {editingCombo && (
         <div
