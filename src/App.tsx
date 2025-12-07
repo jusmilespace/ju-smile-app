@@ -1317,11 +1317,22 @@ const [srcMet, setSrcMet] = useState<string>(
           height: '100%',
           cursor: 'pointer',
           position: 'relative',
-          padding: '12px',
-          transition: 'transform 0.1s',
-          border: '1px solid #eee',
-          borderRadius: '12px',
-          background: '#fff'
+          padding: '16px', // 增加內距
+          transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)', // 平滑動畫
+          borderRadius: '20px', // 更圓
+          background: '#fff',
+          // ✨ 魔法：預設有輕微陰影，按下去或 hover 時浮起
+          boxShadow: '0 4px 12px rgba(0,0,0,0.03)', 
+          border: '1px solid #f0f0f0'
+        }}
+        // 加入 Hover 效果 (React inline style 模擬)
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-4px)';
+          e.currentTarget.style.boxShadow = '0 12px 20px rgba(0,0,0,0.08)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.03)';
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
@@ -1544,24 +1555,63 @@ const [srcMet, setSrcMet] = useState<string>(
 
         <section className="card">
           <h2>今日概況</h2>
+          {/* 上層：今日熱量儀表板 (Gradient Card) */}
           <div
             className="net-block"
             style={{ 
-              marginBottom: 16, 
+              marginBottom: 20, 
               textAlign: 'center',
-              padding: '16px',
-              background: calorieGoal != null ? `${netColor}15` : '#f8f9fa',
-              borderRadius: 16,
+              padding: '24px',
+              // ✨ 魔法：使用品牌色漸層，創造高級感
+              background: 'linear-gradient(135deg, #97d0ba 0%, #5c9c84 100%)',
+              borderRadius: 24,
+              color: '#fff', // 文字改為白色
+              boxShadow: '0 10px 25px rgba(92, 156, 132, 0.4)', // 發光的陰影
+              position: 'relative',
+              overflow: 'hidden'
             }}
           >
-            <div className="label" style={{ fontSize: 13, color: '#666', marginBottom: 2 }}>
-              {calorieGoal != null ? (netKcal > calorieGoal ? '已超過目標' : '距離熱量上限還有') : '今日淨熱量'}
+            {/* 裝飾用的背景圓圈，增加層次感 */}
+            <div style={{
+              position: 'absolute', top: -20, right: -20, width: 100, height: 100,
+              background: 'rgba(255,255,255,0.1)', borderRadius: '50%'
+            }} />
+            <div style={{
+              position: 'absolute', bottom: -10, left: -10, width: 60, height: 60,
+              background: 'rgba(255,255,255,0.1)', borderRadius: '50%'
+            }} />
+
+            <div
+              className="label"
+              style={{ fontSize: 14, color: 'rgba(255,255,255,0.9)', marginBottom: 4, fontWeight: 500 }}
+            >
+              {calorieGoal != null ? (netKcal > calorieGoal ? '⚠️ 已超過目標' : '✨ 距離熱量上限還有') : '今日淨熱量'}
             </div>
-            <div className="value" style={{ fontSize: 32, fontWeight: 800, color: netColor, lineHeight: 1.2 }}>
-              {netDisplayValue} <span style={{ fontSize: 14, fontWeight: 500 }}>kcal</span>
+            <div
+              className="value"
+              style={{
+                fontSize: 42, // 數字再加大
+                fontWeight: 800,
+                color: '#fff',
+                lineHeight: 1.1,
+                textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              }}
+            >
+              {netDisplayValue} <span style={{ fontSize: 16, fontWeight: 500, opacity: 0.9 }}>kcal</span>
             </div>
             {calorieGoal != null && (
-               <div style={{ fontSize: 12, color: netColor, fontWeight: 600 }}>{netStatusLabel}</div>
+               <div style={{ 
+                 marginTop: 8,
+                 display: 'inline-block',
+                 padding: '4px 12px',
+                 background: 'rgba(255,255,255,0.2)',
+                 borderRadius: 20,
+                 fontSize: 13, 
+                 fontWeight: 600,
+                 backdropFilter: 'blur(4px)'
+               }}>
+                 {netStatusLabel}
+               </div>
             )}
           </div>
 
