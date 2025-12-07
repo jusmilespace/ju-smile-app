@@ -1297,6 +1297,7 @@ const [srcMet, setSrcMet] = useState<string>(
     );
   };
 
+  // 優化樣式：更緊湊，移除按鈕改為整張卡片可點擊
   const MealCard: React.FC<{
     title: '早餐' | '午餐' | '晚餐' | '點心';
     kcal: number;
@@ -1306,23 +1307,51 @@ const [srcMet, setSrcMet] = useState<string>(
     onAdd: () => void;
   }> = ({ title, kcal, protein, carb, fat, onAdd }) => {
     return (
-      <div className="meal-card">
-        <div className="meal-header">
-          <div className="meal-title">{title}</div>
-          <div className="meal-kcal">{kcal} kcal</div>
-        </div>
-        <div className="meal-macros">
-          蛋白質 {round1(protein)} g · 碳水 {round1(carb)} g · 脂肪{' '}
-          {round1(fat)} g
+      <div 
+        className="meal-card"
+        onClick={onAdd}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          height: '100%',
+          cursor: 'pointer',
+          position: 'relative',
+          padding: '12px',
+          transition: 'transform 0.1s',
+          border: '1px solid #eee',
+          borderRadius: '12px',
+          background: '#fff'
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <div className="meal-title" style={{ fontSize: 16, fontWeight: 700, color: '#333' }}>{title}</div>
+          <div style={{ 
+            background: '#5c9c84', 
+            color: '#fff', 
+            borderRadius: '50%', 
+            width: 24, 
+            height: 24, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            fontSize: 16,
+            fontWeight: 'bold',
+            lineHeight: 1
+          }}>+</div>
         </div>
 
-        <div className="meal-actions">
-          <button onClick={onAdd}>新增</button>
+        <div style={{ flex: 1 }}>
+           <div className="meal-kcal" style={{ fontSize: 20, fontWeight: 800, color: '#5c9c84', marginBottom: 4 }}>
+             {kcal} <span style={{ fontSize: 12, fontWeight: 400, color: '#888' }}>kcal</span>
+           </div>
+           <div style={{ fontSize: 11, color: '#888', lineHeight: 1.4 }}>
+             P {round1(protein)} · C {round1(carb)} · F {round1(fat)}
+           </div>
         </div>
       </div>
     );
   };
-
   // ======== 首頁 ========
 
   type TodayPageProps = {
@@ -1332,111 +1361,54 @@ const [srcMet, setSrcMet] = useState<string>(
   const TodayPage: React.FC<TodayPageProps> = ({ onAddExercise }) => {
     const { showToast } = React.useContext(ToastContext);
     const todaySummary = getDay(todayLocal);
-// 🆕 點標題日期時打開原生 date picker
-  const todayDateInputRef = useRef<HTMLInputElement | null>(null);
-  const openTodayDatePicker = () => {
-    const input = todayDateInputRef.current;
-    if (!input) return;
-    const withPicker = input as HTMLInputElement & { showPicker?: () => void };
-    if (withPicker.showPicker) {
-      withPicker.showPicker();
-    } else {
-      input.focus();
-      input.click();
-    }
-  };
+    
+    // 🆕 點標題日期時打開原生 date picker
+    const todayDateInputRef = useRef<HTMLInputElement | null>(null);
+    const openTodayDatePicker = () => {
+      const input = todayDateInputRef.current;
+      if (!input) return;
+      const withPicker = input as HTMLInputElement & { showPicker?: () => void };
+      if (withPicker.showPicker) {
+        withPicker.showPicker();
+      } else {
+        input.focus();
+        input.click();
+      }
+    };
 
     const [wInput, setWInput] = useState<string>('');
     const [bfInput, setBfInput] = useState<string>('');
     const [vfInput, setVfInput] = useState<string>('');
     const [smInput, setSmInput] = useState<string>(''); // 🆕 骨骼肌率輸入
     const [waterInput, setWaterInput] = useState<string>('');
-    const [showBodyModal, setShowBodyModal] = useState(false);
-    const [bodyMetricsExpanded, setBodyMetricsExpanded] = useState(false); // 身體指標預設收起
+    
+    // 🗑️ 已移除 showBodyModal 與 bodyMetricsExpanded 相關狀態
 
+    // 初始化輸入框數值
     useEffect(() => {
-      setWInput(
-        todaySummary.weight != null ? String(todaySummary.weight) : ''
-      );
-      setBfInput(
-        todaySummary.bodyFat != null ? String(todaySummary.bodyFat) : ''
-      );
-      setVfInput(
-        todaySummary.visceralFat != null
-          ? String(todaySummary.visceralFat)
-          : ''
-      );
-      setSmInput(
-        todaySummary.skeletalMuscle != null
-          ? String(todaySummary.skeletalMuscle)
-          : ''
-      );
+      setWInput(todaySummary.weight != null ? String(todaySummary.weight) : '');
+      setBfInput(todaySummary.bodyFat != null ? String(todaySummary.bodyFat) : '');
+      setVfInput(todaySummary.visceralFat != null ? String(todaySummary.visceralFat) : '');
+      setSmInput(todaySummary.skeletalMuscle != null ? String(todaySummary.skeletalMuscle) : '');
     }, [todaySummary.weight, todaySummary.bodyFat, todaySummary.visceralFat, todaySummary.skeletalMuscle]);
-    // 取得依日期排序過的紀錄
-    const sortedDays = [...days].sort((a, b) =>
-      a.date.localeCompare(b.date)
-    );
-
-    const firstWeightDay = sortedDays.find((d) => d.weight != null);
-    const firstBodyFatDay = sortedDays.find((d) => d.bodyFat != null);
-    const firstVisceralFatDay = sortedDays.find(
-      (d) => d.visceralFat != null
-    );
-    const firstSkeletalMuscleDay = sortedDays.find(
-      (d) => d.skeletalMuscle != null
-    ); // 🆕 骨骼肌率最早紀錄日
-
-    // 以減重起始日期作為「起始值」，若沒有就用最早有紀錄的一天，再不行才用今日數值
-    const startDay = settings.startDate
-      ? days.find((d) => d.date === settings.startDate)
-      : undefined;
-
-    const startWeight =
-      startDay?.weight ??
-      firstWeightDay?.weight ??
-      todaySummary.weight;
-
-    const startBodyFat =
-      startDay?.bodyFat ??
-      firstBodyFatDay?.bodyFat ??
-      todaySummary.bodyFat;
-
-    const startVisceralFat =
-      startDay?.visceralFat ??
-      firstVisceralFatDay?.visceralFat ??
-      todaySummary.visceralFat;
-
-    const startSkeletalMuscle =
-      startDay?.skeletalMuscle ??
-      firstSkeletalMuscleDay?.skeletalMuscle ??
-      todaySummary.skeletalMuscle; // 🆕 骨骼肌率起始值
 
     const todayMeals = meals.filter((m) => m.date === todayLocal);
     const todayExercises = exercises.filter((e) => e.date === todayLocal);
 
     const todayIntake = todayMeals.reduce((s, m) => s + (m.kcal || 0), 0);
-    const todayBurn = todayExercises.reduce(
-      (s, e) => s + (e.kcal || 0),
-      0
-    );
-// 改成使用「這一天」自己的目標熱量，不再直接看全域 settings
-const calorieGoal =
-  todaySummary.calorieGoalKcal != null
-    ? todaySummary.calorieGoalKcal
-    : undefined;
-
-
-
+    const todayBurn = todayExercises.reduce((s, e) => s + (e.kcal || 0), 0);
+    
+    // 改成使用「這一天」自己的目標熱量
+    const calorieGoal = todaySummary.calorieGoalKcal != null ? todaySummary.calorieGoalKcal : undefined;
 
     // 先算出今天的「淨熱量」= 攝取 - 消耗
     const netKcal = todayIntake - todayBurn;
 
-    // 要顯示在畫面上的數字
+    // 要顯示在畫面上的數字與狀態
     let netDisplayValue = 0;
     let netStatusLabel = '';
     let netColor = '#444';
 
-    // 有設定目標時：用「淨熱量 - 目標」判斷
     if (calorieGoal != null) {
       const diff = netKcal - calorieGoal; // >0 超標, <0 赤字
       netDisplayValue = Math.abs(Math.round(diff));
@@ -1452,81 +1424,42 @@ const calorieGoal =
         netColor = '#3eabbeff';
       }
     } else {
-      // 沒設定目標時，就退回舊邏輯：和 0 比較
       netDisplayValue = Math.abs(Math.round(netKcal));
       const isDeficit = netKcal < 0;
       netStatusLabel = isDeficit ? '赤字(相對運動)' : '盈餘';
       netColor = isDeficit ? '#3b8c5a' : '#d64545';
     }
 
-    const todayExerciseMinutes = todayExercises.reduce(
-      (s, e) => s + (e.minutes || 0),
-      0
-    );
+    const todayExerciseMinutes = todayExercises.reduce((s, e) => s + (e.minutes || 0), 0);
 
-    const breakfastKcal = todayMeals
-      .filter((m) => m.mealType === '早餐')
-      .reduce((s, m) => s + m.kcal, 0);
-    const lunchKcal = todayMeals
-      .filter((m) => m.mealType === '午餐')
-      .reduce((s, m) => s + m.kcal, 0);
-    const dinnerKcal = todayMeals
-      .filter((m) => m.mealType === '晚餐')
-      .reduce((s, m) => s + m.kcal, 0);
-    const snackKcal = todayMeals
-      .filter((m) => m.mealType === '點心')
-      .reduce((s, m) => s + m.kcal, 0);
+    const breakfastKcal = todayMeals.filter((m) => m.mealType === '早餐').reduce((s, m) => s + m.kcal, 0);
+    const lunchKcal = todayMeals.filter((m) => m.mealType === '午餐').reduce((s, m) => s + m.kcal, 0);
+    const dinnerKcal = todayMeals.filter((m) => m.mealType === '晚餐').reduce((s, m) => s + m.kcal, 0);
+    const snackKcal = todayMeals.filter((m) => m.mealType === '點心').reduce((s, m) => s + m.kcal, 0);
 
-    const breakfastProt = todayMeals
-      .filter((m) => m.mealType === '早餐')
-      .reduce((s, m) => s + (m.protein ?? 0), 0);
-    const breakfastCarb = todayMeals
-      .filter((m) => m.mealType === '早餐')
-      .reduce((s, m) => s + (m.carb ?? 0), 0);
-    const breakfastFat = todayMeals
-      .filter((m) => m.mealType === '早餐')
-      .reduce((s, m) => s + (m.fat ?? 0), 0);
+    const breakfastProt = todayMeals.filter((m) => m.mealType === '早餐').reduce((s, m) => s + (m.protein ?? 0), 0);
+    const breakfastCarb = todayMeals.filter((m) => m.mealType === '早餐').reduce((s, m) => s + (m.carb ?? 0), 0);
+    const breakfastFat = todayMeals.filter((m) => m.mealType === '早餐').reduce((s, m) => s + (m.fat ?? 0), 0);
 
-    const lunchProt = todayMeals
-      .filter((m) => m.mealType === '午餐')
-      .reduce((s, m) => s + (m.protein ?? 0), 0);
-    const lunchCarb = todayMeals
-      .filter((m) => m.mealType === '午餐')
-      .reduce((s, m) => s + (m.carb ?? 0), 0);
-    const lunchFat = todayMeals
-      .filter((m) => m.mealType === '午餐')
-      .reduce((s, m) => s + (m.fat ?? 0), 0);
+    const lunchProt = todayMeals.filter((m) => m.mealType === '午餐').reduce((s, m) => s + (m.protein ?? 0), 0);
+    const lunchCarb = todayMeals.filter((m) => m.mealType === '午餐').reduce((s, m) => s + (m.carb ?? 0), 0);
+    const lunchFat = todayMeals.filter((m) => m.mealType === '午餐').reduce((s, m) => s + (m.fat ?? 0), 0);
 
-    const dinnerProt = todayMeals
-      .filter((m) => m.mealType === '晚餐')
-      .reduce((s, m) => s + (m.protein ?? 0), 0);
-    const dinnerCarb = todayMeals
-      .filter((m) => m.mealType === '晚餐')
-      .reduce((s, m) => s + (m.carb ?? 0), 0);
-    const dinnerFat = todayMeals
-      .filter((m) => m.mealType === '晚餐')
-      .reduce((s, m) => s + (m.fat ?? 0), 0);
+    const dinnerProt = todayMeals.filter((m) => m.mealType === '晚餐').reduce((s, m) => s + (m.protein ?? 0), 0);
+    const dinnerCarb = todayMeals.filter((m) => m.mealType === '晚餐').reduce((s, m) => s + (m.carb ?? 0), 0);
+    const dinnerFat = todayMeals.filter((m) => m.mealType === '晚餐').reduce((s, m) => s + (m.fat ?? 0), 0);
 
-    const snackProt = todayMeals
-      .filter((m) => m.mealType === '點心')
-      .reduce((s, m) => s + (m.protein ?? 0), 0);
-    const snackCarb = todayMeals
-      .filter((m) => m.mealType === '點心')
-      .reduce((s, m) => s + (m.carb ?? 0), 0);
-    const snackFat = todayMeals
-      .filter((m) => m.mealType === '點心')
-      .reduce((s, m) => s + (m.fat ?? 0), 0);
+    const snackProt = todayMeals.filter((m) => m.mealType === '點心').reduce((s, m) => s + (m.protein ?? 0), 0);
+    const snackCarb = todayMeals.filter((m) => m.mealType === '點心').reduce((s, m) => s + (m.carb ?? 0), 0);
+    const snackFat = todayMeals.filter((m) => m.mealType === '點心').reduce((s, m) => s + (m.fat ?? 0), 0);
 
-    const todayProtein = todayMeals.reduce(
-      (s, m) => s + (m.protein ?? 0),
-      0
-    );
+    const todayProtein = todayMeals.reduce((s, m) => s + (m.protein ?? 0), 0);
 
     function saveBody() {
       updateDay(todayLocal, {
         weight: wInput ? Number(wInput) : undefined,
         bodyFat: bfInput ? Number(bfInput) : undefined,
-        skeletalMuscle: smInput ? Number(smInput) : undefined, // 🆕 骨骼肌率
+        skeletalMuscle: smInput ? Number(smInput) : undefined,
         visceralFat: vfInput ? Number(vfInput) : undefined,
       });
       showToast('success','已儲存今日身體紀錄');
@@ -1544,192 +1477,102 @@ const calorieGoal =
     }
 
     return (
-      <div
-        className="page page-today"
-        style={{ paddingBottom: '90px' }}
-      >
+      <div className="page page-today" style={{ paddingBottom: '90px' }}>
         <header className="top-bar">
-  <button
-    type="button"
-    onClick={() =>
-      setTodayLocal(
-        dayjs(todayLocal)
-          .subtract(7, 'day')
-          .format('YYYY-MM-DD')
-      )
-    }
-    style={{
-      background: 'none',
-      border: 'none',
-      fontSize: 18,
-      cursor: 'pointer',
-      padding: '4px 8px',
-    }}
-  >
-    ◀
-  </button>
-
-  <div
-    className="date-text"
-    style={{
-      flex: 1,
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      gap: 8,
-    }}
-  >
-    {/* 週標題：點這一行會開 date picker */}
-    <div
-      style={{
-        fontSize: 13,
-        color: '#666',
-        fontWeight: 500,
-        cursor: 'pointer',
-      }}
-      onClick={openTodayDatePicker}
-    >
-      {dayjs(todayLocal).format('dddd, MMM D')}
-      <span style={{ marginLeft: 4 }}>▼</span>
-    </div>
-
-    {/* 7天日期選擇器 */}
-    <div style={{ display: 'flex', gap: 4 }}>
-      {Array.from({ length: 7 }).map((_, i) => {
-        const date = dayjs(todayLocal).startOf('week').add(i, 'day');
-        const dateStr = date.format('YYYY-MM-DD');
-        const isSelected = dateStr === todayLocal;
-        const isToday = dateStr === dayjs().format('YYYY-MM-DD');
-
-        return (
           <button
-            key={i}
-            onClick={() => setTodayLocal(dateStr)}
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: 8,
-              border: isSelected
-                ? '2px solid #97d0ba'
-                : isToday
-                ? '2px solid #d1f0e3'
-                : '1px solid #e9ecef',
-              background: isSelected
-                ? '#97d0ba'
-                : isToday
-                ? '#fff'
-                : 'transparent',
-              color: isSelected
-                ? '#fff'
-                : isToday
-                ? '#97d0ba'
-                : '#333',
-              fontSize: 14,
-              fontWeight: isSelected ? 700 : isToday ? 600 : 400,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: isSelected
-                ? '0 2px 4px rgba(151, 208, 186, 0.3)'
-                : 'none',
-              transition: 'all 0.2s ease',
-            }}
+            type="button"
+            onClick={() => setTodayLocal(dayjs(todayLocal).subtract(7, 'day').format('YYYY-MM-DD'))}
+            style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', padding: '4px 8px' }}
           >
-            {date.format('D')}
+            ◀
           </button>
-        );
-      })}
-    </div>
-  </div>
 
-  <button
-    type="button"
-    onClick={() =>
-      setTodayLocal(
-        dayjs(todayLocal)
-          .add(7, 'day')
-          .format('YYYY-MM-DD')
-      )
-    }
-    style={{
-      background: 'none',
-      border: 'none',
-      fontSize: 18,
-      cursor: 'pointer',
-      padding: '4px 8px',
-    }}
-  >
-    ▶
-  </button>
+          <div className="date-text" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+            <div 
+              style={{ fontSize: 13, color: '#666', fontWeight: 500, cursor: 'pointer' }}
+              onClick={openTodayDatePicker}
+            >
+              {dayjs(todayLocal).format('dddd, MMM D')} {todayLocal === dayjs().format('YYYY-MM-DD') && '▼'}
+            </div>
+            <div style={{ display: 'flex', gap: 4 }}>
+              {Array.from({ length: 7 }).map((_, i) => {
+                const date = dayjs(todayLocal).startOf('week').add(i, 'day');
+                const dateStr = date.format('YYYY-MM-DD');
+                const isSelected = dateStr === todayLocal;
+                const isToday = dateStr === dayjs().format('YYYY-MM-DD');
+                return (
+                  <button
+                    key={i}
+                    onClick={() => setTodayLocal(dateStr)}
+                    style={{
+                      width: 32, height: 32, borderRadius: 8,
+                      border: isSelected ? '2px solid #97d0ba' : (isToday ? '2px solid #d1f0e3' : '1px solid #e9ecef'),
+                      background: isSelected ? '#97d0ba' : (isToday ? '#fff' : 'transparent'),
+                      color: isSelected ? '#fff' : (isToday ? '#97d0ba' : '#333'),
+                      fontSize: 14, fontWeight: isSelected ? 700 : (isToday ? 600 : 400),
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      boxShadow: isSelected ? '0 2px 4px rgba(151, 208, 186, 0.3)' : 'none',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    {date.format('D')}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-  {/* 隱藏的 date input，用來打開原生日期選擇器 */}
-  <input
-    ref={todayDateInputRef}
-    type="date"
-    value={todayLocal}
-    onChange={(e) => {
-      if (!e.target.value) return;
-      setTodayLocal(e.target.value);
-    }}
-    style={{
-      position: 'absolute',
-      opacity: 0,
-      width: 1,
-      height: 1,
-    }}
-  />
-</header>
+          <button
+            type="button"
+            onClick={() => setTodayLocal(dayjs(todayLocal).add(7, 'day').format('YYYY-MM-DD'))}
+            style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', padding: '4px 8px' }}
+          >
+            ▶
+          </button>
 
-
+          <input
+            ref={todayDateInputRef}
+            type="date"
+            value={todayLocal}
+            onChange={(e) => {
+              if (!e.target.value) return;
+              setTodayLocal(e.target.value);
+            }}
+            style={{ position: 'absolute', opacity: 0, width: 1, height: 1 }}
+          />
+        </header>
 
         <section className="card">
           <h2>今日概況</h2>
-
-          {/* 上層：大大的淨熱量＋狀態 */}
           <div
             className="net-block"
-            style={{ marginBottom: 12, textAlign: 'center' }}
+            style={{ 
+              marginBottom: 16, 
+              textAlign: 'center',
+              padding: '16px',
+              background: calorieGoal != null ? `${netColor}15` : '#f8f9fa',
+              borderRadius: 16,
+            }}
           >
-            <div
-              className="label"
-              style={{ fontSize: 13, color: '#666', marginBottom: 4 }}
-            >
-              熱量目標差距
+            <div className="label" style={{ fontSize: 13, color: '#666', marginBottom: 2 }}>
+              {calorieGoal != null ? (netKcal > calorieGoal ? '已超過目標' : '距離熱量上限還有') : '今日淨熱量'}
             </div>
-            <div
-              className="value"
-              style={{
-                fontSize: 22,
-                fontWeight: 700,
-                color: netColor,
-                marginBottom: 4,
-              }}
-            >
-              {netDisplayValue} kcal {netStatusLabel}
+            <div className="value" style={{ fontSize: 32, fontWeight: 800, color: netColor, lineHeight: 1.2 }}>
+              {netDisplayValue} <span style={{ fontSize: 14, fontWeight: 500 }}>kcal</span>
             </div>
-
+            {calorieGoal != null && (
+               <div style={{ fontSize: 12, color: netColor, fontWeight: 600 }}>{netStatusLabel}</div>
+            )}
           </div>
 
-          {/* 下層：三個小欄位（攝取 / 消耗 / 目標攝取） */}
           <div className="summary-row">
             <div>
               <div className="label">🍽️ 攝取</div>
-              <div
-                className="value"
-                style={{ color: '#444', fontWeight: 600 }}
-              >
-                {todayIntake} kcal
-              </div>
+              <div className="value" style={{ color: '#444', fontWeight: 600 }}>{todayIntake} kcal</div>
             </div>
             <div>
               <div className="label">🔥 消耗</div>
-              <div
-                className="value"
-                style={{ color: '#e68a3a', fontWeight: 600 }}
-              >
-                {todayBurn} kcal
-              </div>
+              <div className="value" style={{ color: '#e68a3a', fontWeight: 600 }}>{todayBurn} kcal</div>
             </div>
             <div>
               <div className="label">目標攝取</div>
@@ -1742,104 +1585,15 @@ const calorieGoal =
 
         <section className="card rings-card">
           <h2>目標達成率</h2>
-          <div
-            className="rings-row"
-            style={{
-              display: 'flex',
-              gap: 12,
-              justifyContent: 'space-between',
-              alignItems: 'stretch',
-            }}
-          >
-            <MacroRing
-              label="蛋白質"
-              current={todayProtein}
-              target={settings.proteinGoal}
-              unit="g"
-            />
-            <MacroRing
-              label="飲水"
-              current={todaySummary.waterMl}
-              target={settings.waterGoalMl}
-              unit="ml"
-            />
-            <MacroRing
-              label="運動"
-              current={todayExerciseMinutes}
-              target={settings.exerciseMinutesGoal}
-              unit="min"
-            />
+          <div className="rings-row" style={{ display: 'flex', gap: 12, justifyContent: 'space-between', alignItems: 'stretch' }}>
+            <MacroRing label="蛋白質" current={todayProtein} target={settings.proteinGoal} unit="g" />
+            <MacroRing label="飲水" current={todaySummary.waterMl} target={settings.waterGoalMl} unit="ml" />
+            <MacroRing label="運動" current={todayExerciseMinutes} target={settings.exerciseMinutesGoal} unit="min" />
           </div>
-        </section>
-
-        {/* 🔵 身體指標進度（可收合，預設收起） */}
-        <section className="card rings-card">
-          <div
-            onClick={() => setBodyMetricsExpanded(!bodyMetricsExpanded)}
-            style={{
-              cursor: 'pointer',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: bodyMetricsExpanded ? 12 : 0,
-            }}
-          >
-            <h2 style={{ margin: 0 }}>身體指標進度</h2>
-            <span style={{ fontSize: 20 }}>{bodyMetricsExpanded ? '▲' : '▼'}</span>
-          </div>
-
-          {bodyMetricsExpanded && (
-            <>
-              <div
-                className="rings-row"
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: 12,
-                }}
-              >
-                <BodyRing
-                  label="體重"
-                  start={startWeight}
-                  current={todaySummary.weight}
-                  target={settings.targetWeight}
-                  unit="kg"
-                  onClick={() => setShowBodyModal(true)}
-                />
-                <BodyRing
-                  label="體脂率"
-                  start={startBodyFat}
-                  current={todaySummary.bodyFat}
-                  target={settings.bodyFatGoal}
-                  unit="%"
-                  onClick={() => setShowBodyModal(true)}
-                />
-                <BodyRing
-                  label="骨骼肌率"
-                  start={startSkeletalMuscle}
-                  current={todaySummary.skeletalMuscle}
-                  target={settings.skeletalMuscleGoal}
-                  unit="%"
-                  onClick={() => setShowBodyModal(true)}
-                />
-                <BodyRing
-                  label="內臟脂肪"
-                  start={startVisceralFat}
-                  current={todaySummary.visceralFat}
-                  target={settings.visceralFatGoal}
-                  unit=""
-                  onClick={() => setShowBodyModal(true)}
-                />
-              </div>
-              <div className="hint">點擊圓環可快速編輯今日身體紀錄</div>
-            </>
-          )}
         </section>
 
         <section className="card">
           <h2>今日飲水</h2>
-          <div className="water-row">
-          </div>
           <div className="btn-row">
             <button onClick={() => addWater(100)}>+100 ml</button>
             <button onClick={() => addWater(500)}>+500 ml</button>
@@ -1851,9 +1605,7 @@ const calorieGoal =
               <input
                 type="number"
                 value={waterInput}
-                onChange={(e) =>
-                  setWaterInput(e.target.value)
-                }
+                onChange={(e) => setWaterInput(e.target.value)}
                 placeholder="例如:300"
               />
             </label>
@@ -1863,75 +1615,70 @@ const calorieGoal =
           </div>
         </section>
 
-        <section className="card meals-card">
-          <MealCard
-            title="早餐"
-            kcal={breakfastKcal}
-            protein={breakfastProt}
-            carb={breakfastCarb}
-            fat={breakfastFat}
-            onAdd={() => {
-              setRecordDefaultMealType('早餐');
-              setCurrentFoodMealType('早餐');
-              setTab('records');
-              setRecordTab('food');
-              // 🆕 增加滾動到頂部
-            setTimeout(() => {
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }, 0);
-            }}
-          />
-          <MealCard
-            title="午餐"
-            kcal={lunchKcal}
-            protein={lunchProt}
-            carb={lunchCarb}
-            fat={lunchFat}
-            onAdd={() => {
-              setRecordDefaultMealType('午餐');
-              setCurrentFoodMealType('午餐');
-              setTab('records');
-              setRecordTab('food');
-              // 🆕 增加滾動到頂部
-            setTimeout(() => {
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }, 0);
-            }}
-          />
-          <MealCard
-            title="晚餐"
-            kcal={dinnerKcal}
-            protein={dinnerProt}
-            carb={dinnerCarb}
-            fat={dinnerFat}
-            onAdd={() => {
-              setRecordDefaultMealType('晚餐');
-              setCurrentFoodMealType('晚餐');
-              setTab('records');
-              setRecordTab('food');
-              // 🆕 增加滾動到頂部
-            setTimeout(() => {
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }, 0);
-            }}
-          />
-          <MealCard
-            title="點心"
-            kcal={snackKcal}
-            protein={snackProt}
-            carb={snackCarb}
-            fat={snackFat}
-            onAdd={() => {
-              setRecordDefaultMealType('點心');
-              setCurrentFoodMealType('點心');
-              setTab('records');
-              setRecordTab('food');
-              // 🆕 增加滾動到頂部
-            setTimeout(() => {
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }, 0);
-            }}
-          />
+        {/* 2x2 格狀排列的餐點卡片 */}
+        <section className="card" style={{ background: 'transparent', boxShadow: 'none', border: 'none', padding: 0 }}>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: '1fr 1fr',
+            gap: 12 
+          }}>
+            <MealCard
+              title="早餐"
+              kcal={breakfastKcal}
+              protein={breakfastProt}
+              carb={breakfastCarb}
+              fat={breakfastFat}
+              onAdd={() => {
+                setRecordDefaultMealType('早餐');
+                setCurrentFoodMealType('早餐');
+                setTab('records');
+                setRecordTab('food');
+                setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0);
+              }}
+            />
+            <MealCard
+              title="午餐"
+              kcal={lunchKcal}
+              protein={lunchProt}
+              carb={lunchCarb}
+              fat={lunchFat}
+              onAdd={() => {
+                setRecordDefaultMealType('午餐');
+                setCurrentFoodMealType('午餐');
+                setTab('records');
+                setRecordTab('food');
+                setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0);
+              }}
+            />
+            <MealCard
+              title="晚餐"
+              kcal={dinnerKcal}
+              protein={dinnerProt}
+              carb={dinnerCarb}
+              fat={dinnerFat}
+              onAdd={() => {
+                setRecordDefaultMealType('晚餐');
+                setCurrentFoodMealType('晚餐');
+                setTab('records');
+                setRecordTab('food');
+                setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0);
+              }}
+            />
+            <MealCard
+              title="點心"
+              kcal={snackKcal}
+              protein={snackProt}
+              carb={snackCarb}
+              fat={snackFat}
+              onAdd={() => {
+                setRecordDefaultMealType('點心');
+                setCurrentFoodMealType('點心');
+                setTab('records');
+                setRecordTab('food');
+                setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0);
+              }}
+            />
+          </div>
         </section>
 
         <section className="card">
@@ -1950,9 +1697,7 @@ const calorieGoal =
                 <div>
                   <div>{e.name}</div>
                   <div className="sub">
-                    {e.minutes != null
-                      ? `${e.minutes} 分鐘 · `
-                      : ''}
+                    {e.minutes != null ? `${e.minutes} 分鐘 · ` : ''}
                     {e.kcal} kcal
                   </div>
                 </div>
@@ -1966,127 +1711,25 @@ const calorieGoal =
           <div className="form-section">
             <label>
               體重 (kg)
-              <input
-                type="number"
-                value={wInput}
-                onChange={(e) => setWInput(e.target.value)}
-                placeholder="例如:70"
-              />
+              <input type="number" value={wInput} onChange={(e) => setWInput(e.target.value)} placeholder="例如:70" />
             </label>
             <label>
               體脂率 (%)
-              <input
-                type="number"
-                value={bfInput}
-                onChange={(e) => setBfInput(e.target.value)}
-                placeholder="例如:30"
-              />
+              <input type="number" value={bfInput} onChange={(e) => setBfInput(e.target.value)} placeholder="例如:30" />
             </label>
             <label>
               骨骼肌率 (%)
-              <input
-                type="number"
-                value={smInput}
-                onChange={(e) => setSmInput(e.target.value)}
-                placeholder="例如:25"
-              />
+              <input type="number" value={smInput} onChange={(e) => setSmInput(e.target.value)} placeholder="例如:25" />
             </label>
             <label>
               內臟脂肪指數
-              <input
-                type="number"
-                value={vfInput}
-                onChange={(e) => setVfInput(e.target.value)}
-                placeholder="例如:8"
-              />
+              <input type="number" value={vfInput} onChange={(e) => setVfInput(e.target.value)} placeholder="例如:8" />
             </label>
             <button className="primary" onClick={saveBody}>
               儲存今日身體紀錄
             </button>
           </div>
         </section>
-
-        {/* 編輯今日身體紀錄彈窗 */}
-        {showBodyModal && (
-          <div
-            className="modal-backdrop"
-            style={{
-              position: 'fixed',
-              inset: 0,
-              background: 'rgba(0,0,0,0.35)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 20,
-            }}
-          >
-            <div
-              className="modal"
-              style={{
-                background: '#fff',
-                borderRadius: 12,
-                padding: 16,
-                maxWidth: 320,
-                width: '90%',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-              }}
-            >
-              <h3 style={{ marginTop: 0 }}>編輯今日身體紀錄</h3>
-              <div className="form-section">
-                <label>
-                  體重 (kg)
-                  <input
-                    type="number"
-                    value={wInput}
-                    onChange={(e) => setWInput(e.target.value)}
-                    placeholder="例如:70"
-                  />
-                </label>
-                <label>
-                  體脂率 (%)
-                  <input
-                    type="number"
-                    value={bfInput}
-                    onChange={(e) => setBfInput(e.target.value)}
-                    placeholder="例如:30"
-                  />
-                </label>
-                <label>
-                  骨骼肌率 (%)
-                  <input
-                    type="number"
-                    value={smInput}
-                    onChange={(e) => setSmInput(e.target.value)}
-                    placeholder="例如:25"
-                  />
-                </label>
-                <label>
-                  內臟脂肪指數
-                  <input
-                    type="number"
-                    value={vfInput}
-                    onChange={(e) => setVfInput(e.target.value)}
-                    placeholder="例如:8"
-                  />
-                </label>
-              </div>
-              <div className="btn-row">
-                <button
-                  className="primary"
-                  onClick={() => {
-                    saveBody();
-                    setShowBodyModal(false);
-                  }}
-                >
-                  儲存
-                </button>
-                <button onClick={() => setShowBodyModal(false)}>
-                  取消
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     );
   };
