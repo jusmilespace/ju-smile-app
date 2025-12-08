@@ -3,6 +3,22 @@ import Papa from 'papaparse';
 import dayjs from 'dayjs';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { VisualPortionPicker } from './VisualPortionPicker';
+import proteinIcon from './assets/protein-icon.png';
+import veggieIcon from './assets/veggie-icon.png';
+import grainIcon from './assets/grain-icon.png';
+import fruitIcon from './assets/fruit-icon.png';
+import fatIcon from './assets/fat-icon.png';
+
+// 🖐️ 手掌法圖示（與 VisualPortionPicker 共用的 6 張 img）
+import proteinImg from './assets/protein.png';
+import veggieImg from './assets/veggie.png';
+import grainsImg from './assets/grains.png';
+import fruitImg from './assets/fruit.png';
+import fatImg from './assets/fat.png';
+import dairyImg from './assets/dairy.png';
+
+
+
 // 🆕 ===== Toast 動畫樣式（加在這裡）=====
 // 使用 useEffect 確保在元件掛載後注入樣式
 const ToastStyles: React.FC = () => {
@@ -158,13 +174,91 @@ type MealCombo = {
   items: ComboItem[];
 };
 
-type ToastType = 'success' | 'error' | 'warning' | 'info';
-
-type ToastMessage = {
-  id: string;
-  type: ToastType;
-  message: string;
+// 🖐️ 手掌法份量：把 emoji 轉成圖片顯示（與 VisualPortionPicker 共用）
+const PALM_PORTION_ICON_MAP: Record<string, { src: string; alt: string }> = {
+  '✋': { src: proteinImg, alt: '豆魚蛋肉類' },
+  // 👊 在手掌法中代表「拳頭份量」，可用於蔬菜 / 全穀 / 水果
+  '👊': { src: grainsImg, alt: '拳頭份量（蔬菜/全穀/水果）' },
+  '👍': { src: fatImg, alt: '油脂與堅果種子類' },
+  '🥛': { src: dairyImg, alt: '乳品類' },
 };
+
+function renderPalmAmountText(amountText?: string): React.ReactNode {
+  if (!amountText) return null;
+
+  // 如果字串裡沒有手掌法 emoji，就直接原樣顯示
+  const hasPalmEmoji = Object.keys(PALM_PORTION_ICON_MAP).some((emoji) =>
+    amountText.includes(emoji)
+  );
+  if (!hasPalmEmoji) {
+    return amountText;
+  }
+
+  // 範例格式：✋×1 + 👊×1 + 👊×1 + 👍×1 + 🥛×1
+  const segments = amountText
+    .split('+')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: 4,
+      }}
+    >
+      {segments.map((seg, idx) => {
+        const match = seg.match(/^(.+?)(?:×|x)([0-9]+(?:\.[0-9]+)?)$/);
+        if (!match) {
+          // 解析不到就直接顯示原文字，避免壞掉
+          return (
+            <span key={idx} style={{ marginRight: 4 }}>
+              {seg}
+            </span>
+          );
+        }
+
+        const emoji = match[1];
+        const count = match[2];
+        const cfg = PALM_PORTION_ICON_MAP[emoji];
+
+        if (!cfg) {
+          return (
+            <span key={idx} style={{ marginRight: 4 }}>
+              {seg}
+            </span>
+          );
+        }
+
+        return (
+          <span
+            key={idx}
+            style={{ display: 'inline-flex', alignItems: 'center' }}
+          >
+            <img
+              src={cfg.src}
+              alt={cfg.alt}
+              style={{
+                width: 18,
+                height: 18,
+                marginRight: 2,
+                objectFit: 'contain',
+              }}
+            />
+            <span>×{count}</span>
+            {idx < segments.length - 1 && (
+              <span style={{ margin: '0 4px' }}>+</span>
+            )}
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
+type ToastType = 'success' | 'error' | 'warning' | 'info';
 
 
 // ======== 常數 & 工具 ========
@@ -1468,7 +1562,33 @@ const [srcMet, setSrcMet] = useState<string>(
     const snackCarb = todayMeals.filter((m) => m.mealType === '點心').reduce((s, m) => s + (m.carb ?? 0), 0);
     const snackFat = todayMeals.filter((m) => m.mealType === '點心').reduce((s, m) => s + (m.fat ?? 0), 0);
 
+    // 1. 計算今日已攝取的總營養素 (原本只有算 Protein, 現在補上 C 與 F)
     const todayProtein = todayMeals.reduce((s, m) => s + (m.protein ?? 0), 0);
+    const todayCarb = todayMeals.reduce((s, m) => s + (m.carb ?? 0), 0);
+    const todayFat = todayMeals.reduce((s, m) => s + (m.fat ?? 0), 0);
+
+    // 2. 計算目標 (Target)
+    // 基準熱量：優先使用當日目標 (calorieGoal)，若無則用設定頁目標，再無則預設 2000
+    const currentTargetKcal = calorieGoal || settings.calorieGoal || 2000;
+
+    // 蛋白質目標 (P)：優先使用 settings.proteinGoal
+    // 若沒設定，暫時用體重 * 1.2 推算
+    const currentWeight = todaySummary.weight || 60;
+    const targetP = (settings.proteinGoal && settings.proteinGoal > 0)
+      ? settings.proteinGoal
+      : (currentWeight * 1.2); 
+
+    // 脂肪目標 (F)：設定為總熱量的 30%
+    const targetFatKcal = currentTargetKcal * 0.3;
+    const targetF = targetFatKcal / 9;
+
+    // 碳水目標 (C)：剩下的熱量給碳水
+    const targetProtKcal = targetP * 4;
+    const targetCarbKcal = currentTargetKcal - targetFatKcal - targetProtKcal;
+    const targetC = targetCarbKcal > 0 ? targetCarbKcal / 4 : 0;
+
+    // 計算剩餘可攝取熱量
+    const remainingKcal = currentTargetKcal + todayBurn - todayIntake;
 
     function saveBody() {
       updateDay(todayLocal, {
@@ -1672,114 +1792,175 @@ const [srcMet, setSrcMet] = useState<string>(
   {/* 移除原本放在這裡的 hidden input，因為已經整併到上方標題裡了 */}
 </header>
 
-        <section className="card">
-          <h2>今日概況</h2>
-          {/* 上層：今日熱量儀表板 (Gradient Card) */}
-          <div
-            className="net-block"
-            style={{ 
-              marginBottom: 20, 
-              textAlign: 'center',
-              padding: '24px',
-              // ✨ 魔法：使用品牌色漸層，創造高級感
-              background: 'linear-gradient(135deg, #97d0ba 0%, #5c9c84 100%)',
-              borderRadius: 24,
-              color: '#fff', // 文字改為白色
-              boxShadow: '0 10px 25px rgba(92, 156, 132, 0.4)', // 發光的陰影
-              position: 'relative',
-              overflow: 'hidden'
-            }}
-          >
-            {/* 裝飾用的背景圓圈，增加層次感 */}
-            <div style={{
-              position: 'absolute', top: -20, right: -20, width: 100, height: 100,
-              background: 'rgba(255,255,255,0.1)', borderRadius: '50%'
-            }} />
-            <div style={{
-              position: 'absolute', bottom: -10, left: -10, width: 60, height: 60,
-              background: 'rgba(255,255,255,0.1)', borderRadius: '50%'
-            }} />
 
-            <div
-              className="label"
-              style={{ fontSize: 14, color: 'rgba(255,255,255,0.9)', marginBottom: 4, fontWeight: 500 }}
-            >
-              {calorieGoal != null ? (netKcal > calorieGoal ? '⚠️ 已超過目標' : '✨ 距離熱量上限還有') : '今日淨熱量'}
+
+       {/* ==== 新版 Hero Card (內縮漸層 + 白底營養素) ==== */}
+        {/* ==== Hero Card (內縮漸層 + P/C/F 進度條) ==== */}
+        <div className="hero-card">
+          {/* 綠色漸層區塊 */}
+          <div className="hero-gradient-block">
+            {/* 裝飾圓圈 */}
+            <div style={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, background: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
+            
+            <div className="hero-title">今日剩餘可攝取</div>
+            <div className="hero-number">
+              {Math.round(remainingKcal)}
+              <span className="hero-unit">kcal</span>
             </div>
-            <div
-              className="value"
-              style={{
-                fontSize: 42, // 數字再加大
-                fontWeight: 800,
-                color: '#fff',
-                lineHeight: 1.1,
-                textShadow: '0 2px 4px rgba(0,0,0,0.1)'
-              }}
-            >
-              {netDisplayValue} <span style={{ fontSize: 16, fontWeight: 500, opacity: 0.9 }}>kcal</span>
+            <div className="hero-subtitle">
+              目標 {currentTargetKcal} － 已吃 {Math.round(todayIntake)} ＋ 運動 {Math.round(todayBurn)}
             </div>
-            {calorieGoal != null && (
-               <div style={{ 
-                 marginTop: 8,
-                 display: 'inline-block',
-                 padding: '4px 12px',
-                 background: 'rgba(255,255,255,0.2)',
-                 borderRadius: 20,
-                 fontSize: 13, 
-                 fontWeight: 600,
-                 backdropFilter: 'blur(4px)'
-               }}>
-                 {netStatusLabel}
-               </div>
-            )}
           </div>
 
-          <div className="summary-row">
-            <div>
-              <div className="label">🍽️ 攝取</div>
-              <div className="value" style={{ color: '#444', fontWeight: 600 }}>{todayIntake} kcal</div>
+          {/* 營養素區塊 (P/C/F) */}
+          <div className="macro-grid">
+            {/* 蛋白質 (P) */}
+            <div className="macro-item">
+              <div className="macro-label">蛋白質</div>
+              <div className="macro-val">
+                {Math.round(todayProtein)}<span className="macro-limit">/{Math.round(targetP)}</span>
+              </div>
+              <div className="progress-mini-track">
+                <div 
+                  className="progress-mini-bar" 
+                  style={{ 
+                    width: `${Math.min((todayProtein / targetP) * 100, 100)}%`,
+                    background: '#5c9c84' // 綠色
+                  }} 
+                />
+              </div>
             </div>
-            <div>
-              <div className="label">🔥 消耗</div>
-              <div className="value" style={{ color: '#e68a3a', fontWeight: 600 }}>{todayBurn} kcal</div>
+
+            {/* 碳水 (C) */}
+            <div className="macro-item">
+              <div className="macro-label">碳水</div>
+              <div className="macro-val">
+                {Math.round(todayCarb)}<span className="macro-limit">/{Math.round(targetC)}</span>
+              </div>
+              <div className="progress-mini-track">
+                <div 
+                  className="progress-mini-bar" 
+                  style={{ 
+                    width: `${Math.min((todayCarb / targetC) * 100, 100)}%`,
+                    background: '#ffbe76' // 橘色
+                  }} 
+                />
+              </div>
             </div>
-            <div>
-              <div className="label">目標攝取</div>
-              <div className="value" style={{ fontWeight: 600 }}>
-                {calorieGoal != null ? `${calorieGoal} kcal` : '未設定'}
+
+            {/* 脂肪 (F) */}
+            <div className="macro-item">
+              <div className="macro-label">脂肪</div>
+              <div className="macro-val">
+                {Math.round(todayFat)}<span className="macro-limit">/{Math.round(targetF)}</span>
+              </div>
+              <div className="progress-mini-track">
+                <div 
+                  className="progress-mini-bar" 
+                  style={{ 
+                    width: `${Math.min((todayFat / targetF) * 100, 100)}%`,
+                    background: '#ff7979' // 紅色
+                  }} 
+                />
               </div>
             </div>
           </div>
-        </section>
-
-        <section className="card rings-card">
-          <h2>目標達成率</h2>
-          <div className="rings-row" style={{ display: 'flex', gap: 12, justifyContent: 'space-between', alignItems: 'stretch' }}>
-            <MacroRing label="蛋白質" current={todayProtein} target={settings.proteinGoal} unit="g" />
-            <MacroRing label="飲水" current={todaySummary.waterMl} target={settings.waterGoalMl} unit="ml" />
-            <MacroRing label="運動" current={todayExerciseMinutes} target={settings.exerciseMinutesGoal} unit="min" />
-          </div>
-        </section>
-
+        </div>
         <section className="card">
           <h2>今日飲水</h2>
-          <div className="btn-row">
-            <button onClick={() => addWater(100)}>+100 ml</button>
-            <button onClick={() => addWater(500)}>+500 ml</button>
-            <button onClick={() => addWater(1000)}>+1000 ml</button>
-          </div>
-          <div className="form-section">
-            <label>
-              自訂增加 (ml)
-              <input
-                type="number"
-                value={waterInput}
-                onChange={(e) => setWaterInput(e.target.value)}
-                placeholder="例如:300"
+          
+          {/* 1. 進度條 (藍色 #5eb6e6，代表水) */}
+          <div className="section-progress-wrap">
+            <div className="section-progress-info">
+              <div>
+                <span className="section-progress-current" style={{ color: '#5eb6e6' }}>
+                  {todaySummary.waterMl}
+                </span> 
+                <span style={{ fontSize: 12, marginLeft: 2 }}>ml</span>
+              </div>
+              <div className="section-progress-target">
+                目標 {settings.waterGoalMl || 2000} ml
+              </div>
+            </div>
+            <div className="section-progress-track">
+              <div 
+                className="section-progress-bar" 
+                style={{ 
+                  width: `${Math.min((todaySummary.waterMl / (settings.waterGoalMl || 2000)) * 100, 100)}%`,
+                  background: '#5eb6e6' 
+                }} 
               />
-            </label>
-            <button className="primary" onClick={addWaterManual}>
-              加入今日飲水
+            </div>
+          </div>
+
+          {/* 2. 快速增加按鈕 (淺藍色膠囊樣式) */}
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+            {[100, 500, 1000].map((amt) => (
+              <button
+                key={amt}
+                onClick={() => addWater(amt)}
+                style={{
+                  flex: 1,
+                  padding: '8px 0',
+                  borderRadius: '20px',
+                  // 邊框：很淡的藍色
+                  border: '1px solid #dcf2fa', 
+                  // 背景：極淺的藍色，呼應水的感覺
+                  background: '#f0f9fc', 
+                  // 文字：使用飲水主題色
+                  color: '#5eb6e6', 
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                +{amt}
+              </button>
+            ))}
+          </div>
+          {/* 3. 自訂輸入區 (按鈕改為品牌薄荷綠 #97d0ba) */}
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            background: '#f9fafb', 
+            padding: '4px 4px 4px 16px', 
+            borderRadius: '99px', 
+            border: '1px solid #e9ecef'
+          }}>
+            <input
+              type="number"
+              value={waterInput}
+              onChange={(e) => setWaterInput(e.target.value)}
+              placeholder="自訂 ml..."
+              style={{ 
+                flex: 1, 
+                border: 'none', 
+                background: 'transparent', 
+                fontSize: '14px', 
+                outline: 'none',
+                color: '#333'
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') addWaterManual();
+              }}
+            />
+            <button 
+              onClick={addWaterManual}
+              style={{
+                background: '#97d0ba', // ✅ 修正：使用品牌薄荷綠
+                color: '#fff',
+                border: 'none',
+                borderRadius: '99px',
+                padding: '8px 24px',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                flexShrink: 0,
+                boxShadow: '0 2px 5px rgba(151, 208, 186, 0.4)' // 陰影也調整為對應的薄荷色
+              }}
+            >
+              加入
             </button>
           </div>
         </section>
@@ -1857,6 +2038,29 @@ const [srcMet, setSrcMet] = useState<string>(
               新增運動
             </button>
           </div>
+          {/* 🆕 運動進度條 */}
+          <div className="section-progress-wrap">
+            <div className="section-progress-info">
+              <div>
+                <span className="section-progress-current" style={{ color: '#f59e0b' }}>
+                  {todayExerciseMinutes}
+                </span> 
+                <span style={{ fontSize: 12, marginLeft: 2 }}>分鐘</span>
+              </div>
+              <div className="section-progress-target">
+                目標 {settings.exerciseMinutesGoal || 30} 分鐘
+              </div>
+            </div>
+            <div className="section-progress-track">
+              <div 
+                className="section-progress-bar" 
+                style={{ 
+                  width: `${Math.min((todayExerciseMinutes / (settings.exerciseMinutesGoal || 30)) * 100, 100)}%`,
+                  background: '#f59e0b' // 橘黃色
+                }} 
+              />
+            </div>
+          </div>
           <div>
             {todayExercises.length === 0 && (
               <div className="hint">今天尚未記錄運動</div>
@@ -1876,27 +2080,62 @@ const [srcMet, setSrcMet] = useState<string>(
         </section>
 
         <section className="card">
-          <h2>今日身體紀錄</h2>
-          <div className="form-section">
-            <label>
-              體重 (kg)
-              <input type="number" value={wInput} onChange={(e) => setWInput(e.target.value)} placeholder="例如:70" />
-            </label>
-            <label>
-              體脂率 (%)
-              <input type="number" value={bfInput} onChange={(e) => setBfInput(e.target.value)} placeholder="例如:30" />
-            </label>
-            <label>
-              骨骼肌率 (%)
-              <input type="number" value={smInput} onChange={(e) => setSmInput(e.target.value)} placeholder="例如:25" />
-            </label>
-            <label>
-              內臟脂肪指數
-              <input type="number" value={vfInput} onChange={(e) => setVfInput(e.target.value)} placeholder="例如:8" />
-            </label>
-            <button className="primary" onClick={saveBody}>
-              儲存今日身體紀錄
+          <div className="card-header">
+            <h2>今日身體紀錄</h2>
+            {/* 把儲存按鈕移到標題旁，省去下方空間，也更順手 */}
+            <button className="secondary small" onClick={saveBody}>
+              儲存
             </button>
+          </div>
+          
+          <div className="form-section" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            {/* 1. 體重 */}
+            <div style={{ background: '#f9fafb', padding: '12px', borderRadius: '12px', border: '1px solid #e9ecef' }}>
+              <label style={{ fontSize: 12, color: '#666', marginBottom: 4, display: 'block' }}>體重 (kg)</label>
+              <input 
+                type="number" 
+                value={wInput} 
+                onChange={(e) => setWInput(e.target.value)} 
+                placeholder="0.0" 
+                style={{ width: '100%', fontSize: 18, fontWeight: 'bold', padding: '4px 0', background: 'transparent', border: 'none', borderBottom: '1px solid #ddd', borderRadius: 0 }}
+              />
+            </div>
+
+            {/* 2. 體脂率 */}
+            <div style={{ background: '#f9fafb', padding: '12px', borderRadius: '12px', border: '1px solid #e9ecef' }}>
+              <label style={{ fontSize: 12, color: '#666', marginBottom: 4, display: 'block' }}>體脂率 (%)</label>
+              <input 
+                type="number" 
+                value={bfInput} 
+                onChange={(e) => setBfInput(e.target.value)} 
+                placeholder="0.0" 
+                style={{ width: '100%', fontSize: 18, fontWeight: 'bold', padding: '4px 0', background: 'transparent', border: 'none', borderBottom: '1px solid #ddd', borderRadius: 0 }}
+              />
+            </div>
+
+            {/* 3. 骨骼肌率 */}
+            <div style={{ background: '#f9fafb', padding: '12px', borderRadius: '12px', border: '1px solid #e9ecef' }}>
+              <label style={{ fontSize: 12, color: '#666', marginBottom: 4, display: 'block' }}>骨骼肌率 (%)</label>
+              <input 
+                type="number" 
+                value={smInput} 
+                onChange={(e) => setSmInput(e.target.value)} 
+                placeholder="0.0" 
+                style={{ width: '100%', fontSize: 18, fontWeight: 'bold', padding: '4px 0', background: 'transparent', border: 'none', borderBottom: '1px solid #ddd', borderRadius: 0 }}
+              />
+            </div>
+
+            {/* 4. 內臟脂肪 */}
+            <div style={{ background: '#f9fafb', padding: '12px', borderRadius: '12px', border: '1px solid #e9ecef' }}>
+              <label style={{ fontSize: 12, color: '#666', marginBottom: 4, display: 'block' }}>內臟脂肪</label>
+              <input 
+                type="number" 
+                value={vfInput} 
+                onChange={(e) => setVfInput(e.target.value)} 
+                placeholder="0" 
+                style={{ width: '100%', fontSize: 18, fontWeight: 'bold', padding: '4px 0', background: 'transparent', border: 'none', borderBottom: '1px solid #ddd', borderRadius: 0 }}
+              />
+            </div>
           </div>
         </section>
       </div>
@@ -1944,17 +2183,6 @@ const COMMON_EXERCISES = [
     setFoodMealType: (type: '早餐' | '午餐' | '晚餐' | '點心') => void;
   }> = ({ recordTab, setRecordTab, defaultMealType, foodMealType, setFoodMealType }) => {
     const { showToast } = React.useContext(ToastContext);
-
-    // 🆕 工具函數：將手掌法的手勢 emoji 轉換成代表圖案
-    const convertPalmEmojis = (amountText: string): string => {
-      if (!amountText) return '';
-      
-      return amountText
-        .replace(/✋/g, '🍗') // 手掌心 → 雞腿
-        .replace(/👍/g, '🥜') // 大拇指 → 堅果
-        .replace(/🥛/g, '🥛'); // 乳品保持不變
-      // 註：👊 拳頭在 VisualPortionPicker 裡已經是類別名稱了，不會出現在 amountText
-    };
 
     const [selectedDate, setSelectedDate] = useState(todayLocal);
     
@@ -2886,15 +3114,32 @@ useEffect(() => {
           }}
         >
           {/* 左邊：名稱＋小字說明（版型同飲食明細） */}
-          <div style={{ flex: 1 }}>
-            <div>{m.label}</div>
-            <div className="sub">
-              {m.mealType}
-              {m.amountText ? ` · ${m.amountText}` : ''}
-              {' · '}
-              {m.kcal} kcal
-            </div>
-          </div>
+<div style={{ flex: 1 }}>
+  <div>{m.label}</div>
+  <div
+    className="sub"
+    style={{
+      display: 'flex',
+      flexWrap: 'wrap',
+      alignItems: 'center',
+      gap: 4,
+    }}
+  >
+    <span>{m.mealType}</span>
+
+    {m.amountText && (
+      <>
+        <span>·</span>
+        <span>{renderPalmAmountText(m.amountText)}</span>
+      </>
+    )}
+
+    <span>·</span>
+    <span>{m.kcal} kcal</span>
+  </div>
+</div>
+
+
 
           {/* 右邊：加入按鈕 */}
           <div
@@ -3878,12 +4123,28 @@ useEffect(() => {
                       <div>
                         {m.label}
                       </div>
-                      <div className="sub">
-                        {m.mealType}
-                        {m.amountText ? ` · ${convertPalmEmojis(m.amountText)}` : ''}
-                        {' · '}
-                        {m.kcal} kcal
-                      </div>
+                      <div
+  className="sub"
+  style={{
+    display: 'flex',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 4,
+  }}
+>
+  <span>{m.mealType}</span>
+
+  {m.amountText && (
+    <>
+      <span>·</span>
+      <span>{renderPalmAmountText(m.amountText)}</span>
+    </>
+  )}
+
+  <span>·</span>
+  <span>{m.kcal} kcal</span>
+</div>
+
                     </div>
                     <div 
                       className="btn-row"
@@ -5687,8 +5948,57 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
     const config = metricConfig[metric];
 
     return (
-      <div className="page" style={{ padding: 16, paddingBottom: '96px' }}>
-        <h1 style={{ fontSize: 22, marginBottom: 16 }}>📊 數據趨勢分析</h1>
+  <div className="page" style={{ padding: 16, paddingBottom: '96px' }}>
+    {/* 新的標題區塊：包含圖片 Icon 與樣式 */}
+    {/* 標題區塊：使用 Flexbox 強制並排 */}
+<div style={{ 
+  display: 'flex',          // 👈 關鍵：讓內容左右並排
+  alignItems: 'center',     // 垂直置中對齊
+  marginBottom: 16,         // 與下方內容保持距離
+  paddingBottom: 12,        // 標題區塊內留白
+  borderBottom: '1px solid #e9ecef' // 加一條淡淡的底線增加質感
+}}>
+  
+  {/* 左側：SVG 圖示 (白色圓底 + 陰影) */}
+  <div style={{
+    width: 40,
+    height: 40,
+    borderRadius: '50%',
+    background: '#fff',
+    display: 'flex',           // 讓 SVG 在圓圈內置中
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+    marginRight: 12            // 👈 圖示與文字的間距
+  }}>
+    {/* 直接內嵌 SVG，保證不會 404 */}
+    <svg 
+      width="24" 
+      height="24" 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="#5c9c84"         // 使用品牌 Mint 色
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+    >
+      <line x1="18" y1="20" x2="18" y2="10"></line>
+      <line x1="12" y1="20" x2="12" y2="4"></line>
+      <line x1="6" y1="20" x2="6" y2="14"></line>
+    </svg>
+  </div>
+
+  {/* 右側：標題文字 */}
+  <h1 style={{ 
+    fontSize: 22, 
+    margin: 0,                // 移除預設邊距，避免跑版
+    color: '#333',
+    fontWeight: 700
+  }}>
+    數據趨勢分析
+  </h1>
+
+</div>
 
         {/* 數據洞察卡片（身體組成模式不顯示） */}
         {insights && metric !== 'bodyComposition' && (
@@ -5863,7 +6173,11 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
           {/* 🆕 優化：外層加入橫向捲動容器，避免 X 軸過擠 */}
           <div style={{ width: '100%', overflowX: 'auto', paddingBottom: 10 }}>
             {/* 設定 minWidth，資料多時自動變寬讓使用者滑動 */}
-            <div style={{ minWidth: chartData.length > 10 ? 600 : '100%', height: 300 }}>
+            <div style={{ 
+      minWidth: chartData.length > 10 ? 600 : '100%', 
+      height: 300,        // 確保這裡有 300
+      minHeight: 300      // 多加這行保險
+  }}>
               
               {/* 🆕 身體組成合併圖表（雙 Y 軸） */}
               {metric === 'bodyComposition' ? (

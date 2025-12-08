@@ -534,3 +534,170 @@ details summary {
 input, select, textarea {
   font-size: 16px;
 }
+/* ==== 首頁 Hero Dashboard (白底 + 縮小的漸層區塊) ==== */
+.hero-card {
+  background: #fff; /* 最外層改回白色 */
+  border-radius: 24px;
+  padding: 16px 0; /* 上下留白，左右不留(由內部控制) */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); /* 淡淡的陰影 */
+  border: 1px solid #f0f0f0;
+  text-align: center;
+  margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 新增：內部的漸層區塊 (負責留白效果) */
+.hero-gradient-block {
+  background: linear-gradient(135deg, #97d0ba 0%, #5c9c84 100%);
+  border-radius: 20px;
+  margin: 0 16px; /* 關鍵：左右留白 16px */
+  padding: 20px;
+  color: #fff;
+  box-shadow: 0 8px 16px rgba(92, 156, 132, 0.25); /* 讓綠色塊浮起來 */
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-title {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.hero-number {
+  font-size: 48px; /*稍微縮小一點以適應內縮 */
+  font-weight: 800;
+  color: #fff;
+  line-height: 1;
+  margin-bottom: 4px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.hero-unit {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin-left: 2px;
+  vertical-align: middle;
+}
+
+.hero-subtitle {
+  font-size: 12px;
+  color: #fff;
+  margin-bottom: 0;
+  background: rgba(255, 255, 255, 0.2);
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* 營養素網格：直接在白底上顯示 */
+.macro-grid {
+  background: transparent;
+  padding: 16px 20px 0 20px; /* 配合外層留白 */
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.macro-item {
+  flex: 1;
+  text-align: center;
+}
+
+.macro-label {
+  font-size: 12px;
+  color: #888; /* 深灰字 */
+  margin-bottom: 4px;
+}
+
+.macro-val {
+  font-size: 14px;
+  font-weight: 700;
+  color: #333; /* 深黑字 */
+}
+
+.macro-limit {
+  font-size: 11px;
+  color: #bbb;
+  font-weight: 400;
+  margin-left: 2px;
+}
+
+/* ==== 新增：區塊內的進度條樣式 (給飲水和運動用) ==== */
+.section-progress-wrap {
+  margin: 12px 0 20px 0; /* 與上下內容的距離 */
+}
+
+.section-progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: #666;
+}
+
+.section-progress-current {
+  font-size: 20px;
+  font-weight: 700;
+  color: #333;
+}
+
+.section-progress-target {
+  font-size: 12px;
+  color: #999;
+}
+
+.section-progress-track {
+  height: 10px;
+  background: #f0f0f0;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.section-progress-bar {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.5s ease;
+}
+/* ==== 確保進度條有高度與背景 ==== */
+.progress-mini-track {
+  height: 6px;
+  background: #f0f0f0; /* 淺灰底 */
+  border-radius: 3px;
+  margin-top: 8px;
+  overflow: hidden;
+  width: 100%; /* 確保佔滿寬度 */
+}
+
+.progress-mini-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.analysis-icon {
+  /* 移除 font-size，改用 flex 讓圖片置中 */
+  margin-right: 12px;
+  background: #fff;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  overflow: hidden; /* 確保圖片不會超出圓框 */
+}
+
+/* 新增：限制圖片大小 */
+.analysis-icon img {
+  width: 24px;  /* 控制 icon 圖片大小 */
+  height: 24px;
+  object-fit: contain;
+}
