@@ -3,11 +3,7 @@ import Papa from 'papaparse';
 import dayjs from 'dayjs';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { VisualPortionPicker } from './VisualPortionPicker';
-import proteinIcon from './assets/protein-icon.png';
-import veggieIcon from './assets/veggie-icon.png';
-import grainIcon from './assets/grain-icon.png';
-import fruitIcon from './assets/fruit-icon.png';
-import fatIcon from './assets/fat-icon.png';
+
 
 // 🖐️ 手掌法圖示（與 VisualPortionPicker 共用的 6 張 img）
 import proteinImg from './assets/protein.png';
