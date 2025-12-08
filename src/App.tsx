@@ -2799,38 +2799,52 @@ useEffect(() => {
             </div>
 
             {/* 🆕 輸入模式切換 */}
-            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-              <button
-                onClick={() => setFoodInputMode('search')}
-                style={{
-                  flex: 1,
-                  padding: '10px',
-                  borderRadius: 8,
-                  border: foodInputMode === 'search' ? '2px solid #97d0ba' : '1px solid #e9ecef',
-                  background: foodInputMode === 'search' ? '#f7faf9' : '#fff',
-                  fontWeight: foodInputMode === 'search' ? 700 : 400,
-                  cursor: 'pointer',
-                  fontSize: 15,
-                }}
-              >
-                🔍 快速搜尋
-              </button>
-              <button
-                onClick={() => setFoodInputMode('palm')}
-                style={{
-                  flex: 1,
-                  padding: '10px',
-                  borderRadius: 8,
-                  border: foodInputMode === 'palm' ? '2px solid #97d0ba' : '1px solid #e9ecef',
-                  background: foodInputMode === 'palm' ? '#f7faf9' : '#fff',
-                  fontWeight: foodInputMode === 'palm' ? 700 : 400,
-                  cursor: 'pointer',
-                  fontSize: 15,
-                }}
-              >
-                🖐️ 手掌法
-              </button>
-            </div>
+            <div style={{ 
+  display: 'flex', 
+  background: '#f0f2f5', // 底層淺灰軌道
+  borderRadius: 999,     // 橢圓關鍵
+  padding: 4,            // 內縮留白
+  marginBottom: 16 
+}}>
+  <button
+    onClick={() => setFoodInputMode('search')}
+    style={{
+      flex: 1,
+      padding: '8px 0', // 上下高度
+      border: 'none',
+      borderRadius: 999, // 按鈕本身也要橢圓
+      // 選中：白色背景 + 陰影 + 深色字
+      // 未選：透明背景 + 灰色字
+      background: foodInputMode === 'search' ? '#fff' : 'transparent',
+      color: foodInputMode === 'search' ? 'var(--mint-dark, #5c9c84)' : '#888',
+      boxShadow: foodInputMode === 'search' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
+      fontWeight: foodInputMode === 'search' ? 600 : 400,
+      fontSize: 14,
+      cursor: 'pointer',
+      transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)', // 增加彈性動畫
+    }}
+  >
+    🔍 快速搜尋
+  </button>
+  <button
+    onClick={() => setFoodInputMode('palm')}
+    style={{
+      flex: 1,
+      padding: '8px 0',
+      border: 'none',
+      borderRadius: 999,
+      background: foodInputMode === 'palm' ? '#fff' : 'transparent',
+      color: foodInputMode === 'palm' ? 'var(--mint-dark, #5c9c84)' : '#888',
+      boxShadow: foodInputMode === 'palm' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
+      fontWeight: foodInputMode === 'palm' ? 600 : 400,
+      fontSize: 14,
+      cursor: 'pointer',
+      transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
+    }}
+  >
+    🖐️ 手掌法
+  </button>
+</div>
 
             
 
@@ -3965,48 +3979,52 @@ useEffect(() => {
 
     {/* 🆕 記錄模式切換 */}
     <div style={{ 
-      display: 'flex', 
-      gap: 8, 
-      marginBottom: 16,
-      marginTop: 12,
-    }}>
-      <button
-        type="button"
-        style={{
-          flex: 1,
-          padding: '12px',
-          border: 'none',
-          borderBottom: recordMode === 'quick' ? '3px solid var(--mint-dark, #5c9c84)' : '1px solid #ddd',
-          background: 'transparent',
-          cursor: 'pointer',
-          fontWeight: recordMode === 'quick' ? 600 : 400,
-          color: recordMode === 'quick' ? 'var(--mint-dark, #5c9c84)' : '#666',
-          fontSize: 15,
-          transition: 'all 0.2s',
-        }}
-        onClick={() => setRecordMode('quick')}
-      >
-        ⚡ 快速記錄
-      </button>
-      <button
-        type="button"
-        style={{
-          flex: 1,
-          padding: '12px',
-          border: 'none',
-          borderBottom: recordMode === 'detail' ? '3px solid var(--mint-dark, #5c9c84)' : '1px solid #ddd',
-          background: 'transparent',
-          cursor: 'pointer',
-          fontWeight: recordMode === 'detail' ? 600 : 400,
-          color: recordMode === 'detail' ? 'var(--mint-dark, #5c9c84)' : '#666',
-          fontSize: 15,
-          transition: 'all 0.2s',
-        }}
-        onClick={() => setRecordMode('detail')}
-      >
-        🔍 精確記錄
-      </button>
-    </div>
+  display: 'flex', 
+  background: '#f0f2f5', 
+  borderRadius: 999, 
+  padding: 4, 
+  marginBottom: 16, 
+  marginTop: 12 
+}}>
+  <button
+    type="button"
+    onClick={() => setRecordMode('quick')}
+    style={{
+      flex: 1,
+      padding: '8px 0',
+      border: 'none',
+      borderRadius: 999,
+      background: recordMode === 'quick' ? '#fff' : 'transparent',
+      color: recordMode === 'quick' ? 'var(--mint-dark, #5c9c84)' : '#888',
+      boxShadow: recordMode === 'quick' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
+      fontWeight: recordMode === 'quick' ? 600 : 400,
+      fontSize: 14,
+      cursor: 'pointer',
+      transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
+    }}
+  >
+    ⚡ 快速記錄
+  </button>
+  <button
+    type="button"
+    onClick={() => setRecordMode('detail')}
+    style={{
+      flex: 1,
+      padding: '8px 0',
+      border: 'none',
+      borderRadius: 999,
+      background: recordMode === 'detail' ? '#fff' : 'transparent',
+      color: recordMode === 'detail' ? 'var(--mint-dark, #5c9c84)' : '#888',
+      boxShadow: recordMode === 'detail' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
+      fontWeight: recordMode === 'detail' ? 600 : 400,
+      fontSize: 14,
+      cursor: 'pointer',
+      transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
+    }}
+  >
+    🔍 精確記錄
+  </button>
+</div>
 
     {/* ========== 快速記錄模式 ========== */}
 {recordMode === 'quick' && (
