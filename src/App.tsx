@@ -1023,6 +1023,10 @@ useEffect(() => {
   const [todayLocal, setTodayLocal] = useState(
     dayjs().format('YYYY-MM-DD')
   );
+  
+  // 使用 useRef 來保持顯示的週起點固定，不受重新渲染影響
+  const displayWeekStartRef = useRef(dayjs().startOf('week').format('YYYY-MM-DD'));
+  const [weekKey, setWeekKey] = useState(0); // 用來強制重新渲染
 // ✅ 修正：確保在 App 載入時，時間狀態能正確初始化為當下時間
 // 雖然 useState 已經初始化，但這個 useEffect 能確保在客戶端環境中，
 // 初始渲染後的時間狀態是準確的，避免午夜交界點的誤差。
@@ -1491,51 +1495,123 @@ const [srcMet, setSrcMet] = useState<string>(
       <div className="page page-today" style={{ paddingBottom: '90px' }}>
         <header className="top-bar">
           <div className="date-text" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-            {/* 月份標題 */}
-            <div 
-              style={{ fontSize: 13, color: '#666', fontWeight: 500, cursor: 'pointer' }}
-              onClick={openTodayDatePicker}
-            >
-              {dayjs(todayLocal).format('MMMM, YYYY')}
-              <span style={{ marginLeft: 4 }}>▼</span>
+            {/* 月份標題 + 今天按鈕 */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '0 8px' }}>
+              <div style={{ flex: 1 }} />
+              <div 
+                style={{ fontSize: 13, color: '#666', fontWeight: 500, cursor: 'pointer' }}
+                onClick={openTodayDatePicker}
+              >
+                {dayjs(todayLocal).format('MMMM, YYYY')}
+                <span style={{ marginLeft: 4 }}>▼</span>
+              </div>
+              <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => {
+                    const today = dayjs().format('YYYY-MM-DD');
+                    setTodayLocal(today);
+                    // 同時更新 ref 中的週起點
+                    displayWeekStartRef.current = dayjs().startOf('week').format('YYYY-MM-DD');
+                    setWeekKey(k => k + 1); // 強制重新渲染
+                  }}
+                  style={{
+                    padding: '4px 12px',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    color: todayLocal === dayjs().format('YYYY-MM-DD') ? '#fff' : '#97d0ba',
+                    background: todayLocal === dayjs().format('YYYY-MM-DD') ? '#97d0ba' : 'transparent',
+                    border: '1px solid #97d0ba',
+                    borderRadius: 12,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (todayLocal !== dayjs().format('YYYY-MM-DD')) {
+                      e.currentTarget.style.background = '#97d0ba';
+                      e.currentTarget.style.color = '#fff';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (todayLocal !== dayjs().format('YYYY-MM-DD')) {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = '#97d0ba';
+                    }
+                  }}
+                >
+                  今天
+                </button>
+              </div>
             </div>
             
-            {/* 滑動式日期選擇器 */}
-            <div style={{ 
-              width: '100%',
-              maxWidth: '100vw',
-              overflowX: 'auto',
-              overflowY: 'hidden',
-              WebkitOverflowScrolling: 'touch',
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none',
-            }}>
-              <style>{`
-                .date-slider::-webkit-scrollbar {
-                  display: none;
+            {/* 週滑動日期選擇器 */}
+            <div 
+              ref={(el) => {
+                if (el) {
+                  let touchStartX = 0;
+                  let touchEndX = 0;
+                  
+                  const handleTouchStart = (e: TouchEvent) => {
+                    touchStartX = e.touches[0].clientX;
+                    touchEndX = e.touches[0].clientX;
+                  };
+                  
+                  const handleTouchMove = (e: TouchEvent) => {
+                    touchEndX = e.touches[0].clientX;
+                  };
+                  
+                  const handleTouchEnd = () => {
+                    const diff = touchStartX - touchEndX;
+                    const threshold = 50;
+                    
+                    if (Math.abs(diff) > threshold) {
+                      if (diff > 0) {
+                        // 左滑 → 下週
+                        displayWeekStartRef.current = dayjs(displayWeekStartRef.current).add(7, 'day').format('YYYY-MM-DD');
+                        setTodayLocal(dayjs(todayLocal).add(7, 'day').format('YYYY-MM-DD'));
+                        setWeekKey(k => k + 1); // 強制重新渲染
+                      } else {
+                        // 右滑 → 上週
+                        displayWeekStartRef.current = dayjs(displayWeekStartRef.current).subtract(7, 'day').format('YYYY-MM-DD');
+                        setTodayLocal(dayjs(todayLocal).subtract(7, 'day').format('YYYY-MM-DD'));
+                        setWeekKey(k => k + 1); // 強制重新渲染
+                      }
+                    }
+                  };
+                  
+                  // 加入 passive 選項
+                  el.addEventListener('touchstart', handleTouchStart, { passive: true });
+                  el.addEventListener('touchmove', handleTouchMove, { passive: true });
+                  el.addEventListener('touchend', handleTouchEnd, { passive: true });
                 }
-              `}</style>
+              }}
+              style={{ 
+                width: '100%',
+                padding: '0 8px',
+                touchAction: 'pan-y',
+              }}
+            >
               <div 
-                className="date-slider"
                 style={{ 
-                  display: 'flex', 
-                  gap: 8,
-                  padding: '0 8px',
-                  minWidth: 'max-content',
+                  display: 'flex',
+                  gap: 6,
                 }}
               >
-                {Array.from({ length: 14 }).map((_, i) => {
-                  const date = dayjs(todayLocal).subtract(6, 'day').add(i, 'day');
+                {Array.from({ length: 7 }).map((_, i) => {
+                  // 使用 ref 中固定的週起點
+                  const date = dayjs(displayWeekStartRef.current).add(i, 'day');
                   const dateStr = date.format('YYYY-MM-DD');
                   const isSelected = dateStr === todayLocal;
                   const isToday = dateStr === dayjs().format('YYYY-MM-DD');
                   
                   return (
                     <button
-                      key={i}
-                      onClick={() => setTodayLocal(dateStr)}
+                      key={dateStr}
+                      onClick={() => {
+                        // 只更新選中日期，不改變週起點
+                        setTodayLocal(dateStr);
+                      }}
                       style={{
-                        minWidth: 44,
+                        flex: 1,
                         height: 56,
                         borderRadius: 10,
                         border: isSelected ? '2px solid #97d0ba' : (isToday ? '2px solid #d1f0e3' : '1px solid #e9ecef'),
@@ -1548,11 +1624,10 @@ const [srcMet, setSrcMet] = useState<string>(
                         justifyContent: 'center',
                         gap: 2,
                         boxShadow: isSelected ? '0 2px 8px rgba(151, 208, 186, 0.3)' : 'none',
-                        transition: 'all 0.2s ease',
+                        transition: 'background 0.2s ease, border 0.2s ease, color 0.2s ease',
                         padding: '6px 2px',
                       }}
                     >
-                      {/* 星期縮寫 */}
                       <span style={{ 
                         fontSize: 10, 
                         fontWeight: 500,
@@ -1560,7 +1635,6 @@ const [srcMet, setSrcMet] = useState<string>(
                       }}>
                         {date.format('ddd')}
                       </span>
-                      {/* 日期數字 */}
                       <span style={{ 
                         fontSize: 16, 
                         fontWeight: isSelected ? 700 : (isToday ? 600 : 500),
@@ -1575,15 +1649,23 @@ const [srcMet, setSrcMet] = useState<string>(
           </div>
 
           <input
-            ref={todayDateInputRef}
-            type="date"
-            value={todayLocal}
-            onChange={(e) => {
-              if (!e.target.value) return;
-              setTodayLocal(e.target.value);
-            }}
-            style={{ position: 'absolute', opacity: 0, width: 1, height: 1 }}
-          />
+  ref={todayDateInputRef}
+  type="date"
+  value={todayLocal}
+  onChange={(e) => {
+    if (!e.target.value) return;
+    const newDate = e.target.value;
+    setTodayLocal(newDate);
+
+    // 🆕 修正：算出新日期所在的週起始日，並強制更新畫面
+    const newWeekStart = dayjs(newDate).startOf('week').format('YYYY-MM-DD');
+    if (displayWeekStartRef.current !== newWeekStart) {
+      displayWeekStartRef.current = newWeekStart;
+      setWeekKey((k) => k + 1); // 強制重新渲染週曆區域
+    }
+  }}
+  style={{ position: 'absolute', opacity: 0, width: 1, height: 1 }}
+/>
         </header>
 
         <section className="card">
@@ -1871,6 +1953,10 @@ const COMMON_EXERCISES = [
     };
 
     const [selectedDate, setSelectedDate] = useState(todayLocal);
+    
+    // 使用 useRef 保持週起點固定
+    const recordsWeekStartRef = useRef(dayjs(todayLocal).startOf('week').format('YYYY-MM-DD'));
+    const [recordsWeekKey, setRecordsWeekKey] = useState(0);
 // 🆕 點標題日期時打開原生 date picker
   const recordsDateInputRef = useRef<HTMLInputElement | null>(null);
   const openRecordsDatePicker = () => {
@@ -2537,56 +2623,127 @@ useEffect(() => {
       gap: 6,
     }}
   >
-    {/* 月份標題：點這一行會開 date picker */}
-    <div
-      style={{
-        fontSize: 13,
-        color: '#666',
-        fontWeight: 500,
-        cursor: 'pointer',
-      }}
-      onClick={openRecordsDatePicker}
-    >
-      {dayjs(selectedDate).format('MMMM, YYYY')}
-      <span style={{ marginLeft: 4 }}>▼</span>
+    {/* 月份標題 + 今天按鈕 */}
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '0 8px' }}>
+      <div style={{ flex: 1 }} />
+      <div
+        style={{
+          fontSize: 13,
+          color: '#666',
+          fontWeight: 500,
+          cursor: 'pointer',
+        }}
+        onClick={openRecordsDatePicker}
+      >
+        {dayjs(selectedDate).format('MMMM, YYYY')}
+        <span style={{ marginLeft: 4 }}>▼</span>
+      </div>
+      <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+        <button
+          onClick={() => {
+            const today = dayjs().format('YYYY-MM-DD');
+            setSelectedDate(today);
+            recordsWeekStartRef.current = dayjs().startOf('week').format('YYYY-MM-DD');
+            setRecordsWeekKey(k => k + 1);
+          }}
+          style={{
+            padding: '4px 12px',
+            fontSize: 12,
+            fontWeight: 500,
+            color: selectedDate === dayjs().format('YYYY-MM-DD') ? '#fff' : '#97d0ba',
+            background: selectedDate === dayjs().format('YYYY-MM-DD') ? '#97d0ba' : 'transparent',
+            border: '1px solid #97d0ba',
+            borderRadius: 12,
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+          }}
+          onMouseEnter={(e) => {
+            if (selectedDate !== dayjs().format('YYYY-MM-DD')) {
+              e.currentTarget.style.background = '#97d0ba';
+              e.currentTarget.style.color = '#fff';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (selectedDate !== dayjs().format('YYYY-MM-DD')) {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = '#97d0ba';
+            }
+          }}
+        >
+          今天
+        </button>
+      </div>
     </div>
 
-    {/* 滑動式日期選擇器 */}
-    <div style={{ 
-      width: '100%',
-      maxWidth: '100vw',
-      overflowX: 'auto',
-      overflowY: 'hidden',
-      WebkitOverflowScrolling: 'touch',
-      scrollbarWidth: 'none',
-      msOverflowStyle: 'none',
-    }}>
-      <style>{`
-        .date-slider::-webkit-scrollbar {
-          display: none;
+    {/* 週滑動日期選擇器 */}
+    <div 
+      ref={(el) => {
+        if (el) {
+          let touchStartX = 0;
+          let touchEndX = 0;
+          
+          const handleTouchStart = (e: TouchEvent) => {
+            touchStartX = e.touches[0].clientX;
+            touchEndX = e.touches[0].clientX;
+          };
+          
+          const handleTouchMove = (e: TouchEvent) => {
+            touchEndX = e.touches[0].clientX;
+          };
+          
+          const handleTouchEnd = () => {
+            const diff = touchStartX - touchEndX;
+            const threshold = 50;
+            
+            if (Math.abs(diff) > threshold) {
+              if (diff > 0) {
+                // 左滑 → 下週
+                recordsWeekStartRef.current = dayjs(recordsWeekStartRef.current).add(7, 'day').format('YYYY-MM-DD');
+                setSelectedDate(dayjs(selectedDate).add(7, 'day').format('YYYY-MM-DD'));
+                setRecordsWeekKey(k => k + 1);
+              } else {
+                // 右滑 → 上週
+                recordsWeekStartRef.current = dayjs(recordsWeekStartRef.current).subtract(7, 'day').format('YYYY-MM-DD');
+                setSelectedDate(dayjs(selectedDate).subtract(7, 'day').format('YYYY-MM-DD'));
+                setRecordsWeekKey(k => k + 1);
+              }
+            }
+          };
+          
+          // 加入 passive 選項
+          el.addEventListener('touchstart', handleTouchStart, { passive: true });
+          el.addEventListener('touchmove', handleTouchMove, { passive: true });
+          el.addEventListener('touchend', handleTouchEnd, { passive: true });
         }
-      `}</style>
+      }}
+      style={{ 
+        width: '100%',
+        padding: '0 8px',
+        touchAction: 'pan-y',
+      }}
+    >
       <div 
-        className="date-slider"
         style={{ 
-          display: 'flex', 
-          gap: 8,
-          padding: '0 8px',
-          minWidth: 'max-content',
+          display: 'flex',
+          gap: 6,
         }}
       >
-        {Array.from({ length: 14 }).map((_, i) => {
-          const date = dayjs(selectedDate).subtract(6, 'day').add(i, 'day');
+        {Array.from({ length: 7 }).map((_, i) => {
+          // 使用 ref 中固定的週起點
+          const date = dayjs(recordsWeekStartRef.current).add(i, 'day');
           const dateStr = date.format('YYYY-MM-DD');
           const isSelected = dateStr === selectedDate;
           const isToday = dateStr === dayjs().format('YYYY-MM-DD');
           
           return (
             <button
-              key={i}
-              onClick={() => setSelectedDate(dateStr)}
+              key={dateStr}
+              onClick={() => {
+                // 只更新選中日期
+                setSelectedDate(dateStr);
+              }}
               style={{
-                minWidth: 44,
+                flex: 1,
                 height: 56,
                 borderRadius: 10,
                 border: isSelected ? '2px solid #97d0ba' : (isToday ? '2px solid #d1f0e3' : '1px solid #e9ecef'),
@@ -2599,11 +2756,10 @@ useEffect(() => {
                 justifyContent: 'center',
                 gap: 2,
                 boxShadow: isSelected ? '0 2px 8px rgba(151, 208, 186, 0.3)' : 'none',
-                transition: 'all 0.2s ease',
+                transition: 'background 0.2s ease, border 0.2s ease, color 0.2s ease',
                 padding: '6px 2px',
               }}
             >
-              {/* 星期縮寫 */}
               <span style={{ 
                 fontSize: 10, 
                 fontWeight: 500,
@@ -2611,7 +2767,6 @@ useEffect(() => {
               }}>
                 {date.format('ddd')}
               </span>
-              {/* 日期數字 */}
               <span style={{ 
                 fontSize: 16, 
                 fontWeight: isSelected ? 700 : (isToday ? 600 : 500),
@@ -2627,20 +2782,28 @@ useEffect(() => {
 
   {/* 隱藏的 date input，用來打開原生日期選擇器 */}
   <input
-    ref={recordsDateInputRef}
-    type="date"
-    value={selectedDate}
-    onChange={(e) => {
-      if (!e.target.value) return;
-      setSelectedDate(e.target.value);
-    }}
-    style={{
-      position: 'absolute',
-      opacity: 0,
-      width: 1,
-      height: 1,
-    }}
-  />
+  ref={recordsDateInputRef}
+  type="date"
+  value={selectedDate}
+  onChange={(e) => {
+    if (!e.target.value) return;
+    const newDate = e.target.value;
+    setSelectedDate(newDate);
+
+    // 🆕 修正：算出新日期所在的週起始日，並強制更新畫面
+    const newWeekStart = dayjs(newDate).startOf('week').format('YYYY-MM-DD');
+    if (recordsWeekStartRef.current !== newWeekStart) {
+      recordsWeekStartRef.current = newWeekStart;
+      setRecordsWeekKey((k) => k + 1); // 強制重新渲染週曆區域
+    }
+  }}
+  style={{
+    position: 'absolute',
+    opacity: 0,
+    width: 1,
+    height: 1,
+  }}
+/>
 </header>
 
 
