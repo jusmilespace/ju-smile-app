@@ -1,120 +1,60 @@
 import React, { useState, useMemo } from 'react';
+// --- 新增：導入圖片 (確保路徑對應到 src/assets/) ---
+import proteinImg from './assets/protein.png';
+import veggieImg from './assets/veggie.png';
+import grainsImg from './assets/grains.png';
+import fruitImg from './assets/fruit.png';
+import fatImg from './assets/fat.png';
+import dairyImg from './assets/dairy.png';
 
-// SVG 圖案組件
+// --- 修改 Icon 組件：使用導入的圖片變數 ---
+
 const ProteinIcon = () => (
-  <svg viewBox="0 0 64 64" style={{ width: '100%', height: '100%' }}>
-    <defs>
-      <linearGradient id="proteinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" style={{ stopColor: '#ff9a76', stopOpacity: 1 }} />
-        <stop offset="100%" style={{ stopColor: '#ff6b6b', stopOpacity: 1 }} />
-      </linearGradient>
-    </defs>
-    {/* 雞腿 */}
-    <ellipse cx="28" cy="45" rx="12" ry="18" fill="url(#proteinGrad)" />
-    <ellipse cx="28" cy="45" rx="9" ry="15" fill="#ffd4c4" opacity="0.6" />
-    <rect x="22" y="18" width="12" height="28" rx="6" fill="#f4d4b8" />
-    <ellipse cx="28" cy="18" rx="7" ry="5" fill="#e8c4a8" />
-    {/* 亮點 */}
-    <ellipse cx="24" cy="38" rx="3" ry="5" fill="white" opacity="0.4" />
-  </svg>
+  <img 
+    src={proteinImg} 
+    alt="豆魚肉蛋類" 
+    style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+  />
 );
 
 const VeggieIcon = () => (
-  <svg viewBox="0 0 64 64" style={{ width: '100%', height: '100%' }}>
-    <defs>
-      <linearGradient id="veggieGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" style={{ stopColor: '#a8e6cf', stopOpacity: 1 }} />
-        <stop offset="100%" style={{ stopColor: '#56c596', stopOpacity: 1 }} />
-      </linearGradient>
-    </defs>
-    {/* 青菜葉片 */}
-    <ellipse cx="32" cy="38" rx="18" ry="20" fill="url(#veggieGrad)" />
-    <ellipse cx="32" cy="38" rx="14" ry="16" fill="#c8f5d8" opacity="0.5" />
-    <ellipse cx="20" cy="32" rx="12" ry="15" fill="url(#veggieGrad)" />
-    <ellipse cx="44" cy="32" rx="12" ry="15" fill="url(#veggieGrad)" />
-    {/* 葉脈 */}
-    <line x1="32" y1="25" x2="32" y2="50" stroke="#7fcd9f" strokeWidth="2" />
-    <line x1="32" y1="35" x2="22" y2="32" stroke="#7fcd9f" strokeWidth="1.5" opacity="0.6" />
-    <line x1="32" y1="35" x2="42" y2="32" stroke="#7fcd9f" strokeWidth="1.5" opacity="0.6" />
-  </svg>
+  <img 
+    src={veggieImg} 
+    alt="蔬菜類" 
+    style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+  />
 );
 
 const GrainsIcon = () => (
-  <svg viewBox="0 0 64 64" style={{ width: '100%', height: '100%' }}>
-    <defs>
-      <linearGradient id="grainsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" style={{ stopColor: '#ffe8cc', stopOpacity: 1 }} />
-        <stop offset="100%" style={{ stopColor: '#ffd89b', stopOpacity: 1 }} />
-      </linearGradient>
-    </defs>
-    {/* 碗 */}
-    <ellipse cx="32" cy="42" rx="22" ry="18" fill="url(#grainsGrad)" />
-    <ellipse cx="32" cy="42" rx="18" ry="14" fill="#fff9ed" />
-    {/* 米飯 */}
-    <ellipse cx="32" cy="35" rx="20" ry="12" fill="white" />
-    <ellipse cx="28" cy="33" rx="4" ry="3" fill="#f5f5f5" />
-    <ellipse cx="36" cy="34" rx="3" ry="2" fill="#f5f5f5" />
-    <ellipse cx="32" cy="37" rx="3" ry="2" fill="#f5f5f5" />
-    {/* 碗邊 */}
-    <path d="M 10 42 Q 10 52, 32 58 Q 54 52, 54 42" fill="none" stroke="#f4c77e" strokeWidth="2" />
-  </svg>
+  <img 
+    src={grainsImg} 
+    alt="全穀雜糧類" 
+    style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+  />
 );
 
 const FruitIcon = () => (
-  <svg viewBox="0 0 64 64" style={{ width: '100%', height: '100%' }}>
-    <defs>
-      <linearGradient id="fruitGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" style={{ stopColor: '#ff6b6b', stopOpacity: 1 }} />
-        <stop offset="100%" style={{ stopColor: '#c44569', stopOpacity: 1 }} />
-      </linearGradient>
-    </defs>
-    {/* 蘋果 */}
-    <ellipse cx="32" cy="36" rx="20" ry="22" fill="url(#fruitGrad)" />
-    <ellipse cx="28" cy="32" rx="16" ry="18" fill="#ff8787" opacity="0.6" />
-    {/* 葉子 */}
-    <ellipse cx="32" cy="15" rx="6" ry="10" fill="#56c596" transform="rotate(-20 32 15)" />
-    {/* 莖 */}
-    <rect x="30" y="12" width="4" height="8" rx="2" fill="#8b7355" />
-    {/* 亮點 */}
-    <ellipse cx="24" cy="28" rx="6" ry="8" fill="white" opacity="0.3" />
-  </svg>
+  <img 
+    src={fruitImg} 
+    alt="水果類" 
+    style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+  />
 );
 
 const FatIcon = () => (
-  <svg viewBox="0 0 64 64" style={{ width: '100%', height: '100%' }}>
-    <defs>
-      <linearGradient id="fatGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" style={{ stopColor: '#d4a574', stopOpacity: 1 }} />
-        <stop offset="100%" style={{ stopColor: '#a67c52', stopOpacity: 1 }} />
-      </linearGradient>
-    </defs>
-    {/* 堅果 */}
-    <ellipse cx="32" cy="32" rx="18" ry="20" fill="url(#fatGrad)" />
-    <ellipse cx="28" cy="28" rx="14" ry="16" fill="#e8c4a8" opacity="0.5" />
-    {/* 紋理 */}
-    <path d="M 20 28 Q 32 20, 44 28" fill="none" stroke="#8b6f47" strokeWidth="2" />
-    <path d="M 20 35 Q 32 27, 44 35" fill="none" stroke="#8b6f47" strokeWidth="2" />
-    <path d="M 20 42 Q 32 34, 44 42" fill="none" stroke="#8b6f47" strokeWidth="2" />
-  </svg>
+  <img 
+    src={fatImg} 
+    alt="油脂類" 
+    style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+  />
 );
 
 const DairyIcon = () => (
-  <svg viewBox="0 0 64 64" style={{ width: '100%', height: '100%' }}>
-    <defs>
-      <linearGradient id="dairyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" style={{ stopColor: '#e3f2fd', stopOpacity: 1 }} />
-        <stop offset="100%" style={{ stopColor: '#bbdefb', stopOpacity: 1 }} />
-      </linearGradient>
-    </defs>
-    {/* 玻璃杯 */}
-    <path d="M 20 15 L 18 50 Q 18 55, 23 56 L 41 56 Q 46 55, 46 50 L 44 15 Z" fill="url(#dairyGrad)" stroke="#90caf9" strokeWidth="2" />
-    {/* 牛奶 */}
-    <path d="M 21 22 L 19 48 Q 19 52, 23 53 L 41 53 Q 45 52, 45 48 L 43 22 Z" fill="white" opacity="0.9" />
-    {/* 氣泡 */}
-    <circle cx="28" cy="35" r="3" fill="white" opacity="0.5" />
-    <circle cx="36" cy="40" r="2" fill="white" opacity="0.5" />
-    <circle cx="32" cy="28" r="2" fill="white" opacity="0.5" />
-  </svg>
+  <img 
+    src={dairyImg} 
+    alt="乳品類" 
+    style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+  />
 );
 
 // 手掌法類別定義（對應台灣六大類食物）
