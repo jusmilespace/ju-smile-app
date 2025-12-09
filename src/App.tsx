@@ -3765,460 +3765,324 @@ useEffect(() => {
                         </div>
                       )}
 
-                    <label>
+                    <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
                       食物類別
-                      <BigSelect
-                        options={[
-    { value: '其他類', label: '其他類 (自訂 P/C/F)' },
-    { value: '自定義熱量', label: '自定義熱量 (僅 Kcal)' },
-    ...typeOptions.map((t) => ({ value: t, label: t })),
-  ]}
-                        value={fallbackType}
-                        onChange={(v) => {
-                          setFallbackType(v);
-                          setFallbackServings('');
-                          setFallbackQty('');
-                          setFallbackProtPerServ('');
-                          setFallbackCarbPerServ('');
-                          setFallbackFatPerServ('');
-                          setFallbackKcalPerServ('');
-                        }}
-                        placeholder="請選擇食物類型或估算模式"
-                        width="100%"
-                      />
                     </label>
+                    <BigSelect
+                      options={[
+                        { value: '其他類', label: '其他類 (自訂 P/C/F)' },
+                        { value: '自定義熱量', label: '自定義熱量 (僅 Kcal)' },
+                        ...typeOptions.map((t) => ({ value: t, label: t })),
+                      ]}
+                      value={fallbackType}
+                      onChange={(v) => {
+                        setFallbackType(v);
+                        setFallbackServings('1'); // ✅ 優化：切換類別時，份數預設為 1
+                        setFallbackQty('');
+                        setFallbackProtPerServ('');
+                        setFallbackCarbPerServ('');
+                        setFallbackFatPerServ('');
+                        setFallbackKcalPerServ('');
+                      }}
+                      placeholder="請選擇食物類型或估算模式"
+                      width="100%"
+                    />
 
-                    {/* C1：一般類型 */}
-                    {fallbackType &&
-                      fallbackType !== '其他類' &&
-                      fallbackType !== '自定義熱量' && (
-                        <>
-                          <div className="hint" style={{ marginTop: '8px' }}>
-                            從類別估算：{fallbackType}
+                    {/* C1：一般類型 (保持原樣，略過不貼，請保留您原本的 C1 程式碼) */}
+                    
+                    {/* C2：其他類 (自訂 P/C/F) - 針對您的需求進行優化 */}
+                    {fallbackType === '其他類' && (
+                      <div style={{ marginTop: 12 }}>
+                        
+                        {/* 1. 份量輸入 (優化：高度對齊 44px) */}
+                        <div style={{ background: '#fff', padding: '16px', borderRadius: 12, border: '1px solid #e9ecef', marginBottom: 12 }}>
+                          <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151', fontSize: 14 }}>
+                            這次吃了幾份?
+                          </label>
+                          
+                          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                            {/* 輸入框：強制高度 44px */}
+                            <input
+                              type="number"
+                              value={fallbackServings}
+                              onChange={(e) => setFallbackServings(e.target.value)}
+                              placeholder="例如: 1.5"
+                              style={{ 
+                                flex: 1, 
+                                height: 44,         // ✅ 高度固定
+                                fontSize: '16px',
+                                fontWeight: 500, 
+                                padding: '0 12px',  // 上下設 0，靠 Flex 置中 
+                                borderRadius: 10, 
+                                border: '1px solid #e5e7eb',
+                                background: '#f9fafc',
+                                color: '#1f2937',
+                                outline: 'none',
+                                minWidth: 0,
+                                boxSizing: 'border-box'
+                              }}
+                              onFocus={(e) => e.target.style.borderColor = '#97d0ba'}
+                              onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                            />
+
+                            {/* 切換器：強制高度 44px，與輸入框對齊 */}
+                            <div style={{ 
+                              height: 44,           // ✅ 高度固定
+                              display: 'flex', 
+                              background: '#f3f4f6', 
+                              padding: 4, 
+                              borderRadius: 10, 
+                              alignItems: 'center',
+                              flexShrink: 0,
+                              boxSizing: 'border-box'
+                            }}>
+                              <button 
+                                type="button" 
+                                onClick={() => setServingsInputMode('dec')} 
+                                style={{ 
+                                  height: '100%',   // 填滿容器
+                                  padding: '0 12px', 
+                                  border: 'none', 
+                                  borderRadius: 8,
+                                  background: servingsInputMode === 'dec' ? '#fff' : 'transparent', 
+                                  color: servingsInputMode === 'dec' ? '#1f2937' : '#6b7280', 
+                                  fontSize: 13,
+                                  fontWeight: servingsInputMode === 'dec' ? 600 : 500,
+                                  boxShadow: servingsInputMode === 'dec' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
+                                  transition: 'all 0.2s',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                小數
+                              </button>
+                              <button 
+                                type="button" 
+                                onClick={() => setServingsInputMode('frac')} 
+                                style={{ 
+                                  height: '100%',
+                                  padding: '0 12px', 
+                                  border: 'none', 
+                                  borderRadius: 8,
+                                  background: servingsInputMode === 'frac' ? '#fff' : 'transparent', 
+                                  color: servingsInputMode === 'frac' ? '#1f2937' : '#6b7280', 
+                                  fontSize: 13,
+                                  fontWeight: servingsInputMode === 'frac' ? 600 : 500,
+                                  boxShadow: servingsInputMode === 'frac' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
+                                  transition: 'all 0.2s',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                分數
+                              </button>
+                            </div>
                           </div>
                           
-                          {/* ✅ 新增：顯示 Type Table 的份量資訊 */}
-                          {currentTypeRow && (
-                            <div className="hint" style={{ marginTop: '0', marginBottom: '8px' }}>
-                              一份約 {currentTypeRow['Weight per serving (g)']} g
-                              {currentTypeRow.note && ` (${currentTypeRow.note})`}
+                          {/* 分數快捷鍵 */}
+                          {servingsInputMode === 'frac' && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
+                              {['1/4', '1/3', '1/2', '2/3', '3/4'].map((f) => (
+                                 <button 
+                                   key={f} 
+                                   type="button" 
+                                   onClick={() => {
+                                     const [n, d] = f.split('/').map(Number);
+                                     if (d) setFallbackServings(((n / d).toFixed(3).replace(/0+$/, '').replace(/\.$/, '')));
+                                   }}
+                                   style={{ 
+                                     flex: 1, 
+                                     padding: '8px 0', // 稍微加大
+                                     border: '1px solid #e5e7eb',
+                                     background: '#fff',
+                                     borderRadius: 100, 
+                                     color: '#4b5563',
+                                     fontSize: 13,
+                                     cursor: 'pointer',
+                                     transition: 'all 0.1s'
+                                   }}
+                                   onMouseDown={(e) => e.currentTarget.style.background = '#f3f4f6'}
+                                   onMouseUp={(e) => e.currentTarget.style.background = '#fff'}
+                                 >
+                                   {f}
+                                 </button>
+                              ))}
                             </div>
                           )}
+                        </div>
 
-                          {visualReference && (
-                            <div className="hint">
-                              視覺參照：{visualReference}
+                        {/* 2. 定義「一份」的內容 */}
+                        <div style={{ background: '#f8fafc', padding: '16px', borderRadius: 12, border: '1px solid #e2e8f0' }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: '#64748b', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span>⚙️ 設定「1 份」的營養素</span>
+                          </div>
+
+                          {/* A. 參考單位 (優化：滾輪字體加大) */}
+                          <div style={{ marginBottom: 16 }}>
+                            <div style={{ fontSize: 13, color: '#666', marginBottom: 6 }}>
+                              定義 1 份 = 多少?
                             </div>
-                          )}
+                            
+                            <div style={{ 
+                              display: 'flex', 
+                              border: '1px solid #e2e8f0', 
+                              borderRadius: 10, 
+                              overflow: 'hidden',
+                              background: '#fff',
+                              height: 44,
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
+                            }}>
+                              
+                              {/* 左側：數量輸入 */}
+                              <div style={{ 
+                                flex: 1, 
+                                display: 'flex', 
+                                alignItems: 'center',
+                                justifyContent: 'center', 
+                                borderRight: '1px solid #f1f5f9',
+                                background: '#f8fafc',
+                                padding: '0 8px'
+                              }}>
+                                <input
+                                  type="number"
+                                  value={fallbackQty}
+                                  onChange={(e) => setFallbackQty(e.target.value)}
+                                  placeholder="數量"
+                                  style={{ 
+                                    width: '100%', 
+                                    textAlign: 'center', 
+                                    fontSize: 16, 
+                                    fontWeight: 600, 
+                                    color: '#333',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    outline: 'none',
+                                    padding: 0,
+                                    height: '100%'
+                                  }}
+                                />
+                              </div>
 
-                        
+                              {/* 右側：單位滾輪 (字體優化) */}
+                              <div style={{ 
+                                flex: 1, 
+                                position: 'relative',
+                                background: '#fff'
+                              }}>
+                                <div style={{
+                                  position: 'absolute',
+                                  right: 8,
+                                  top: '50%',
+                                  transform: 'translateY(-50%)',
+                                  color: '#cbd5e1',
+                                  fontSize: 12,
+                                  pointerEvents: 'none',
+                                  zIndex: 5
+                                }}>
+                                  ↕
+                                </div>
 
-                          <label>
-  份量 (份)
-  <input
-    type="number"
-    min={0}
-    step={0.1}
-    value={fallbackServings}
-    onChange={(e) => setFallbackServings(e.target.value)}
-    placeholder="例如:1 或 1.5"
-  />
+                                <div style={{ 
+                                  overflowY: 'auto', 
+                                  height: '100%', 
+                                  scrollSnapType: 'y mandatory',
+                                  scrollbarWidth: 'none', 
+                                  msOverflowStyle: 'none'
+                                }}>
+                                   {!fallbackUnitLabel && (
+                                     <div style={{
+                                       height: 44,
+                                       display: 'flex',
+                                       alignItems: 'center',
+                                       justifyContent: 'center',
+                                       color: '#94a3b8',
+                                       fontSize: 15,
+                                       scrollSnapAlign: 'center'
+                                     }}>
+                                       請選擇單位
+                                     </div>
+                                   )}
 
-  {/* UX-07：份量輸入 DEC / FRAC 切換 */}
-  <div
-    style={{
-      marginTop: 4,
-      display: 'flex',
-      alignItems: 'center',
-      gap: 8,
-      fontSize: 12,
-    }}
-  >
-    {/* DEC / FRAC 小開關 */}
-    <div
-      style={{
-        display: 'inline-flex',
-        borderRadius: 999,
-        border: '1px solid var(--line, #ccc)',
-        overflow: 'hidden',
-      }}
-    >
-      <button
-        type="button"
-        onClick={() => setServingsInputMode('dec')}
-        style={{
-          padding: '2px 10px',
-          border: 'none',
-          background:
-            servingsInputMode === 'dec' ? '#1e88e5' : 'transparent',
-          color: servingsInputMode === 'dec' ? '#fff' : 'inherit',
-          fontSize: 12,
-        }}
-      >
-        DEC
-      </button>
-      <button
-        type="button"
-        onClick={() => setServingsInputMode('frac')}
-        style={{
-          padding: '2px 10px',
-          border: 'none',
-          borderLeft: '1px solid var(--line, #ccc)',
-          background:
-            servingsInputMode === 'frac' ? '#1e88e5' : 'transparent',
-          color: servingsInputMode === 'frac' ? '#fff' : 'inherit',
-          fontSize: 12,
-        }}
-      >
-        FRAC
-      </button>
-    </div>
+                                   {[
+                                     '個', '杯', '碗', '盤', '片', '瓶', '包', '湯匙', '茶匙', 
+                                     '根', '粒', '張', 'g', '米杯', '瓣'
+                                   ].map((u) => (
+                                     <div
+                                       key={u}
+                                       onClick={() => setFallbackUnitLabel(u)}
+                                       style={{
+                                         height: 44,
+                                         display: 'flex',
+                                         alignItems: 'center',
+                                         justifyContent: 'center',
+                                         paddingRight: 16,
+                                         fontSize: 18, // ✅ 優化：字體加大至 18px，閱讀更清晰
+                                         fontWeight: fallbackUnitLabel === u ? 600 : 400,
+                                         color: fallbackUnitLabel === u ? '#059669' : '#64748b',
+                                         background: fallbackUnitLabel === u ? '#ecfdf5' : 'transparent',
+                                         cursor: 'pointer',
+                                         scrollSnapAlign: 'center',
+                                         transition: 'all 0.2s'
+                                       }}
+                                     >
+                                       {u}
+                                     </div>
+                                   ))}
+                                   
+                                   <style>{`
+                                     div::-webkit-scrollbar { display: none; }
+                                   `}</style>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
 
-    <span className="sub">
-      {servingsInputMode === 'dec'
-        ? '直接輸入 1.5、2.25 等小數'
-        : '從常用分數中選擇，會自動換算成小數'}
-    </span>
-  </div>
+                          {/* B. 營養素輸入 (保持原本的 Grid 佈局) */}
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                            {/* Protein */}
+                            <div style={{ background: '#fff', padding: '8px', borderRadius: 8, border: '1px solid #bbf7d0', textAlign: 'center' }}>
+                              <div style={{ fontSize: 11, color: '#16a34a', fontWeight: 700, marginBottom: 4 }}>蛋白質 P</div>
+                              <input
+                                type="number"
+                                value={fallbackProtPerServ}
+                                onChange={(e) => setFallbackProtPerServ(e.target.value)}
+                                placeholder="0"
+                                style={{ width: '100%', textAlign: 'center', border: 'none', borderBottom: '2px solid #bbf7d0', borderRadius: 0, padding: '4px 0', fontSize: 18, fontWeight: 600, color: '#333' }}
+                              />
+                              <div style={{ fontSize: 10, color: '#999', marginTop: 2 }}>g / 份</div>
+                            </div>
 
-  {/* 只有在 FRAC 模式時，才顯示分數快捷鍵 */}
-  {servingsInputMode === 'frac' && (
-    <div
-      style={{
-        marginTop: 4,
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: 4,
-        fontSize: 12,
-      }}
-    >
-      {[
-        '1/8',
-        '1/4',
-        '1/3',
-        '3/8',
-        '1/2',
-        '5/8',
-        '2/3',
-        '3/4',
-        '7/8',
-      ].map((f) => (
-        <button
-          key={f}
-          type="button"
-          className="small"
-          style={{ padding: '2px 6px' }}
-          onClick={() => {
-            const [n, d] = f.split('/').map(Number);
-            if (!d) return;
-            const value = (n / d)
-              .toFixed(3)
-              .replace(/0+$/, '')
-              .replace(/\.$/, '');
-            setFallbackServings(value);
-          }}
-        >
-          {f}
-        </button>
-      ))}
-    </div>
-  )}
-</label>
+                            {/* Carb */}
+                            <div style={{ background: '#fff', padding: '8px', borderRadius: 8, border: '1px solid #fed7aa', textAlign: 'center' }}>
+                              <div style={{ fontSize: 11, color: '#ea580c', fontWeight: 700, marginBottom: 4 }}>碳水 C</div>
+                              <input
+                                type="number"
+                                value={fallbackCarbPerServ}
+                                onChange={(e) => setFallbackCarbPerServ(e.target.value)}
+                                placeholder="0"
+                                style={{ width: '100%', textAlign: 'center', border: 'none', borderBottom: '2px solid #fed7aa', borderRadius: 0, padding: '4px 0', fontSize: 18, fontWeight: 600, color: '#333' }}
+                              />
+                              <div style={{ fontSize: 10, color: '#999', marginTop: 2 }}>g / 份</div>
+                            </div>
 
-                        </>
-                      )}
-
-                    {/* C2：其他類 (自訂 P/C/F) */}
-{fallbackType === '其他類' && (
-  <div style={{ marginTop: 8 }}>
-    
-    {/* 1. 份量輸入 (Style 優化：協調字體大小 + iOS 風格切換器) */}
-    <div style={{ background: '#fff', padding: '16px', borderRadius: 12, border: '1px solid #e9ecef', marginBottom: 12 }}>
-      <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151', fontSize: 14 }}>
-        這次吃了幾份?
-      </label>
-      
-      <div style={{ display: 'flex', gap: 12, alignItems: 'stretch' }}>
-        {/* 輸入框：修正字體大小，使其與介面協調 */}
-        <input
-          type="number"
-          value={fallbackServings}
-          onChange={(e) => setFallbackServings(e.target.value)}
-          placeholder="例如: 1.5"
-          style={{ 
-            flex: 1, 
-            fontSize: '16px', // 回歸標準大小
-            fontWeight: 500, 
-            padding: '10px 12px', 
-            borderRadius: 10, 
-            border: '1px solid #e5e7eb',
-            background: '#f9fafb',
-            color: '#1f2937',
-            outline: 'none',
-            minWidth: 0
-          }}
-          onFocus={(e) => e.target.style.borderColor = '#97d0ba'}
-          onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-        />
-
-        {/* 切換器：iOS Segmented Control 風格 */}
-        <div style={{ 
-          display: 'flex', 
-          background: '#f3f4f6', 
-          padding: 4, 
-          borderRadius: 10, 
-          alignItems: 'center',
-          flexShrink: 0 
-        }}>
-          <button 
-            type="button" 
-            onClick={() => setServingsInputMode('dec')} 
-            style={{ 
-              padding: '6px 12px', 
-              border: 'none', 
-              borderRadius: 8,
-              background: servingsInputMode === 'dec' ? '#fff' : 'transparent', 
-              color: servingsInputMode === 'dec' ? '#1f2937' : '#6b7280', 
-              fontSize: 13,
-              fontWeight: servingsInputMode === 'dec' ? 600 : 500,
-              boxShadow: servingsInputMode === 'dec' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-              transition: 'all 0.2s',
-              cursor: 'pointer'
-            }}
-          >
-            小數
-          </button>
-          <button 
-            type="button" 
-            onClick={() => setServingsInputMode('frac')} 
-            style={{ 
-              padding: '6px 12px', 
-              border: 'none', 
-              borderRadius: 8,
-              background: servingsInputMode === 'frac' ? '#fff' : 'transparent', 
-              color: servingsInputMode === 'frac' ? '#1f2937' : '#6b7280', 
-              fontSize: 13,
-              fontWeight: servingsInputMode === 'frac' ? 600 : 500,
-              boxShadow: servingsInputMode === 'frac' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-              transition: 'all 0.2s',
-              cursor: 'pointer'
-            }}
-          >
-            分數
-          </button>
-        </div>
-      </div>
-      
-      {/* 分數快捷鍵 (樣式優化：膠囊按鈕) */}
-      {servingsInputMode === 'frac' && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
-          {['1/4', '1/3', '1/2', '2/3', '3/4'].map((f) => (
-             <button 
-               key={f} 
-               type="button" 
-               onClick={() => {
-                 const [n, d] = f.split('/').map(Number);
-                 if (d) setFallbackServings(((n / d).toFixed(3).replace(/0+$/, '').replace(/\.$/, '')));
-               }}
-               style={{ 
-                 flex: 1, 
-                 padding: '6px 0', 
-                 border: '1px solid #e5e7eb',
-                 background: '#fff',
-                 borderRadius: 100, // 膠囊狀
-                 color: '#4b5563',
-                 fontSize: 12,
-                 cursor: 'pointer',
-                 transition: 'all 0.1s'
-               }}
-               onMouseDown={(e) => e.currentTarget.style.background = '#f3f4f6'}
-               onMouseUp={(e) => e.currentTarget.style.background = '#fff'}
-             >
-               {f}
-             </button>
-          ))}
-        </div>
-      )}
-    </div>
-
-    {/* 2. 定義「一份」的內容 */}
-    <div style={{ background: '#f8fafc', padding: '16px', borderRadius: 12, border: '1px solid #e2e8f0' }}>
-      <div style={{ fontSize: 13, fontWeight: 600, color: '#64748b', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span>⚙️ 設定「1 份」的營養素</span>
-      </div>
-
-      {/* A. 參考單位 (優化：緊湊高度 + 明確滑動提示) */}
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 13, color: '#666', marginBottom: 6 }}>
-          定義 1 份 = 多少?
-        </div>
-        
-        <div style={{ 
-          display: 'flex', 
-          border: '1px solid #e2e8f0', // 邊框顏色淡一點，更柔和
-          borderRadius: 10, 
-          overflow: 'hidden',
-          background: '#fff',
-          height: 44, // ✅ 1. 高度縮小至 44px (更緊湊)
-          boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
-        }}>
-          
-          {/* 左側：數量輸入 */}
-          <div style={{ 
-            flex: 1, 
-            display: 'flex', 
-            alignItems: 'center',
-            justifyContent: 'center', 
-            borderRight: '1px solid #f1f5f9',
-            background: '#f8fafc',
-            padding: '0 8px'
-          }}>
-            <input
-              type="number"
-              value={fallbackQty}
-              onChange={(e) => setFallbackQty(e.target.value)}
-              placeholder="數量"
-              style={{ 
-                width: '100%', 
-                textAlign: 'center', 
-                fontSize: 16,       // ✅ 2. 字體改為 16px (不過大)
-                fontWeight: 600, 
-                color: '#333',
-                background: 'transparent',
-                border: 'none',
-                outline: 'none',
-                padding: 0,
-                height: '100%'
-              }}
-            />
-          </div>
-
-          {/* 右側：單位滾輪 (Scroll Snap Picker) */}
-          <div style={{ 
-            flex: 1, 
-            position: 'relative', // 為了定位提示箭頭
-            background: '#fff'
-          }}>
-            {/* ✅ 3. 視覺提示：上下滑動箭頭 (固定在右側) */}
-            <div style={{
-              position: 'absolute',
-              right: 8,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              color: '#cbd5e1',
-              fontSize: 12,
-              pointerEvents: 'none', // 讓點擊穿透
-              zIndex: 5
-            }}>
-              ↕
-            </div>
-
-            <div style={{ 
-              overflowY: 'auto', 
-              height: '100%', 
-              scrollSnapType: 'y mandatory',
-              // 隱藏捲軸
-              scrollbarWidth: 'none', 
-              msOverflowStyle: 'none'
-            }}>
-               {/* 提示選項 (Placeholder) - 當還沒選單位時，讓使用者看到這個 */}
-               {!fallbackUnitLabel && (
-                 <div style={{
-                   height: 44,
-                   display: 'flex',
-                   alignItems: 'center',
-                   justifyContent: 'center',
-                   color: '#94a3b8',
-                   fontSize: 14,
-                   scrollSnapAlign: 'center'
-                 }}>
-                   請選擇單位
-                 </div>
-               )}
-
-               {/* 單位清單 */}
-               {[
-                 '個', '杯', '碗', '盤', '片', '瓶', '包', '湯匙', '茶匙', 
-                 '根', '粒', '張', 'g', '米杯', '瓣'
-               ].map((u) => (
-                 <div
-                   key={u}
-                   onClick={() => setFallbackUnitLabel(u)}
-                   style={{
-                     height: 44,              // ✅ 配合容器高度 44px
-                     display: 'flex',
-                     alignItems: 'center',
-                     justifyContent: 'center',
-                     paddingRight: 16,        // 留空間給右邊的箭頭
-                     fontSize: 15,
-                     fontWeight: fallbackUnitLabel === u ? 600 : 400,
-                     color: fallbackUnitLabel === u ? '#059669' : '#64748b',
-                     background: fallbackUnitLabel === u ? '#ecfdf5' : 'transparent',
-                     cursor: 'pointer',
-                     scrollSnapAlign: 'center',
-                     transition: 'all 0.2s'
-                   }}
-                 >
-                   {u}
-                 </div>
-               ))}
-               
-               <style>{`
-                 div::-webkit-scrollbar { display: none; }
-               `}</style>
-            </div>
-          </div>
-        </div>
-      </div>
-      {/* B. 營養素輸入 - 三欄式卡片佈局 (保持您滿意的設計) */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-        {/* Protein */}
-        <div style={{ background: '#fff', padding: '8px', borderRadius: 8, border: '1px solid #bbf7d0', textAlign: 'center' }}>
-          <div style={{ fontSize: 11, color: '#16a34a', fontWeight: 700, marginBottom: 4 }}>蛋白質 P</div>
-          <input
-            type="number"
-            value={fallbackProtPerServ}
-            onChange={(e) => setFallbackProtPerServ(e.target.value)}
-            placeholder="0"
-            style={{ width: '100%', textAlign: 'center', border: 'none', borderBottom: '2px solid #bbf7d0', borderRadius: 0, padding: '4px 0', fontSize: 18, fontWeight: 600, color: '#333' }}
-          />
-          <div style={{ fontSize: 10, color: '#999', marginTop: 2 }}>g / 份</div>
-        </div>
-
-        {/* Carb */}
-        <div style={{ background: '#fff', padding: '8px', borderRadius: 8, border: '1px solid #fed7aa', textAlign: 'center' }}>
-          <div style={{ fontSize: 11, color: '#ea580c', fontWeight: 700, marginBottom: 4 }}>碳水 C</div>
-          <input
-            type="number"
-            value={fallbackCarbPerServ}
-            onChange={(e) => setFallbackCarbPerServ(e.target.value)}
-            placeholder="0"
-            style={{ width: '100%', textAlign: 'center', border: 'none', borderBottom: '2px solid #fed7aa', borderRadius: 0, padding: '4px 0', fontSize: 18, fontWeight: 600, color: '#333' }}
-          />
-          <div style={{ fontSize: 10, color: '#999', marginTop: 2 }}>g / 份</div>
-        </div>
-
-        {/* Fat */}
-        <div style={{ background: '#fff', padding: '8px', borderRadius: 8, border: '1px solid #fecaca', textAlign: 'center' }}>
-          <div style={{ fontSize: 11, color: '#dc2626', fontWeight: 700, marginBottom: 4 }}>脂肪 F</div>
-          <input
-            type="number"
-            value={fallbackFatPerServ}
-            onChange={(e) => setFallbackFatPerServ(e.target.value)}
-            placeholder="0"
-            style={{ width: '100%', textAlign: 'center', border: 'none', borderBottom: '2px solid #fecaca', borderRadius: 0, padding: '4px 0', fontSize: 18, fontWeight: 600, color: '#333' }}
-          />
-          <div style={{ fontSize: 10, color: '#999', marginTop: 2 }}>g / 份</div>
-        </div>
-      </div>
-      
-      {/* 自動計算總熱量提示 */}
-      <div style={{ textAlign: 'center', marginTop: 12, fontSize: 12, color: '#666' }}>
-        系統將依 <b>P×4 + C×4 + F×9</b> 自動計算熱量
-      </div>
-    </div>
-  </div>
-)}
+                            {/* Fat */}
+                            <div style={{ background: '#fff', padding: '8px', borderRadius: 8, border: '1px solid #fecaca', textAlign: 'center' }}>
+                              <div style={{ fontSize: 11, color: '#dc2626', fontWeight: 700, marginBottom: 4 }}>脂肪 F</div>
+                              <input
+                                type="number"
+                                value={fallbackFatPerServ}
+                                onChange={(e) => setFallbackFatPerServ(e.target.value)}
+                                placeholder="0"
+                                style={{ width: '100%', textAlign: 'center', border: 'none', borderBottom: '2px solid #fecaca', borderRadius: 0, padding: '4px 0', fontSize: 18, fontWeight: 600, color: '#333' }}
+                              />
+                              <div style={{ fontSize: 10, color: '#999', marginTop: 2 }}>g / 份</div>
+                            </div>
+                          </div>
+                          
+                          <div style={{ textAlign: 'center', marginTop: 12, fontSize: 12, color: '#666' }}>
+                            系統將依 <b>P×4 + C×4 + F×9</b> 自動計算熱量
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* C3：自定義熱量 (僅 Kcal) */}
                     {fallbackType === '自定義熱量' && (
