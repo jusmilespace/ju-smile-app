@@ -2265,6 +2265,14 @@ const recordsWeekSwipeRef = useRef<HTMLDivElement | null>(null);
 // 🆕 份量彈窗專用的 State
     const [showServingsModal, setShowServingsModal] = useState(false);
     const [servingsTab, setServingsTab] = useState<'dec' | 'frac'>('dec'); // 控制彈窗內的 Tab
+    // 🆕 Unit Map (數量) 與 Food DB (重量) 的彈窗開關
+    const [showUnitQtyModal, setShowUnitQtyModal] = useState(false);
+    const [showGramModal, setShowGramModal] = useState(false);
+    
+    // 🆕 通用的 Tab 狀態 (控制彈窗內是顯示小數還是分數)
+    const [inputTab, setInputTab] = useState<'dec' | 'frac'>('dec');
+
+    
 
     // 🆕 分數滾輪的 Ref (用於自動捲動)
     const servingsPickerRef = useRef<HTMLDivElement>(null);
@@ -2363,6 +2371,21 @@ useEffect(() => {
       useState<UnitMapRow | null>(null);
     const [selectedFoodDbRow, setSelectedFoodDbRow] =
       useState<FoodDbRow | null>(null);
+      // 🆕 1. 建立一個 Ref 來定位搜尋欄的位置
+    const searchTopRef = useRef<HTMLDivElement>(null);
+
+    // 🆕 2. 監聽：當選中 Unit Map 或 Food DB 食物時，自動捲動到搜尋欄
+    useEffect(() => {
+      if (selectedUnitFood || selectedFoodDbRow) {
+        // 稍微延遲一點點，確保畫面渲染完成後再捲動
+        setTimeout(() => {
+          searchTopRef.current?.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' // 捲動到畫面中間，確保不會被頂部導航列擋住
+          });
+        }, 100);
+      }
+    }, [selectedUnitFood, selectedFoodDbRow]);
     const [unitQuantity, setUnitQuantity] = useState('1');
     const [foodAmountG, setFoodAmountG] = useState('');
 
@@ -3214,7 +3237,8 @@ useEffect(() => {
             {foodInputMode === 'search' && (
             <div className="form-section">
               {/* 貼上這一段新的搜尋框程式碼 */}
-<div style={{ marginBottom: 16 }}>
+
+  <div ref={searchTopRef} style={{ marginBottom: 16 }}>
   <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
     搜尋食物
   </label>
@@ -3294,6 +3318,222 @@ useEffect(() => {
     )}
   </div>
 </div>
+{/* =========================================================
+                🔴 補回遺失區塊：已選中 Unit Map 食物 (顯示數量輸入按鈕)
+               ========================================================= */}
+            {selectedUnitFood && (
+              <>
+                <div style={{ background: '#fff', padding: '16px', borderRadius: 12, border: '1px solid #e9ecef', marginBottom: 12 }}>
+                  <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151', fontSize: 14 }}>
+                    數量 ({selectedUnitFood.Unit})
+                  </label>
+                  
+                  {/* 觸發按鈕 (唯讀) */}
+                  <div 
+                    onClick={() => {
+                      setShowUnitQtyModal(true);
+                      if (!unitQuantity) setUnitQuantity('1'); // 預設 1
+                    }}
+                    style={{ 
+                      height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: '#f9fafc', border: '1px solid #e5e7eb', borderRadius: 10,
+                      fontSize: 18, fontWeight: 600, color: '#1f2937', cursor: 'pointer',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
+                    }}
+                  >
+                    {unitQuantity || '1'} 
+                  </div>
+
+                  {/* === Unit Qty Modal (數量輸入彈窗) === */}
+                  {showUnitQtyModal && (
+                    <div 
+                      className="modal-backdrop"
+                      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+                      onClick={() => setShowUnitQtyModal(false)}
+                    >
+                      <div 
+                        style={{ width: '100%', maxWidth: 420, background: '#f0f2f5', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, boxShadow: '0 -4px 20px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', gap: 16 }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {/* 頂部列 */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span style={{ fontWeight: 600, color: '#666', fontSize: 15 }}>輸入數量 ({selectedUnitFood.Unit})</span>
+                          <div style={{ display: 'flex', background: '#e5e7eb', padding: 3, borderRadius: 8 }}>
+                            <button onClick={() => setInputTab('dec')} style={{ padding: '4px 16px', borderRadius: 6, border: 'none', fontSize: 13, fontWeight: 600, background: inputTab === 'dec' ? '#fff' : 'transparent', color: inputTab === 'dec' ? '#333' : '#666', boxShadow: inputTab === 'dec' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none', transition: 'all 0.2s' }}>小數</button>
+                            <button onClick={() => setInputTab('frac')} style={{ padding: '4px 16px', borderRadius: 6, border: 'none', fontSize: 13, fontWeight: 600, background: inputTab === 'frac' ? '#fff' : 'transparent', color: inputTab === 'frac' ? '#333' : '#666', boxShadow: inputTab === 'frac' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none', transition: 'all 0.2s' }}>分數</button>
+                          </div>
+                        </div>
+
+                        {/* 數值顯示 */}
+                        <div style={{ background: '#fff', borderRadius: 12, padding: '12px', textAlign: 'center', fontSize: 28, fontWeight: 700, color: '#333', border: '1px solid #e5e7eb' }}>
+                          {unitQuantity || '0'}
+                        </div>
+
+                        {/* 鍵盤內容 */}
+                        {inputTab === 'dec' ? (
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, '.', 0].map((num) => (
+                              <button key={num} onClick={() => { if (num === '.') { if (!unitQuantity.includes('.')) setUnitQuantity(p => p + '.'); } else { setUnitQuantity(p => (p === '0' || p === '' ? String(num) : p + num)); } }} style={{ padding: '12px 0', borderRadius: 12, border: 'none', background: '#fff', fontSize: 22, fontWeight: 600, color: '#333', boxShadow: '0 2px 0 #e5e7eb' }}>{num}</button>
+                            ))}
+                            <button onClick={() => setUnitQuantity(p => p.slice(0, -1) || '0')} style={{ padding: '12px 0', borderRadius: 12, border: 'none', background: '#e5e7eb', fontSize: 20, color: '#333', boxShadow: '0 2px 0 #d1d5db' }}>⌫</button>
+                          </div>
+                        ) : (
+                          <div style={{ position: 'relative', height: 200, overflow: 'hidden', background: '#fff', borderRadius: 12 }}>
+                            <div style={{ position: 'absolute', top: 75, left: 0, right: 0, height: 50, background: 'rgba(151, 208, 186, 0.2)', borderTop: '1px solid #97d0ba', borderBottom: '1px solid #97d0ba', pointerEvents: 'none', zIndex: 1 }}></div>
+                            <div style={{ height: '100%', overflowY: 'auto', scrollSnapType: 'y mandatory', position: 'relative', zIndex: 2, scrollbarWidth: 'none' }}>
+                              <div style={{ height: 75 }}></div>
+                              {fractionList.map((item) => (
+                                <div key={item.label} onClick={() => setUnitQuantity(item.value)} style={{ height: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 600, scrollSnapAlign: 'center', color: String(unitQuantity) === item.value ? '#059669' : '#9ca3b8' }}>
+                                  {item.label}
+                                </div>
+                              ))}
+                              <div style={{ height: 75 }}></div>
+                            </div>
+                          </div>
+                        )}
+
+                        <button onClick={() => setShowUnitQtyModal(false)} style={{ width: '100%', padding: '14px 0', borderRadius: 12, border: 'none', background: '#5c9c84', color: '#fff', fontSize: 18, fontWeight: 700, marginTop: 4 }}>完成</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="hint">
+                  {selectedUnitFood.Food} ({selectedUnitFood.Unit})：{selectedUnitFood.Kcal_per_serv} kcal / 份
+                </div>
+                {autoFoodInfo.kcal > 0 && (
+                  <div className="hint">
+                    目前估算熱量:約 {autoFoodInfo.kcal} kcal
+                  </div>
+                )}
+                
+                {/* 加入按鈕 */}
+                <button 
+                  className="primary" 
+                  onClick={saveMeal}
+                  style={{ marginTop: 16, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6 }}
+                >
+                  <span>加入記錄</span>
+                  {effectiveFoodKcal > 0 && (
+                    <span style={{ background: 'rgba(255,255,255,0.25)', padding: '2px 8px', borderRadius: 99, fontSize: 13, fontWeight: 600 }}>
+                      {Math.round(effectiveFoodKcal)} kcal
+                    </span>
+                  )}
+                </button>
+                <button onClick={() => { setSelectedUnitFood(null); setUnitQuantity('1'); }} style={{ marginTop: 8 }}>
+                  取消選擇
+                </button>
+              </>
+            )}
+
+            {/* =========================================================
+                🔴 補回遺失區塊：已選中 Food DB 食物 (顯示重量輸入按鈕)
+               ========================================================= */}
+            {selectedFoodDbRow && (
+              <>
+                <div style={{ background: '#fff', padding: '16px', borderRadius: 12, border: '1px solid #e9ecef', marginBottom: 12 }}>
+                  <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151', fontSize: 14 }}>
+                    重量 (g)
+                  </label>
+
+                  {/* 觸發按鈕 (唯讀) */}
+                  <div 
+                    onClick={() => {
+                      setShowGramModal(true);
+                      if (!foodAmountG) setFoodAmountG('100'); 
+                    }}
+                    style={{ 
+                      height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: '#f9fafc', border: '1px solid #e5e7eb', borderRadius: 10,
+                      fontSize: 18, fontWeight: 600, color: '#1f2937', cursor: 'pointer',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
+                    }}
+                  >
+                    {foodAmountG || '100'} 
+                    <span style={{ fontSize: 12, color: '#9ca3af', marginLeft: 4, fontWeight: 400 }}>g</span>
+                  </div>
+
+                  {/* === Gram Modal (重量輸入彈窗) === */}
+                  {showGramModal && (
+                    <div 
+                      className="modal-backdrop"
+                      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+                      onClick={() => setShowGramModal(false)}
+                    >
+                      <div 
+                        style={{ width: '100%', maxWidth: 420, background: '#f0f2f5', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, boxShadow: '0 -4px 20px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', gap: 16 }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {/* 頂部列 */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span style={{ fontWeight: 600, color: '#666', fontSize: 15 }}>輸入重量 (g)</span>
+                          <div style={{ display: 'flex', background: '#e5e7eb', padding: 3, borderRadius: 8 }}>
+                            <button onClick={() => setInputTab('dec')} style={{ padding: '4px 16px', borderRadius: 6, border: 'none', fontSize: 13, fontWeight: 600, background: inputTab === 'dec' ? '#fff' : 'transparent', color: inputTab === 'dec' ? '#333' : '#666', boxShadow: inputTab === 'dec' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none', transition: 'all 0.2s' }}>小數</button>
+                            <button onClick={() => setInputTab('frac')} style={{ padding: '4px 16px', borderRadius: 6, border: 'none', fontSize: 13, fontWeight: 600, background: inputTab === 'frac' ? '#fff' : 'transparent', color: inputTab === 'frac' ? '#333' : '#666', boxShadow: inputTab === 'frac' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none', transition: 'all 0.2s' }}>分數</button>
+                          </div>
+                        </div>
+
+                        {/* 數值顯示 */}
+                        <div style={{ background: '#fff', borderRadius: 12, padding: '12px', textAlign: 'center', fontSize: 28, fontWeight: 700, color: '#333', border: '1px solid #e5e7eb' }}>
+                          {foodAmountG || '0'}
+                        </div>
+
+                        {/* 鍵盤內容 (與 Unit Qty 共用 inputTab 邏輯) */}
+                        {inputTab === 'dec' ? (
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, '.', 0].map((num) => (
+                              <button key={num} onClick={() => { if (num === '.') { if (!foodAmountG.includes('.')) setFoodAmountG(p => p + '.'); } else { setFoodAmountG(p => (p === '0' || p === '' ? String(num) : p + num)); } }} style={{ padding: '12px 0', borderRadius: 12, border: 'none', background: '#fff', fontSize: 22, fontWeight: 600, color: '#333', boxShadow: '0 2px 0 #e5e7eb' }}>{num}</button>
+                            ))}
+                            <button onClick={() => setFoodAmountG(p => p.slice(0, -1) || '0')} style={{ padding: '12px 0', borderRadius: 12, border: 'none', background: '#e5e7eb', fontSize: 20, color: '#333', boxShadow: '0 2px 0 #d1d5db' }}>⌫</button>
+                          </div>
+                        ) : (
+                          <div style={{ position: 'relative', height: 200, overflow: 'hidden', background: '#fff', borderRadius: 12 }}>
+                            <div style={{ position: 'absolute', top: 75, left: 0, right: 0, height: 50, background: 'rgba(151, 208, 186, 0.2)', borderTop: '1px solid #97d0ba', borderBottom: '1px solid #97d0ba', pointerEvents: 'none', zIndex: 1 }}></div>
+                            <div style={{ height: '100%', overflowY: 'auto', scrollSnapType: 'y mandatory', position: 'relative', zIndex: 2, scrollbarWidth: 'none' }}>
+                              <div style={{ height: 75 }}></div>
+                              {fractionList.map((item) => (
+                                <div key={item.label} onClick={() => setFoodAmountG(item.value)} style={{ height: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 600, scrollSnapAlign: 'center', color: String(foodAmountG) === item.value ? '#059669' : '#9ca3b8' }}>
+                                  {item.label}
+                                </div>
+                              ))}
+                              <div style={{ height: 75 }}></div>
+                            </div>
+                          </div>
+                        )}
+
+                        <button onClick={() => setShowGramModal(false)} style={{ width: '100%', padding: '14px 0', borderRadius: 12, border: 'none', background: '#5c9c84', color: '#fff', fontSize: 18, fontWeight: 700, marginTop: 4 }}>完成</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="hint">
+                  {selectedFoodDbRow.food}：{selectedFoodDbRow.kcal} kcal / 100g
+                </div>
+                {autoFoodInfo.kcal > 0 && (
+                  <div className="hint">
+                    目前估算熱量:約 {autoFoodInfo.kcal} kcal
+                  </div>
+                )}
+                
+                {/* 加入按鈕 */}
+                <button 
+                  className="primary" 
+                  onClick={saveMeal}
+                  style={{ marginTop: 16, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6 }}
+                >
+                  <span>加入記錄</span>
+                  {effectiveFoodKcal > 0 && (
+                    <span style={{ background: 'rgba(255,255,255,0.25)', padding: '2px 8px', borderRadius: 99, fontSize: 13, fontWeight: 600 }}>
+                      {Math.round(effectiveFoodKcal)} kcal
+                    </span>
+                  )}
+                </button>
+                <button onClick={() => { setSelectedFoodDbRow(null); setFoodAmountG('100'); }} style={{ marginTop: 8 }}>
+                  取消選擇
+                </button>
+              </>
+            )}
 
               {/* UX-05：從歷史紀錄快速加入（新版，版型比照「飲食明細」） */}
 {recentMealsForQuickAdd.length > 0 && (
@@ -3830,6 +4070,146 @@ useEffect(() => {
                     />
 
                     {/* C1：一般類型 (保持原樣，略過不貼，請保留您原本的 C1 程式碼) */}
+                    {/* C1：一般類型 */}
+                    {fallbackType &&
+                      fallbackType !== '其他類' &&
+                      fallbackType !== '自定義熱量' && (
+                        <>
+                          <div className="hint" style={{ marginTop: '8px' }}>
+                            從類別估算：{fallbackType}
+                          </div>
+                          
+                          {/* ✅ 新增：顯示 Type Table 的份量資訊 */}
+                          {currentTypeRow && (
+                            <div className="hint" style={{ marginTop: '0', marginBottom: '8px' }}>
+                              一份約 {currentTypeRow['Weight per serving (g)']} g
+                              {currentTypeRow.note && ` (${currentTypeRow.note})`}
+                            </div>
+                          )}
+
+                          {visualReference && (
+                            <div className="hint">
+                              視覺參照：{visualReference}
+                            </div>
+                          )}
+
+                        
+
+                          <label>
+  份量 (份)
+  <input
+    type="number"
+    min={0}
+    step={0.1}
+    value={fallbackServings}
+    onChange={(e) => setFallbackServings(e.target.value)}
+    placeholder="例如:1 或 1.5"
+  />
+
+  {/* UX-07：份量輸入 DEC / FRAC 切換 */}
+  <div
+    style={{
+      marginTop: 4,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+      fontSize: 12,
+    }}
+  >
+    {/* DEC / FRAC 小開關 */}
+    <div
+      style={{
+        display: 'inline-flex',
+        borderRadius: 999,
+        border: '1px solid var(--line, #ccc)',
+        overflow: 'hidden',
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => setServingsInputMode('dec')}
+        style={{
+          padding: '2px 10px',
+          border: 'none',
+          background:
+            servingsInputMode === 'dec' ? '#1e88e5' : 'transparent',
+          color: servingsInputMode === 'dec' ? '#fff' : 'inherit',
+          fontSize: 12,
+        }}
+      >
+        DEC
+      </button>
+      <button
+        type="button"
+        onClick={() => setServingsInputMode('frac')}
+        style={{
+          padding: '2px 10px',
+          border: 'none',
+          borderLeft: '1px solid var(--line, #ccc)',
+          background:
+            servingsInputMode === 'frac' ? '#1e88e5' : 'transparent',
+          color: servingsInputMode === 'frac' ? '#fff' : 'inherit',
+          fontSize: 12,
+        }}
+      >
+        FRAC
+      </button>
+    </div>
+
+    <span className="sub">
+      {servingsInputMode === 'dec'
+        ? '直接輸入 1.5、2.25 等小數'
+        : '從常用分數中選擇，會自動換算成小數'}
+    </span>
+  </div>
+
+  {/* 只有在 FRAC 模式時，才顯示分數快捷鍵 */}
+  {servingsInputMode === 'frac' && (
+    <div
+      style={{
+        marginTop: 4,
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 4,
+        fontSize: 12,
+      }}
+    >
+      {[
+        '1/8',
+        '1/4',
+        '1/3',
+        '3/8',
+        '1/2',
+        '5/8',
+        '2/3',
+        '3/4',
+        '7/8',
+      ].map((f) => (
+        <button
+          key={f}
+          type="button"
+          className="small"
+          style={{ padding: '2px 6px' }}
+          onClick={() => {
+            const [n, d] = f.split('/').map(Number);
+            if (!d) return;
+            const value = (n / d)
+              .toFixed(3)
+              .replace(/0+$/, '')
+              .replace(/\.$/, '');
+            setFallbackServings(value);
+          }}
+        >
+          {f}
+        </button>
+      ))}
+    </div>
+  )}
+</label>
+
+                        </>
+                      )}
+
                     
                     {/* C2：其他類 (自訂 P/C/F) - 針對您的需求進行優化 */}
                     {fallbackType === '其他類' && (
@@ -4192,7 +4572,93 @@ useEffect(() => {
             </div>
           </div>
         )}
+{/* 🆕 補回遺失的：數量輸入彈窗 (Qty Pad) */}
+        {showQtyPad && (
+          <div 
+            className="modal-backdrop"
+            style={{ 
+              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 100,
+              display: 'flex', alignItems: 'flex-end', justifyContent: 'center' 
+            }}
+            onClick={() => setShowQtyPad(false)}
+          >
+            <div 
+              style={{ 
+                width: '100%', maxWidth: 420, background: '#f0f2f5', 
+                borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20,
+                boxShadow: '0 -4px 20px rgba(0,0,0,0.1)',
+                display: 'flex', flexDirection: 'column', gap: 16
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* 頂部列：標題 + Tab 切換 */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontWeight: 600, color: '#666', fontSize: 15 }}>輸入數量</span>
+                
+                <div style={{ display: 'flex', background: '#e5e7eb', padding: 3, borderRadius: 8 }}>
+                  <button onClick={() => setInputTab('dec')} style={{ padding: '4px 16px', borderRadius: 6, border: 'none', fontSize: 13, fontWeight: 600, background: inputTab === 'dec' ? '#fff' : 'transparent', color: inputTab === 'dec' ? '#333' : '#666', boxShadow: inputTab === 'dec' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none', transition: 'all 0.2s' }}>小數</button>
+                  <button onClick={() => setInputTab('frac')} style={{ padding: '4px 16px', borderRadius: 6, border: 'none', fontSize: 13, fontWeight: 600, background: inputTab === 'frac' ? '#fff' : 'transparent', color: inputTab === 'frac' ? '#333' : '#666', boxShadow: inputTab === 'frac' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none', transition: 'all 0.2s' }}>分數</button>
+                </div>
+              </div>
 
+              {/* 數值顯示 */}
+              <div style={{ background: '#fff', borderRadius: 12, padding: '12px', textAlign: 'center', fontSize: 28, fontWeight: 700, color: '#333', border: '1px solid #e5e7eb' }}>
+                {fallbackQty || '0'}
+              </div>
+
+              {/* 內容區：小數鍵盤 vs 分數滾輪 */}
+              {inputTab === 'dec' ? (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, '.', 0].map((num) => (
+                    <button
+                      key={num}
+                      onClick={() => {
+                        if (num === '.') {
+                          if (!fallbackQty.includes('.')) setFallbackQty(prev => prev + '.');
+                        } else {
+                          setFallbackQty(prev => (prev === '0' || prev === '' ? String(num) : prev + num));
+                        }
+                      }}
+                      style={{ 
+                        padding: '12px 0', borderRadius: 12, border: 'none', background: '#fff', 
+                        fontSize: 22, fontWeight: 600, color: '#333', boxShadow: '0 2px 0 #e5e7eb' 
+                      }}
+                    >
+                      {num}
+                    </button>
+                  ))}
+                  <button onClick={() => setFallbackQty(prev => prev.slice(0, -1))} style={{ padding: '12px 0', borderRadius: 12, border: 'none', background: '#e5e7eb', fontSize: 20, color: '#333', boxShadow: '0 2px 0 #d1d5db' }}>⌫</button>
+                </div>
+              ) : (
+                <div style={{ position: 'relative', height: 200, overflow: 'hidden', background: '#fff', borderRadius: 12 }}>
+                   {/* Highlight Bar */}
+                   <div style={{ position: 'absolute', top: 75, left: 0, right: 0, height: 50, background: 'rgba(151, 208, 186, 0.2)', borderTop: '1px solid #97d0ba', borderBottom: '1px solid #97d0ba', pointerEvents: 'none', zIndex: 1 }}></div>
+                   
+                   {/* Scroll List */}
+                   <div style={{ height: '100%', overflowY: 'auto', scrollSnapType: 'y mandatory', position: 'relative', zIndex: 2, scrollbarWidth: 'none' }}>
+                     <div style={{ height: 75 }}></div>
+                     {fractionList.map((item) => (
+                       <div key={item.label} onClick={() => setFallbackQty(item.value)} style={{ height: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 600, scrollSnapAlign: 'center', color: String(fallbackQty) === item.value ? '#059669' : '#9ca3b8' }}>
+                         {item.label}
+                       </div>
+                     ))}
+                     <div style={{ height: 75 }}></div>
+                   </div>
+                </div>
+              )}
+
+              <button
+                onClick={() => setShowQtyPad(false)}
+                style={{ 
+                  width: '100%', marginTop: 12, padding: '14px 0', borderRadius: 12, border: 'none', 
+                  background: '#5c9c84', color: '#fff', fontSize: 18, fontWeight: 700 
+                }}
+              >
+                完成
+              </button>
+            </div>
+          </div>
+        )}
         
         {/* --- 彈窗 2：單位選擇器 (iOS Wheel Picker Style) --- */}
         {showUnitPicker && (
@@ -4426,177 +4892,9 @@ useEffect(() => {
                     )}
                   </div>
                 )}
-{/* 🆕 Food_DB 選中後：顯示公克數輸入框 */}
-              {selectedFoodDbRow && (
-                <>
-                  <label>
-                    重量 (g)
-                    <input
-                      type="number"
-                      value={foodAmountG}
-                      onChange={(e) => setFoodAmountG(e.target.value)}
-                      placeholder="例如:100"
-                    />
-                  </label>
-                  <div className="hint">
-                    {selectedFoodDbRow.food}：{selectedFoodDbRow.kcal} kcal / 100g
-                  </div>
-                  {autoFoodInfo.kcal > 0 && (
-                    <div className="hint">
-                      目前估算熱量:約 {autoFoodInfo.kcal} kcal
-                    </div>
-                  )}
-                </>
-              )}
-
-
-
-{selectedUnitFood && (
-  <>
-      <label>
-      數量({selectedUnitFood.Unit})
-      <input
-        type="number"
-        value={unitQuantity}
-        onChange={(e) => setUnitQuantity(e.target.value)}
-        placeholder="例如:1 或 1.5"
-      />
-
-      {/* UX-07：數量輸入 DEC / FRAC 切換 */}
-      <div
-        style={{
-          marginTop: 4,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          fontSize: 12,
-        }}
-      >
-        {/* DEC / FRAC 小開關 */}
-        <div
-          style={{
-            display: 'inline-flex',
-            borderRadius: 999,
-            border: '1px solid var(--line, #ccc)',
-            overflow: 'hidden',
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => setUnitQtyInputMode('dec')}
-            style={{
-              padding: '2px 10px',
-              border: 'none',
-              background:
-                unitQtyInputMode === 'dec' ? '#1e88e5' : 'transparent',
-              color: unitQtyInputMode === 'dec' ? '#fff' : 'inherit',
-              fontSize: 12,
-            }}
-          >
-            DEC
-          </button>
-          <button
-            type="button"
-            onClick={() => setUnitQtyInputMode('frac')}
-            style={{
-              padding: '2px 10px',
-              border: 'none',
-              borderLeft: '1px solid var(--line, #ccc)',
-              background:
-                unitQtyInputMode === 'frac' ? '#1e88e5' : 'transparent',
-              color: unitQtyInputMode === 'frac' ? '#fff' : 'inherit',
-              fontSize: 12,
-            }}
-          >
-            FRAC
-          </button>
-        </div>
-
-        <span className="sub">
-          {unitQtyInputMode === 'dec'
-            ? '直接輸入 1.5、2.25 等小數'
-            : '從常用分數中選擇，會自動換算成小數'}
-        </span>
-      </div>
-
-      {/* 只有在 FRAC 模式時，才顯示數量分數快捷鍵 */}
-      {unitQtyInputMode === 'frac' && (
-        <div
-          style={{
-            marginTop: 4,
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 4,
-            fontSize: 12,
-          }}
-        >
-          {[
-            '1/8',
-            '1/4',
-            '1/3',
-            '3/8',
-            '1/2',
-            '5/8',
-            '2/3',
-            '3/4',
-            '7/8',
-          ].map((f: string) => (
-            <button
-              key={f}
-              type="button"
-              className="small"
-              style={{ padding: '2px 6px' }}
-              onClick={() => {
-                const [n, d] = f.split('/').map(Number);
-                if (!d) return;
-                const value = (n / d)
-                  .toFixed(3)
-                  .replace(/0+$/, '')
-                  .replace(/\.$/, '');
-                setUnitQuantity(value);
-              }}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
-      )}
-    </label>
-                  <div className="hint">
-                    目前估算熱量:約 {autoFoodInfo.kcal || 0} kcal
-                  </div>
-                </>
-              )}
-
-            
+      
               
-              
-<button 
-  className="primary" 
-  onClick={saveMeal}
-  style={{
-    marginTop: 16, // 增加一點上方間距，讓畫面不擁擠
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 6
-  }}
->
-  <span>{editingMealId ? '更新記錄' : '加入記錄'}</span>
-  
-  {/* 如果有計算出熱量，直接顯示在按鈕上，讓使用者確認後點擊 */}
-  {effectiveFoodKcal > 0 && (
-    <span style={{ 
-      background: 'rgba(255,255,255,0.25)', 
-      padding: '2px 8px', 
-      borderRadius: 99, 
-      fontSize: 13,
-      fontWeight: 600
-    }}>
-      {Math.round(effectiveFoodKcal)} kcal
-    </span>
-  )}
-</button>
+
               {editingMealId && (
                 <button
                   onClick={() => {
