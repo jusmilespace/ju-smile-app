@@ -1818,7 +1818,10 @@ useEffect(() => {
           <div className="hero-gradient-block">
             {/* 裝飾圓圈 */}
             <div style={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, background: 'rgba(255,255,255,0.1)', borderRadius: '50%' }} />
-            
+            <div style={{
+            position: 'absolute', bottom: -10, left: -10, width: 60, height: 60,
+            background: 'rgba(255,255,255,0.1)', borderRadius: '50%'
+          }} />
             <div className="hero-title">今日剩餘可攝取</div>
             <div className="hero-number">
               {Math.round(remainingKcal)}
