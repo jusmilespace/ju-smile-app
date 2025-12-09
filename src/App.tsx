@@ -976,11 +976,14 @@ useEffect(() => {
 
       console.log('✅ Service Worker 已就緒，開始監聽更新');
 
-      // 🆕 每 60 秒檢查一次更新
-      const updateInterval = setInterval(() => {
-        console.log('🔄 定期檢查更新...');
-        reg.update();
-      }, 60000);
+      // After（只在正式環境，每 30 分鐘檢查一次）
+if (!import.meta.env.DEV) {
+  // 🆕 每 30 分鐘檢查一次更新（僅正式環境）
+  const updateInterval = setInterval(() => {
+    console.log('🔄 定期檢查更新...');
+    reg.update();
+  }, 30 * 60 * 1000);
+}
 
       // 監聽更新
       reg.addEventListener('updatefound', () => {
@@ -1485,8 +1488,53 @@ const [srcMet, setSrcMet] = useState<string>(
     const [bfInput, setBfInput] = useState<string>('');
     const [vfInput, setVfInput] = useState<string>('');
     const [smInput, setSmInput] = useState<string>(''); // 🆕 骨骼肌率輸入
-    const [waterInput, setWaterInput] = useState<string>('');
-    
+const [waterInput, setWaterInput] = useState<string>('');
+const todayWeekSwipeRef = useRef<HTMLDivElement | null>(null);
+
+useEffect(() => {
+  const el = todayWeekSwipeRef.current;
+  if (!el) return;
+
+  let touchStartX = 0;
+  let touchEndX = 0;
+
+  const handleTouchStart = (e: TouchEvent) => {
+    touchStartX = e.touches[0].clientX;
+    touchEndX = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e: TouchEvent) => {
+    touchEndX = e.touches[0].clientX;
+  };
+
+              const handleTouchEnd = () => {
+              const diff = touchStartX - touchEndX;
+              const threshold = 50;
+              if (Math.abs(diff) > threshold) {
+                if (diff > 0) { // 左滑 -> 下週
+                  displayWeekStartRef.current = dayjs(displayWeekStartRef.current).add(7, 'day').format('YYYY-MM-DD');
+                  // 保留原本選擇的日期，不因為切換週而改變
+                  setWeekKey(k => k + 1);
+                } else { // 右滑 -> 上週
+                  displayWeekStartRef.current = dayjs(displayWeekStartRef.current).subtract(7, 'day').format('YYYY-MM-DD');
+                  // 保留原本選擇的日期，不因為切換週而改變
+                  setWeekKey(k => k + 1);
+                }
+              }
+            };
+
+
+  el.addEventListener('touchstart', handleTouchStart, { passive: true });
+  el.addEventListener('touchmove', handleTouchMove, { passive: true });
+  el.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+  // ✅ 清掉舊的 listener，避免越滑越多 handler 卡住主執行緒
+  return () => {
+    el.removeEventListener('touchstart', handleTouchStart);
+    el.removeEventListener('touchmove', handleTouchMove);
+    el.removeEventListener('touchend', handleTouchEnd);
+  };
+}, []);
     // 🗑️ 已移除 showBodyModal 與 bodyMetricsExpanded 相關狀態
 
     // 初始化輸入框數值
@@ -1676,13 +1724,14 @@ const [srcMet, setSrcMet] = useState<string>(
       </div>
     </div>
     
+   
     {/* 2. 週曆區域：加入左右箭頭 */}
     <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: 4 }}>
-      {/* 左箭頭 */}
+     {/* 左箭頭 */}
       <button
         onClick={() => {
           displayWeekStartRef.current = dayjs(displayWeekStartRef.current).subtract(7, 'day').format('YYYY-MM-DD');
-          setTodayLocal(dayjs(todayLocal).subtract(7, 'day').format('YYYY-MM-DD'));
+          // 保留原本選擇的日期，不因為切換週而改變
           setWeekKey(k => k + 1);
         }}
         style={{ padding: '0 4px', border: 'none', background: 'transparent', color: '#ccc', fontSize: 18, cursor: 'pointer' }}
@@ -1691,45 +1740,16 @@ const [srcMet, setSrcMet] = useState<string>(
       </button>
 
       {/*原本的滑動區塊 (保留 touch 事件) */}
-      <div 
-        ref={(el) => {
-          if (el) {
-            let touchStartX = 0;
-            let touchEndX = 0;
-            const handleTouchStart = (e: TouchEvent) => {
-              touchStartX = e.touches[0].clientX;
-              touchEndX = e.touches[0].clientX;
-            };
-            const handleTouchMove = (e: TouchEvent) => {
-              touchEndX = e.touches[0].clientX;
-            };
-            const handleTouchEnd = () => {
-              const diff = touchStartX - touchEndX;
-              const threshold = 50;
-              if (Math.abs(diff) > threshold) {
-                if (diff > 0) { // 左滑 -> 下週
-                  displayWeekStartRef.current = dayjs(displayWeekStartRef.current).add(7, 'day').format('YYYY-MM-DD');
-                  setTodayLocal(dayjs(todayLocal).add(7, 'day').format('YYYY-MM-DD'));
-                  setWeekKey(k => k + 1);
-                } else { // 右滑 -> 上週
-                  displayWeekStartRef.current = dayjs(displayWeekStartRef.current).subtract(7, 'day').format('YYYY-MM-DD');
-                  setTodayLocal(dayjs(todayLocal).subtract(7, 'day').format('YYYY-MM-DD'));
-                  setWeekKey(k => k + 1);
-                }
-              }
-            };
-            el.addEventListener('touchstart', handleTouchStart, { passive: true });
-            el.addEventListener('touchmove', handleTouchMove, { passive: true });
-            el.addEventListener('touchend', handleTouchEnd, { passive: true });
-          }
-        }}
-        style={{ 
-          flex: 1,
-          padding: '0',
-          touchAction: 'pan-y',
-          overflow: 'hidden' // 防止溢出
-        }}
-      >
+<div 
+  ref={todayWeekSwipeRef}
+  style={{ 
+    flex: 1,
+    padding: '0',
+    touchAction: 'pan-y',
+    overflow: 'hidden' // 防止溢出
+  }}
+>
+
         <div style={{ display: 'flex', gap: 4 }}>
           {Array.from({ length: 7 }).map((_, i) => {
             const date = dayjs(displayWeekStartRef.current).add(i, 'day');
@@ -1772,16 +1792,17 @@ const [srcMet, setSrcMet] = useState<string>(
       </div>
 
       {/* 右箭頭 */}
-      <button
+            <button
         onClick={() => {
           displayWeekStartRef.current = dayjs(displayWeekStartRef.current).add(7, 'day').format('YYYY-MM-DD');
-          setTodayLocal(dayjs(todayLocal).add(7, 'day').format('YYYY-MM-DD'));
+          // 保留原本選擇的日期，不因為切換週而改變
           setWeekKey(k => k + 1);
         }}
         style={{ padding: '0 4px', border: 'none', background: 'transparent', color: '#ccc', fontSize: 18, cursor: 'pointer' }}
       >
         ›
       </button>
+
     </div>
 
   </div>
@@ -2181,7 +2202,51 @@ const COMMON_EXERCISES = [
     const { showToast } = React.useContext(ToastContext);
 
     const [selectedDate, setSelectedDate] = useState(todayLocal);
-    
+const recordsWeekSwipeRef = useRef<HTMLDivElement | null>(null);
+
+useEffect(() => {
+  const el = recordsWeekSwipeRef.current;
+  if (!el) return;
+
+  let touchStartX = 0;
+  let touchEndX = 0;
+
+  const handleTouchStart = (e: TouchEvent) => {
+    touchStartX = e.touches[0].clientX;
+    touchEndX = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e: TouchEvent) => {
+    touchEndX = e.touches[0].clientX;
+  };
+
+              const handleTouchEnd = () => {
+              const diff = touchStartX - touchEndX;
+              const threshold = 50;
+              if (Math.abs(diff) > threshold) {
+                if (diff > 0) { // 左 -> 下週
+                  recordsWeekStartRef.current = dayjs(recordsWeekStartRef.current).add(7, 'day').format('YYYY-MM-DD');
+                  // 保留原本選擇的日期，不因為切換週而改變
+                  setRecordsWeekKey(k => k + 1);
+                } else { // 右 -> 上週
+                  recordsWeekStartRef.current = dayjs(recordsWeekStartRef.current).subtract(7, 'day').format('YYYY-MM-DD');
+                  // 保留原本選擇的日期，不因為切換週而改變
+                  setRecordsWeekKey(k => k + 1);
+                }
+              }
+            };
+
+
+  el.addEventListener('touchstart', handleTouchStart, { passive: true });
+  el.addEventListener('touchmove', handleTouchMove, { passive: true });
+  el.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+  return () => {
+    el.removeEventListener('touchstart', handleTouchStart);
+    el.removeEventListener('touchmove', handleTouchMove);
+    el.removeEventListener('touchend', handleTouchEnd);
+  };
+}, []);
     // 使用 useRef 保持週起點固定
     const recordsWeekStartRef = useRef(dayjs(todayLocal).startOf('week').format('YYYY-MM-DD'));
     const [recordsWeekKey, setRecordsWeekKey] = useState(0);
@@ -2890,12 +2955,14 @@ useEffect(() => {
       </div>
     </div>
 
+
+    
     {/* 2. 週曆區域：加入左右箭頭 */}
     <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: 4 }}>
       <button
         onClick={() => {
           recordsWeekStartRef.current = dayjs(recordsWeekStartRef.current).subtract(7, 'day').format('YYYY-MM-DD');
-          setSelectedDate(dayjs(selectedDate).subtract(7, 'day').format('YYYY-MM-DD'));
+          // 保留原本選擇的日期，不因為切換週而改變
           setRecordsWeekKey(k => k + 1);
         }}
         style={{ padding: '0 4px', border: 'none', background: 'transparent', color: '#ccc', fontSize: 18, cursor: 'pointer' }}
@@ -2905,39 +2972,9 @@ useEffect(() => {
 
       {/* Touch 區域 (內容與之前相同，僅樣式微調以配合 flex) */}
       <div 
-        ref={(el) => {
-          if (el) {
-            let touchStartX = 0;
-            let touchEndX = 0;
-            const handleTouchStart = (e: TouchEvent) => {
-              touchStartX = e.touches[0].clientX;
-              touchEndX = e.touches[0].clientX;
-            };
-            const handleTouchMove = (e: TouchEvent) => {
-              touchEndX = e.touches[0].clientX;
-            };
-            const handleTouchEnd = () => {
-              const diff = touchStartX - touchEndX;
-              const threshold = 50;
-              if (Math.abs(diff) > threshold) {
-                if (diff > 0) { // 左 -> 下週
-                  recordsWeekStartRef.current = dayjs(recordsWeekStartRef.current).add(7, 'day').format('YYYY-MM-DD');
-                  setSelectedDate(dayjs(selectedDate).add(7, 'day').format('YYYY-MM-DD'));
-                  setRecordsWeekKey(k => k + 1);
-                } else { // 右 -> 上週
-                  recordsWeekStartRef.current = dayjs(recordsWeekStartRef.current).subtract(7, 'day').format('YYYY-MM-DD');
-                  setSelectedDate(dayjs(selectedDate).subtract(7, 'day').format('YYYY-MM-DD'));
-                  setRecordsWeekKey(k => k + 1);
-                }
-              }
-            };
-            el.addEventListener('touchstart', handleTouchStart, { passive: true });
-            el.addEventListener('touchmove', handleTouchMove, { passive: true });
-            el.addEventListener('touchend', handleTouchEnd, { passive: true });
-          }
-        }}
-        style={{ flex: 1, padding: '0', touchAction: 'pan-y', overflow: 'hidden' }}
-      >
+  ref={recordsWeekSwipeRef}
+  style={{ flex: 1, padding: '0', touchAction: 'pan-y', overflow: 'hidden' }}
+>
         <div style={{ display: 'flex', gap: 4 }}>
           {Array.from({ length: 7 }).map((_, i) => {
             const date = dayjs(recordsWeekStartRef.current).add(i, 'day');
@@ -2970,16 +3007,17 @@ useEffect(() => {
         </div>
       </div>
 
-      <button
+            <button
         onClick={() => {
           recordsWeekStartRef.current = dayjs(recordsWeekStartRef.current).add(7, 'day').format('YYYY-MM-DD');
-          setSelectedDate(dayjs(selectedDate).add(7, 'day').format('YYYY-MM-DD'));
+          // 保留原本選擇的日期，不因為切換週而改變
           setRecordsWeekKey(k => k + 1);
         }}
         style={{ padding: '0 4px', border: 'none', background: 'transparent', color: '#ccc', fontSize: 18, cursor: 'pointer' }}
       >
         ›
       </button>
+
     </div>
   </div>
 </header>
