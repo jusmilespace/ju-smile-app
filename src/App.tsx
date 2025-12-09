@@ -2263,6 +2263,7 @@ const COMMON_EXERCISES = [
     const [selectedDate, setSelectedDate] = useState(todayLocal);
 const recordsWeekSwipeRef = useRef<HTMLDivElement | null>(null);
 
+
 useEffect(() => {
   const el = recordsWeekSwipeRef.current;
   if (!el) return;
@@ -2371,6 +2372,29 @@ const [unitQtyInputMode, setUnitQtyInputMode] =
     const [manualFoodKcal, setManualFoodKcal] = useState(''); // 給你保留舊有「直接輸入總熱量」備用
 
     const [editingMealId, setEditingMealId] = useState<string | null>(null);
+    // 🆕 新增：控制自訂鍵盤與選擇器的開關
+    const [showQtyPad, setShowQtyPad] = useState(false);
+    const [showUnitPicker, setShowUnitPicker] = useState(false);
+
+    // 1. 定義單位列表 (固定順序，方便計算索引)
+    const unitList = [
+      '個', '杯', '碗', '盤', '片', '瓶', '包', '湯匙', '茶匙', 
+      '根', '粒', '張', 'g', '米杯', '瓣'
+    ];
+    
+    // 2. 建立 Ref 用來控制捲動位置
+    const unitPickerRef = useRef<HTMLDivElement>(null);
+
+    // 3. 當彈窗打開時，自動捲動到目前選中的單位
+    useEffect(() => {
+      if (showUnitPicker && unitPickerRef.current) {
+        const index = unitList.indexOf(fallbackUnitLabel || '個');
+        if (index >= 0) {
+          // 每個項目高度 50px，直接捲動到對應位置
+          unitPickerRef.current.scrollTop = index * 50;
+        }
+      }
+    }, [showUnitPicker, fallbackUnitLabel]); // 依賴 showUnitPicker
     
     // 🆕 飲食輸入模式（快速搜尋 vs 手掌法）
     const [foodInputMode, setFoodInputMode] = useState<'search' | 'palm'>('search');
@@ -3915,126 +3939,282 @@ useEffect(() => {
                             <span>⚙️ 設定「1 份」的營養素</span>
                           </div>
 
-                          {/* A. 參考單位 (優化：滾輪字體加大) */}
-                          <div style={{ marginBottom: 16 }}>
-                            <div style={{ fontSize: 13, color: '#666', marginBottom: 6 }}>
-                              定義 1 份 = 多少?
-                            </div>
-                            
-                            <div style={{ 
-                              display: 'flex', 
-                              border: '1px solid #e2e8f0', 
-                              borderRadius: 10, 
-                              overflow: 'hidden',
-                              background: '#fff',
-                              height: 44,
-                              boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
-                            }}>
-                              
-                              {/* 左側：數量輸入 */}
-                              <div style={{ 
-                                flex: 1, 
-                                display: 'flex', 
-                                alignItems: 'center',
-                                justifyContent: 'center', 
-                                borderRight: '1px solid #f1f5f9',
-                                background: '#f8fafc',
-                                padding: '0 8px'
-                              }}>
-                                <input
-                                  type="number"
-                                  value={fallbackQty}
-                                  onChange={(e) => setFallbackQty(e.target.value)}
-                                  placeholder="數量"
-                                  style={{ 
-                                    width: '100%', 
-                                    textAlign: 'center', 
-                                    fontSize: 16, 
-                                    fontWeight: 600, 
-                                    color: '#333',
-                                    background: 'transparent',
-                                    border: 'none',
-                                    outline: 'none',
-                                    padding: 0,
-                                    height: '100%'
-                                  }}
-                                />
-                              </div>
+                          {/* A. 參考單位 (優化：點擊彈出鍵盤與滾輪) */}
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ fontSize: 13, color: '#666', marginBottom: 6 }}>
+          定義 1 份 = 多少?
+        </div>
+        
+        <div style={{ display: 'flex', gap: 10 }}>
+          
+          {/* 左側：數量觸發鈕 (點擊跳出數字鍵盤) */}
+          <div 
+            onClick={() => setShowQtyPad(true)}
+            style={{ 
+              flex: 1, 
+              height: 50, 
+              background: '#fff', 
+              border: '1px solid #cbd5e1', 
+              borderRadius: 10,
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              fontSize: 20, 
+              fontWeight: 700, 
+              color: fallbackQty ? '#333' : '#94a3b8',
+              cursor: 'pointer',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+            }}
+          >
+            {fallbackQty || '輸入數量'}
+          </div>
 
-                              {/* 右側：單位滾輪 (字體優化) */}
-                              <div style={{ 
-                                flex: 1, 
-                                position: 'relative',
-                                background: '#fff'
-                              }}>
-                                <div style={{
-                                  position: 'absolute',
-                                  right: 8,
-                                  top: '50%',
-                                  transform: 'translateY(-50%)',
-                                  color: '#cbd5e1',
-                                  fontSize: 12,
-                                  pointerEvents: 'none',
-                                  zIndex: 5
-                                }}>
-                                  ↕
-                                </div>
+          {/* 右側：單位觸發鈕 (點擊跳出滾輪選擇) */}
+          <div 
+            onClick={() => setShowUnitPicker(true)}
+            style={{ 
+              flex: 1, 
+              height: 50, 
+              background: '#fff', 
+              border: '1px solid #cbd5e1', 
+              borderRadius: 10,
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              fontSize: 18, 
+              fontWeight: 500, 
+              color: fallbackUnitLabel ? '#059669' : '#94a3b8',
+              cursor: 'pointer',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+            }}
+          >
+            {fallbackUnitLabel || '選擇單位'} 
+            <span style={{ fontSize: 12, marginLeft: 6, color: '#cbd5e1' }}>▼</span>
+          </div>
+        </div>
 
-                                <div style={{ 
-                                  overflowY: 'auto', 
-                                  height: '100%', 
-                                  scrollSnapType: 'y mandatory',
-                                  scrollbarWidth: 'none', 
-                                  msOverflowStyle: 'none'
-                                }}>
-                                   {!fallbackUnitLabel && (
-                                     <div style={{
-                                       height: 44,
-                                       display: 'flex',
-                                       alignItems: 'center',
-                                       justifyContent: 'center',
-                                       color: '#94a3b8',
-                                       fontSize: 15,
-                                       scrollSnapAlign: 'center'
-                                     }}>
-                                       請選擇單位
-                                     </div>
-                                   )}
+        {/* --- 彈窗 1：數字鍵盤 (Calculator NumPad) --- */}
+        {showQtyPad && (
+          <div 
+            className="modal-backdrop"
+            style={{ 
+              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 100,
+              display: 'flex', alignItems: 'flex-end', justifyContent: 'center' 
+            }}
+            onClick={() => setShowQtyPad(false)}
+          >
+            <div 
+              style={{ 
+                width: '100%', maxWidth: 420, background: '#f0f2f5', 
+                borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20,
+                boxShadow: '0 -4px 20px rgba(0,0,0,0.1)' 
+              }}
+              onClick={(e) => e.stopPropagation()} // 防止點擊內部關閉
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, alignItems: 'center' }}>
+                <span style={{ fontSize: 16, fontWeight: 600, color: '#666' }}>輸入數量</span>
+                <span style={{ fontSize: 24, fontWeight: 700, color: '#333' }}>{fallbackQty || '0'}</span>
+              </div>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, '.', 0].map((num) => (
+                  <button
+                    key={num}
+                    type="button"
+                    onClick={() => {
+                      if (num === '.') {
+                        if (!fallbackQty.includes('.')) setFallbackQty(prev => prev + '.');
+                      } else {
+                        setFallbackQty(prev => (prev === '0' ? String(num) : prev + num));
+                      }
+                    }}
+                    style={{ 
+                      padding: '16px 0', borderRadius: 12, border: 'none', background: '#fff', 
+                      fontSize: 24, fontWeight: 600, color: '#333', boxShadow: '0 2px 0 #e5e7eb',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {num}
+                  </button>
+                ))}
+                
+                {/* 倒退鍵 (Backspace) */}
+                <button
+                  type="button"
+                  onClick={() => setFallbackQty(prev => prev.slice(0, -1))}
+                  style={{ 
+                    padding: '16px 0', borderRadius: 12, border: 'none', background: '#e5e7eb', 
+                    fontSize: 20, color: '#333', boxShadow: '0 2px 0 #d1d5db', cursor: 'pointer'
+                  }}
+                >
+                  ⌫
+                </button>
+              </div>
 
-                                   {[
-                                     '個', '杯', '碗', '盤', '片', '瓶', '包', '湯匙', '茶匙', 
-                                     '根', '粒', '張', 'g', '米杯', '瓣'
-                                   ].map((u) => (
-                                     <div
-                                       key={u}
-                                       onClick={() => setFallbackUnitLabel(u)}
-                                       style={{
-                                         height: 44,
-                                         display: 'flex',
-                                         alignItems: 'center',
-                                         justifyContent: 'center',
-                                         paddingRight: 16,
-                                         fontSize: 18, // ✅ 優化：字體加大至 18px，閱讀更清晰
-                                         fontWeight: fallbackUnitLabel === u ? 600 : 400,
-                                         color: fallbackUnitLabel === u ? '#059669' : '#64748b',
-                                         background: fallbackUnitLabel === u ? '#ecfdf5' : 'transparent',
-                                         cursor: 'pointer',
-                                         scrollSnapAlign: 'center',
-                                         transition: 'all 0.2s'
-                                       }}
-                                     >
-                                       {u}
-                                     </div>
-                                   ))}
-                                   
-                                   <style>{`
-                                     div::-webkit-scrollbar { display: none; }
-                                   `}</style>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
+              <button
+                type="button"
+                onClick={() => setShowQtyPad(false)}
+                style={{ 
+                  width: '100%', marginTop: 12, padding: '14px 0', borderRadius: 12, border: 'none', 
+                  background: '#5c9c84', color: '#fff', fontSize: 18, fontWeight: 700, cursor: 'pointer'
+                }}
+              >
+                完成
+              </button>
+            </div>
+          </div>
+        )}
 
+        
+        {/* --- 彈窗 2：單位選擇器 (iOS Wheel Picker Style) --- */}
+        {showUnitPicker && (
+          <div 
+            className="modal-backdrop"
+            style={{ 
+              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100,
+              display: 'flex', alignItems: 'flex-end', justifyContent: 'center' 
+            }}
+            onClick={() => setShowUnitPicker(false)}
+          >
+            <div 
+              style={{ 
+                width: '100%', maxWidth: 420, background: '#fff', 
+                borderTopLeftRadius: 20, borderTopRightRadius: 20,
+                display: 'flex', flexDirection: 'column', 
+                paddingBottom: 20, // 底部留白 (適應 iPhone Home Bar)
+                boxShadow: '0 -4px 20px rgba(0,0,0,0.1)'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* 1. 標題列 (Flexbox 修正重疊問題) */}
+              <div style={{ 
+                height: 50, 
+                borderBottom: '1px solid #eee', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between', 
+                padding: '0 16px' 
+              }}>
+                {/* 左側佔位，為了讓標題置中 */}
+                <div style={{ width: 40 }}></div>
+                
+                <span style={{ fontWeight: 700, fontSize: 16, color: '#333' }}>選擇單位</span>
+                
+                <button 
+                  onClick={() => setShowUnitPicker(false)}
+                  style={{ 
+                    width: 40,
+                    background: 'transparent', 
+                    border: 'none', 
+                    color: '#5c9c84', 
+                    fontWeight: 600, 
+                    fontSize: 15,
+                    cursor: 'pointer',
+                    textAlign: 'right',
+                    padding: 0
+                  }}
+                >
+                  完成
+                </button>
+              </div>
+
+              {/* 2. 滾輪選單區域 */}
+              <div style={{ position: 'relative', height: 250, overflow: 'hidden', background: '#fff' }}>
+                
+                {/* [背景層] 固定在中間的綠色長條 (Highlight Bar) */}
+                <div style={{
+                  position: 'absolute',
+                  top: 100, // (250 - 50) / 2
+                  left: 0,
+                  right: 0,
+                  height: 50,
+                  background: 'rgba(151, 208, 186, 0.2)', // 淡淡的薄荷綠
+                  borderTop: '1px solid #97d0ba',
+                  borderBottom: '1px solid #97d0ba',
+                  pointerEvents: 'none', // 讓點擊事件穿透到底下的捲動層
+                  zIndex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                  paddingRight: 32
+                }}>
+                  {/* 可選：在選取框右側顯示小勾勾 */}
+                  <span style={{ color: '#5c9c84', fontWeight: 'bold' }}>✓</span>
+                </div>
+
+                {/* [前景層] 可捲動的列表 */}
+                <div 
+                  ref={unitPickerRef}
+                  onScroll={(e) => {
+                    // 即時計算停在中間的項目
+                    const scrollTop = e.currentTarget.scrollTop;
+                    const index = Math.round(scrollTop / 50); // 50px 是項目高度
+                    const target = unitList[index];
+                    // 如果計算出的單位存在且不同，就更新
+                    if (target && target !== fallbackUnitLabel) {
+                      setFallbackUnitLabel(target);
+                    }
+                  }}
+                  style={{ 
+                    height: '100%', 
+                    overflowY: 'auto', 
+                    scrollSnapType: 'y mandatory', // 強制對齊
+                    zIndex: 2,
+                    position: 'relative',
+                    // 隱藏捲軸
+                    scrollbarWidth: 'none', 
+                    msOverflowStyle: 'none'
+                  }}
+                >
+                   {/* 上方留白 (讓第一個項目能捲到中間) */}
+                   <div style={{ height: 100 }}></div>
+
+                   {unitList.map((u) => (
+                     <div
+                       key={u}
+                       // 點擊項目也可以直接捲動到該項 (Optional UX)
+                       onClick={() => {
+                         const index = unitList.indexOf(u);
+                         if (unitPickerRef.current) {
+                           unitPickerRef.current.scrollTo({
+                             top: index * 50,
+                             behavior: 'smooth'
+                           });
+                         }
+                       }}
+                       style={{
+                         height: 50, // 固定高度
+                         display: 'flex',
+                         alignItems: 'center',
+                         justifyContent: 'center',
+                         fontSize: 18,
+                         fontWeight: fallbackUnitLabel === u ? 700 : 400,
+                         // 選中時變深色，未選中時變淡灰
+                         color: fallbackUnitLabel === u ? '#1f2937' : '#9ca3af',
+                         // 選中時稍微放大
+                         transform: fallbackUnitLabel === u ? 'scale(1.1)' : 'scale(1)',
+                         transition: 'transform 0.2s, color 0.2s',
+                         scrollSnapAlign: 'center', // 每次滑動結束都停在項目中間
+                         cursor: 'pointer'
+                       }}
+                     >
+                       {u}
+                     </div>
+                   ))}
+
+                   {/* 下方留白 (讓最後一個項目能捲到中間) */}
+                   <div style={{ height: 100 }}></div>
+
+                   <style>{`
+                     div::-webkit-scrollbar { display: none; }
+                   `}</style>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div>
                           {/* B. 營養素輸入 (保持原本的 Grid 佈局) */}
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
                             {/* Protein */}
