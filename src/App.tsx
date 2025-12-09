@@ -2262,6 +2262,23 @@ const COMMON_EXERCISES = [
 
     const [selectedDate, setSelectedDate] = useState(todayLocal);
 const recordsWeekSwipeRef = useRef<HTMLDivElement | null>(null);
+// 🆕 份量彈窗專用的 State
+    const [showServingsModal, setShowServingsModal] = useState(false);
+    const [servingsTab, setServingsTab] = useState<'dec' | 'frac'>('dec'); // 控制彈窗內的 Tab
+
+    // 🆕 分數滾輪的 Ref (用於自動捲動)
+    const servingsPickerRef = useRef<HTMLDivElement>(null);
+
+    // 定義分數選項 (顯示標籤 vs 實際數值)
+    const fractionList = [
+      { label: '1/8', value: '0.125' },
+      { label: '1/4', value: '0.25' },
+      { label: '1/3', value: '0.333' },
+      { label: '1/2', value: '0.5' },
+      { label: '2/3', value: '0.666' },
+      { label: '3/4', value: '0.75' },
+      { label: '5/6', value: '0.833' },
+    ];
 
 
 useEffect(() => {
@@ -3818,120 +3835,231 @@ useEffect(() => {
                     {fallbackType === '其他類' && (
                       <div style={{ marginTop: 12 }}>
                         
-                        {/* 1. 份量輸入 (優化：高度對齊 44px) */}
-                        <div style={{ background: '#fff', padding: '16px', borderRadius: 12, border: '1px solid #e9ecef', marginBottom: 12 }}>
-                          <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151', fontSize: 14 }}>
-                            這次吃了幾份?
-                          </label>
-                          
-                          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                            {/* 輸入框：強制高度 44px */}
-                            <input
-                              type="number"
-                              value={fallbackServings}
-                              onChange={(e) => setFallbackServings(e.target.value)}
-                              placeholder="例如: 1.5"
-                              style={{ 
-                                flex: 1, 
-                                height: 44,         // ✅ 高度固定
-                                fontSize: '16px',
-                                fontWeight: 500, 
-                                padding: '0 12px',  // 上下設 0，靠 Flex 置中 
-                                borderRadius: 10, 
-                                border: '1px solid #e5e7eb',
-                                background: '#f9fafc',
-                                color: '#1f2937',
-                                outline: 'none',
-                                minWidth: 0,
-                                boxSizing: 'border-box'
-                              }}
-                              onFocus={(e) => e.target.style.borderColor = '#97d0ba'}
-                              onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                            />
+                        {/* 1. 份量輸入 (優化：點擊彈出整合式鍵盤) */}
+<div style={{ 
+  background: '#fff', 
+  padding: '16px', 
+  borderRadius: 12, 
+  border: '1px solid #e9ecef', 
+  marginBottom: 12 
+}}>
+  <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151', fontSize: 14 }}>
+    份量
+  </label>
+  
+  {/* 觸發按鈕 (唯讀) */}
+  <div 
+    onClick={() => {
+      setShowServingsModal(true);
+      // 如果目前是空的，打開時可以考慮預設切到小數或維持原狀
+      if (!fallbackServings) setFallbackServings('1');
+    }}
+    style={{ 
+      height: 44,
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center', // 數值置中
+      background: '#f9fafc',
+      border: '1px solid #e5e7eb',
+      borderRadius: 10,
+      fontSize: 18,
+      fontWeight: 600,
+      color: '#1f2937',
+      cursor: 'pointer',
+      boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
+    }}
+  >
+    {/* 顯示邏輯：如果沒值預設顯示 1，如果有值則顯示 */}
+    {fallbackServings || '1'} 
+    <span style={{ fontSize: 12, color: '#9ca3af', marginLeft: 4, fontWeight: 400 }}>份</span>
+  </div>
 
-                            {/* 切換器：強制高度 44px，與輸入框對齊 */}
-                            <div style={{ 
-                              height: 44,           // ✅ 高度固定
-                              display: 'flex', 
-                              background: '#f3f4f6', 
-                              padding: 4, 
-                              borderRadius: 10, 
-                              alignItems: 'center',
-                              flexShrink: 0,
-                              boxSizing: 'border-box'
-                            }}>
-                              <button 
-                                type="button" 
-                                onClick={() => setServingsInputMode('dec')} 
-                                style={{ 
-                                  height: '100%',   // 填滿容器
-                                  padding: '0 12px', 
-                                  border: 'none', 
-                                  borderRadius: 8,
-                                  background: servingsInputMode === 'dec' ? '#fff' : 'transparent', 
-                                  color: servingsInputMode === 'dec' ? '#1f2937' : '#6b7280', 
-                                  fontSize: 13,
-                                  fontWeight: servingsInputMode === 'dec' ? 600 : 500,
-                                  boxShadow: servingsInputMode === 'dec' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
-                                  transition: 'all 0.2s',
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                小數
-                              </button>
-                              <button 
-                                type="button" 
-                                onClick={() => setServingsInputMode('frac')} 
-                                style={{ 
-                                  height: '100%',
-                                  padding: '0 12px', 
-                                  border: 'none', 
-                                  borderRadius: 8,
-                                  background: servingsInputMode === 'frac' ? '#fff' : 'transparent', 
-                                  color: servingsInputMode === 'frac' ? '#1f2937' : '#6b7280', 
-                                  fontSize: 13,
-                                  fontWeight: servingsInputMode === 'frac' ? 600 : 500,
-                                  boxShadow: servingsInputMode === 'frac' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
-                                  transition: 'all 0.2s',
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                分數
-                              </button>
-                            </div>
-                          </div>
-                          
-                          {/* 分數快捷鍵 */}
-                          {servingsInputMode === 'frac' && (
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
-                              {['1/4', '1/3', '1/2', '2/3', '3/4'].map((f) => (
-                                 <button 
-                                   key={f} 
-                                   type="button" 
-                                   onClick={() => {
-                                     const [n, d] = f.split('/').map(Number);
-                                     if (d) setFallbackServings(((n / d).toFixed(3).replace(/0+$/, '').replace(/\.$/, '')));
-                                   }}
-                                   style={{ 
-                                     flex: 1, 
-                                     padding: '8px 0', // 稍微加大
-                                     border: '1px solid #e5e7eb',
-                                     background: '#fff',
-                                     borderRadius: 100, 
-                                     color: '#4b5563',
-                                     fontSize: 13,
-                                     cursor: 'pointer',
-                                     transition: 'all 0.1s'
-                                   }}
-                                   onMouseDown={(e) => e.currentTarget.style.background = '#f3f4f6'}
-                                   onMouseUp={(e) => e.currentTarget.style.background = '#fff'}
-                                 >
-                                   {f}
-                                 </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+  {/* === 份量輸入彈窗 (Servings Modal) === */}
+  {showServingsModal && (
+    <div 
+      className="modal-backdrop"
+      style={{ 
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 100,
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'center' 
+      }}
+      onClick={() => setShowServingsModal(false)}
+    >
+      <div 
+        style={{ 
+          width: '100%', maxWidth: 420, background: '#f0f2f5', 
+          borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20,
+          boxShadow: '0 -4px 20px rgba(0,0,0,0.1)',
+          display: 'flex', flexDirection: 'column', gap: 16
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* 1. 頂部控制列：標題 + Tab 切換 */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontWeight: 600, color: '#666', fontSize: 15 }}>輸入份量</span>
+          
+          {/* iOS 風格分段控制器 (Segmented Control) */}
+          <div style={{ 
+            display: 'flex', background: '#e5e7eb', padding: 3, borderRadius: 8,
+          }}>
+            <button
+              onClick={() => setServingsTab('dec')}
+              style={{
+                padding: '4px 16px', borderRadius: 6, border: 'none', fontSize: 13, fontWeight: 600,
+                background: servingsTab === 'dec' ? '#fff' : 'transparent',
+                color: servingsTab === 'dec' ? '#333' : '#666',
+                boxShadow: servingsTab === 'dec' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
+                transition: 'all 0.2s', cursor: 'pointer'
+              }}
+            >
+              小數
+            </button>
+            <button
+              onClick={() => setServingsTab('frac')}
+              style={{
+                padding: '4px 16px', borderRadius: 6, border: 'none', fontSize: 13, fontWeight: 600,
+                background: servingsTab === 'frac' ? '#fff' : 'transparent',
+                color: servingsTab === 'frac' ? '#333' : '#666',
+                boxShadow: servingsTab === 'frac' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
+                transition: 'all 0.2s', cursor: 'pointer'
+              }}
+            >
+              分數
+            </button>
+          </div>
+        </div>
+
+        {/* 2. 即時數值顯示區 (Display) */}
+        <div style={{ 
+          background: '#fff', borderRadius: 12, padding: '12px', 
+          textAlign: 'center', fontSize: 28, fontWeight: 700, color: '#333',
+          boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #e5e7eb'
+        }}>
+          {fallbackServings || '0'}
+        </div>
+
+        {/* 3. 內容區：根據 Tab 切換顯示 NumPad 或 Picker */}
+        
+        {/* === Tab A: 數字鍵盤 (NumPad) === */}
+        {servingsTab === 'dec' && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, '.', 0].map((num) => (
+              <button
+                key={num}
+                type="button"
+                onClick={() => {
+                  if (num === '.') {
+                    if (!fallbackServings.includes('.')) setFallbackServings(prev => prev + '.');
+                  } else {
+                    // 如果目前是 0 或空，直接取代；否則串接
+                    setFallbackServings(prev => (prev === '0' || prev === '' ? String(num) : prev + num));
+                  }
+                }}
+                style={{ 
+                  padding: '12px 0', borderRadius: 12, border: 'none', background: '#fff', 
+                  fontSize: 22, fontWeight: 600, color: '#333', boxShadow: '0 2px 0 #e5e7eb',
+                  cursor: 'pointer'
+                }}
+              >
+                {num}
+              </button>
+            ))}
+            {/* Backspace */}
+            <button
+              type="button"
+              onClick={() => setFallbackServings(prev => prev.slice(0, -1) || '0')}
+              style={{ 
+                padding: '12px 0', borderRadius: 12, border: 'none', background: '#e5e7eb', 
+                fontSize: 20, color: '#333', boxShadow: '0 2px 0 #d1d5db', cursor: 'pointer'
+              }}
+            >
+              ⌫
+            </button>
+          </div>
+        )}
+
+        {/* === Tab B: 分數滾輪 (Fraction Picker) === */}
+        {servingsTab === 'frac' && (
+          <div style={{ position: 'relative', height: 200, overflow: 'hidden', background: '#fff', borderRadius: 12 }}>
+            
+            {/* 綠色選取框 (Highlight Bar) */}
+            <div style={{
+              position: 'absolute', top: 75, left: 0, right: 0, height: 50,
+              background: 'rgba(151, 208, 186, 0.2)', borderTop: '1px solid #97d0ba', borderBottom: '1px solid #97d0ba',
+              pointerEvents: 'none', zIndex: 1
+            }}></div>
+
+            {/* 滾動列表 */}
+            <div 
+              ref={servingsPickerRef}
+              style={{ 
+                height: '100%', overflowY: 'auto', scrollSnapType: 'y mandatory',
+                position: 'relative', zIndex: 2, scrollbarWidth: 'none'
+              }}
+              onScroll={(e) => {
+                // 簡單的防抖動或直接計算
+                const scrollTop = e.currentTarget.scrollTop;
+                const index = Math.round(scrollTop / 50);
+                const target = fractionList[index];
+                // 滑動時即時更新數值
+                if (target) {
+                   // 這裡要注意：如果不希望滑動時一直改變上面的 Display 數值導致跳動，
+                   // 可以只在 scroll 結束時更新，但為了簡單即時回饋，這裡直接更新。
+                   setFallbackServings(target.value); 
+                }
+              }}
+            >
+              <div style={{ height: 75 }}></div> {/* Top Spacer */}
+              
+              {fractionList.map((item) => (
+                <div
+                  key={item.label}
+                  onClick={() => {
+                     setFallbackServings(item.value);
+                     // 點擊後滾動到該位置
+                     const index = fractionList.indexOf(item);
+                     if (servingsPickerRef.current) {
+                       servingsPickerRef.current.scrollTo({ top: index * 50, behavior: 'smooth' });
+                     }
+                  }}
+                  style={{
+                    height: 50, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 20, fontWeight: 600, scrollSnapAlign: 'center', cursor: 'pointer',
+                    color: String(fallbackServings) === item.value ? '#059669' : '#9ca3b8',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {item.label}
+                  {/* 如果數值相同，顯示數值對照 (例: 1/2 = 0.5) */}
+                  {String(fallbackServings) === item.value && (
+                    <span style={{ fontSize: 12, color: '#5c9c84', marginLeft: 8, fontWeight: 400 }}>
+                       ({item.value})
+                    </span>
+                  )}
+                </div>
+              ))}
+              
+              <div style={{ height: 75 }}></div> {/* Bottom Spacer */}
+            </div>
+          </div>
+        )}
+
+        {/* 完成按鈕 */}
+        <button
+          type="button"
+          onClick={() => setShowServingsModal(false)}
+          style={{ 
+            width: '100%', padding: '14px 0', borderRadius: 12, border: 'none', 
+            background: '#5c9c84', color: '#fff', fontSize: 18, fontWeight: 700, cursor: 'pointer',
+            marginTop: 4
+          }}
+        >
+          完成
+        </button>
+
+      </div>
+    </div>
+  )}
+</div>
 
                         {/* 2. 定義「一份」的內容 */}
                         <div style={{ background: '#f8fafc', padding: '16px', borderRadius: 12, border: '1px solid #e2e8f0' }}>
