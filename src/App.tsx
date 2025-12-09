@@ -3172,32 +3172,87 @@ useEffect(() => {
             {/* 🆕 快速搜尋模式 */}
             {foodInputMode === 'search' && (
             <div className="form-section">
-              <label>
-  食物名稱
-  <input
-  value={foodName}
-  onChange={(e) => {
-    setFoodName(e.target.value);
-    setSelectedUnitFood(null);
-    setSelectedFoodDbRow(null);
-    setEditingMealId(null);
-  }}
-  placeholder="輸入關鍵字,例如:白飯、雞蛋、午餐組合…"
-  name="foodSearchQuery"
-  autoComplete="off"
-  autoCorrect="off"
-  spellCheck="false"
-  style={{
-    // 關鍵修正：iOS 必須 16px 才能防止點擊時畫面自動放大
-    fontSize: '16px', 
-    padding: '12px',
-    borderRadius: '8px',
-    border: '1px solid #ddd',
-    width: '100%',
-    boxSizing: 'border-box'
-  }}
-/>
-</label>
+              {/* 貼上這一段新的搜尋框程式碼 */}
+<div style={{ marginBottom: 16 }}>
+  <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
+    搜尋食物
+  </label>
+  <div style={{ position: 'relative' }}>
+    {/* 左側搜尋 Icon */}
+    <div style={{ 
+      position: 'absolute', 
+      left: 12, 
+      top: '50%', 
+      transform: 'translateY(-50%)', 
+      opacity: 0.5,
+      pointerEvents: 'none' 
+    }}>
+      🔍
+    </div>
+    
+    {/* 優化後的 Input */}
+    <input
+      value={foodName}
+      onChange={(e) => {
+        setFoodName(e.target.value);
+        setSelectedUnitFood(null);
+        setSelectedFoodDbRow(null);
+        setEditingMealId(null);
+      }}
+      placeholder="輸入關鍵字 (例: 拿鐵, 雞胸肉)..."
+      name="foodSearchQuery"
+      autoComplete="off"
+      autoCorrect="off"
+      spellCheck="false"
+      style={{
+        width: '100%',
+        padding: '12px 36px 12px 40px', // 左右留空給 Icon 與 X 按鈕
+        borderRadius: '99px',           // 圓角設計
+        border: '1px solid #dde7e2',
+        background: '#fff',
+        fontSize: '16px',               // 關鍵：防止 iOS 自動放大
+        outline: 'none',
+        boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+        transition: 'all 0.2s',
+        boxSizing: 'border-box'
+      }}
+      onFocus={(e) => e.target.style.borderColor = '#97d0ba'}
+      onBlur={(e) => e.target.style.borderColor = '#dde7e2'}
+    />
+
+    {/* 右側清除按鈕 (有文字時才顯示) */}
+    {foodName && (
+      <button
+        onClick={() => {
+          setFoodName('');
+          setSelectedUnitFood(null);
+          setSelectedFoodDbRow(null);
+          setEditingMealId(null);
+        }}
+        style={{
+          position: 'absolute',
+          right: 8,
+          top: '50%',
+          transform: 'translateY(-50%)',
+          border: 'none',
+          background: '#f0f0f0',
+          color: '#999',
+          borderRadius: '50%',
+          width: 24,
+          height: 24,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '12px',
+          cursor: 'pointer',
+          padding: 0
+        }}
+      >
+        ✕
+      </button>
+    )}
+  </div>
+</div>
 
               {/* UX-05：從歷史紀錄快速加入（新版，版型比照「飲食明細」） */}
 {recentMealsForQuickAdd.length > 0 && (
@@ -3536,102 +3591,161 @@ useEffect(() => {
         </>
       )}
 
-                    {/* A：Unit_Map 有資料 */}
-                    {foodSearchResults.unitMatches.length > 0 && (
-                      <>
-                        <div className="result-title">
-                          有份量代換的食物(Unit_Map)
-                        </div>
-                        {foodSearchResults.unitMatches.map((u, i) => (
-                          <div
-                            key={i}
-                            className="list-item clickable"
-                            onClick={() => {
-                              setSelectedUnitFood(u);
-                              setSelectedFoodDbRow(null);
-                              setFallbackType('');
-                              setFoodName(u.Food ?? '');
-                            }}
-                            // 修正：確保 Flex 佈局能正確處理長文字
-                            style={{ 
-                              display: 'flex', 
-                              justifyContent: 'space-between', 
-                              alignItems: 'center',
-                              paddingRight: '8px' // 右側留一點防撞空間
-                            }}
-                          >
-                            {/* 左側：文字區塊，加入 minWidth: 0 防止撐開 */}
-                            <div style={{ flex: 1, minWidth: 0, paddingRight: 10 }}>
-                              <div style={{ 
-                                fontWeight: 600, 
-                                fontSize: '15px',
-                                wordBreak: 'break-word' // 確保長字換行
-                              }}>
-                                {u.Food}
-                              </div>
-                              <div className="sub" style={{ fontSize: '12px', color: '#666', lineHeight: 1.4 }}>
-                                單位:{u.Unit} · 每單位 {u.ServingsPerUnit} 份 
-                                {u.Type && ` · ${u.Type}`}
-                                {u.Notes && ` · ${u.Notes}`}
-                              </div>
-                            </div>
-                            
-                            {/* 右側：標籤，防止被壓縮 */}
-                            <span className="tag" style={{ flexShrink: 0 }}>
-                              {selectedUnitFood === u ? '已選' : '選擇'}
-                            </span>
-                          </div>
-                        ))}
-                      </>
-                    )}
+{/* === A：Unit_Map 結果優化 (份量代換) === */}
+{foodSearchResults.unitMatches.length > 0 && (
+  <>
+    <div className="result-title" style={{ fontSize: 13, color: '#888', marginBottom: 8, paddingLeft: 4 }}>
+      通用份量代換
+    </div>
+    {foodSearchResults.unitMatches.map((u, i) => (
+      <div
+        key={i}
+        className="list-item clickable"
+        onClick={() => {
+          setSelectedUnitFood(u);
+          setSelectedFoodDbRow(null);
+          setFallbackType('');
+          setFoodName(u.Food ?? '');
+        }}
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '12px 12px 12px 16px',
+          marginBottom: 8,
+          background: selectedUnitFood === u ? '#f0fdf9' : '#fff',
+          border: selectedUnitFood === u ? '1px solid #97d0ba' : '1px solid #f3f4f6',
+          borderRadius: '12px',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+          transition: 'all 0.1s active',
+          cursor: 'pointer'
+        }}
+        onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.98)'}
+        onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
+        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+      >
+        {/* 左側：名稱與描述 */}
+        <div style={{ flex: 1, minWidth: 0, paddingRight: 12 }}>
+          <div style={{ fontWeight: 600, color: '#1f2937', fontSize: 15, marginBottom: 4, wordBreak: 'break-word' }}>
+            {u.Food}
+          </div>
+          <div style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.4 }}>
+            單位: {u.Unit} ({u.ServingsPerUnit} 份)
+            {u.Type && <span style={{ opacity: 0.8 }}> · {u.Type}</span>}
+            {/* 這裡加入 Notes 顯示，並用深一點的顏色強調 */}
+            {u.Notes && <span style={{ color: '#d97706', fontWeight: 500 }}> · {u.Notes}</span>}
+          </div>
+        </div>
 
-                    {/* B：只有 Food_DB 有資料 */}
-                    {foodSearchResults.unitMatches.length === 0 &&
-                      foodSearchResults.foodMatches.length > 0 && (
-                        <>
-                          <div className="result-title">
-                            每 100g 精準資料(Food_DB)
-                          </div>
-                          {foodSearchResults.foodMatches.map((f, i) => (
-                            <div
-                              key={i}
-                              className="list-item clickable"
-                              onClick={() => {
-                                setSelectedFoodDbRow(f);
-                                setSelectedUnitFood(null);
-                                setFallbackType('');
-                                setFoodName(f.food ?? '');
-                              }}
-                              // 修正：同上，Flex 佈局保護
-                              style={{ 
-                                display: 'flex', 
-                                justifyContent: 'space-between', 
-                                alignItems: 'center',
-                                paddingRight: '8px'
-                              }}
-                            >
-                              {/* 左側：文字區塊 */}
-                              <div style={{ flex: 1, minWidth: 0, paddingRight: 10 }}>
-                                <div style={{ 
-                                  fontWeight: 600, 
-                                  fontSize: '15px',
-                                  wordBreak: 'break-word' 
-                                }}>
-                                  {f.food}
-                                </div>
-                                <div className="sub" style={{ fontSize: '12px', color: '#666' }}>
-                                  {f.kcal} kcal / 100g
-                                </div>
-                              </div>
-                              
-                              {/* 右側：標籤 */}
-                              <span className="tag" style={{ flexShrink: 0 }}>
-                                {selectedFoodDbRow === f ? '已選' : '選擇'}
-                              </span>
-                            </div>
-                          ))}
-                        </>
-                      )}
+        {/* 右側：熱量與圓形按鈕 */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0, gap: 6 }}>
+           <div style={{ textAlign: 'right' }}>
+             <div style={{ color: '#97d0ba', fontWeight: 700, fontSize: 15, lineHeight: 1 }}>
+               {u.Kcal_per_serv ? Math.round(Number(u.Kcal_per_serv)) : '?'}
+             </div>
+             <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 2 }}>
+               kcal / 份
+             </div>
+           </div>
+           
+           <div style={{ 
+             width: 28, 
+             height: 28, 
+             borderRadius: '50%', 
+             background: selectedUnitFood === u ? '#97d0ba' : '#f0fdf9',
+             border: '1px solid #97d0ba',
+             display: 'flex', 
+             alignItems: 'center', 
+             justifyContent: 'center',
+             color: selectedUnitFood === u ? '#fff' : '#5c9c84',
+             fontWeight: 'bold',
+             fontSize: 16,
+             transition: 'all 0.2s'
+           }}>
+             {selectedUnitFood === u ? '✓' : '+'}
+           </div>
+        </div>
+      </div>
+    ))}
+  </>
+)}
+
+{/* === B：Food_DB 結果優化 (精準資料) === */}
+{foodSearchResults.unitMatches.length === 0 &&
+  foodSearchResults.foodMatches.length > 0 && (
+    <>
+      <div className="result-title" style={{ fontSize: 13, color: '#888', marginBottom: 8, paddingLeft: 4 }}>
+        精準資料庫 (每100g)
+      </div>
+      {foodSearchResults.foodMatches.map((f, i) => (
+        <div
+          key={i}
+          className="list-item clickable"
+          onClick={() => {
+            setSelectedFoodDbRow(f);
+            setSelectedUnitFood(null);
+            setFallbackType('');
+            setFoodName(f.food ?? '');
+          }}
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '12px 12px 12px 16px',
+            marginBottom: 8,
+            background: selectedFoodDbRow === f ? '#f0fdf9' : '#fff',
+            border: selectedFoodDbRow === f ? '1px solid #97d0ba' : '1px solid #f3f4f6',
+            borderRadius: '12px',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+            transition: 'all 0.1s active',
+            cursor: 'pointer'
+          }}
+          onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.98)'}
+          onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+        >
+          {/* 左側：名稱與描述 */}
+          <div style={{ flex: 1, minWidth: 0, paddingRight: 12 }}>
+            <div style={{ fontWeight: 600, color: '#1f2937', fontSize: 15, marginBottom: 4, wordBreak: 'break-word' }}>
+              {f.food}
+            </div>
+            <div style={{ fontSize: 12, color: '#6b7280' }}>
+              精準秤重估算
+            </div>
+          </div>
+          
+          {/* 右側：熱量與圓形按鈕 */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0, gap: 6 }}>
+             <div style={{ textAlign: 'right' }}>
+               <div style={{ color: '#97d0ba', fontWeight: 700, fontSize: 15, lineHeight: 1 }}>
+                 {Math.round(Number(f.kcal))}
+               </div>
+               <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 2 }}>
+                 kcal / 100g
+               </div>
+             </div>
+
+             <div style={{ 
+               width: 28, 
+               height: 28, 
+               borderRadius: '50%', 
+               background: selectedFoodDbRow === f ? '#97d0ba' : '#f0fdf9',
+               border: '1px solid #97d0ba',
+               display: 'flex', 
+               alignItems: 'center', 
+               justifyContent: 'center',
+               color: selectedFoodDbRow === f ? '#fff' : '#5c9c84',
+               fontWeight: 'bold',
+               fontSize: 16,
+               transition: 'all 0.2s'
+             }}>
+               {selectedFoodDbRow === f ? '✓' : '+'}
+             </div>
+          </div>
+        </div>
+      ))}
+    </>
+  )}
                   </div>
               )}
               
@@ -4195,18 +4309,34 @@ useEffect(() => {
               )}
 
             
-              {/* 獨立移除「估算總熱量」欄位，因為已被「自定義熱量」取代 */}
               
-              {effectiveFoodKcal > 0 && (
-                <div className="hint">
-                  即將{editingMealId ? '更新' : '記錄'}的熱量:約{' '}
-                  {effectiveFoodKcal} kcal
-                </div>
-              )}
-
-              <button className="primary" onClick={saveMeal}>
-                {editingMealId ? '更新飲食記錄' : '加入飲食記錄'}
-              </button>
+              
+<button 
+  className="primary" 
+  onClick={saveMeal}
+  style={{
+    marginTop: 16, // 增加一點上方間距，讓畫面不擁擠
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6
+  }}
+>
+  <span>{editingMealId ? '更新記錄' : '加入記錄'}</span>
+  
+  {/* 如果有計算出熱量，直接顯示在按鈕上，讓使用者確認後點擊 */}
+  {effectiveFoodKcal > 0 && (
+    <span style={{ 
+      background: 'rgba(255,255,255,0.25)', 
+      padding: '2px 8px', 
+      borderRadius: 99, 
+      fontSize: 13,
+      fontWeight: 600
+    }}>
+      {Math.round(effectiveFoodKcal)} kcal
+    </span>
+  )}
+</button>
               {editingMealId && (
                 <button
                   onClick={() => {
