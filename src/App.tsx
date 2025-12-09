@@ -13,6 +13,14 @@ import fruitImg from './assets/fruit.png';
 import fatImg from './assets/fat.png';
 import dairyImg from './assets/dairy.png';
 
+const ICON_MAP: { [key: string]: string } = {
+  protein: proteinImg,
+  veggie: veggieImg,
+  grains: grainsImg,
+  fruit: fruitImg,
+  fat: fatImg,
+  dairy: dairyImg,
+};
 
 
 // 🆕 ===== Toast 動畫樣式（加在這裡）=====
@@ -126,6 +134,7 @@ type MealEntry = {
   fat?: number;
   /** 顯示用份量，例如 "1 碗"、"80 g" */
   amountText?: string;
+  counts?: { [key: string]: number };
 };
 
 type ExerciseEntry = {
@@ -162,6 +171,7 @@ type ComboItem = {
   carb?: number;
   fat?: number;
   amountText?: string;
+  counts?: { [key: string]: number };
 };
 
 type MealCombo = {
@@ -170,18 +180,65 @@ type MealCombo = {
   items: ComboItem[];
 };
 
-// 🖐️ 手掌法份量：把 emoji 轉成圖片顯示（與 VisualPortionPicker 共用）
+// 🖐️ 手掌法份量：根據類別 ID 對應圖片（因為蔬菜/全穀/水果都是 👊，需要額外判斷）
+const PALM_PORTION_ICON_MAP_BY_ID: Record<string, { src: string; alt: string }> = {
+  protein: { src: proteinImg, alt: '豆魚蛋肉類' },
+  veggie: { src: veggieImg, alt: '蔬菜類' },
+  grains: { src: grainsImg, alt: '全穀雜糧類' },
+  fruit: { src: fruitImg, alt: '水果類' },
+  fat: { src: fatImg, alt: '油脂與堅果種子類' },
+  dairy: { src: dairyImg, alt: '乳品類' },
+};
+
 const PALM_PORTION_ICON_MAP: Record<string, { src: string; alt: string }> = {
   '✋': { src: proteinImg, alt: '豆魚蛋肉類' },
-  // 👊 在手掌法中代表「拳頭份量」，可用於蔬菜 / 全穀 / 水果
   '👊': { src: grainsImg, alt: '拳頭份量（蔬菜/全穀/水果）' },
   '👍': { src: fatImg, alt: '油脂與堅果種子類' },
   '🥛': { src: dairyImg, alt: '乳品類' },
 };
 
-function renderPalmAmountText(amountText?: string): React.ReactNode {
+function renderPalmAmountText(amountText?: string, counts?: { [key: string]: number }): React.ReactNode {
   if (!amountText) return null;
 
+  // 如果有 counts 資料，就用類別 ID 來顯示圖案
+  if (counts) {
+    const segments: React.ReactNode[] = [];
+    Object.entries(counts).forEach(([typeId, count]) => {
+      if (count > 0) {
+        const cfg = ICON_MAP[typeId];  // 👈 改用 ICON_MAP（已經存在的）
+        if (cfg) {
+          segments.push(
+            <span
+              key={typeId}
+              style={{ display: 'inline-flex', alignItems: 'center', marginRight: 8 }}
+            >
+              <img
+                src={cfg}
+                alt={typeId}
+                style={{
+                  width: 18,
+                  height: 18,
+                  marginRight: 2,
+                  objectFit: 'contain',
+                }}
+              />
+              <span>×{count}</span>
+            </span>
+          );
+        }
+      }
+    });
+    
+    if (segments.length > 0) {
+      return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
+          {segments}
+        </span>
+      );
+    }
+  }
+
+  // 如果沒有 counts，就用原本的 amountText 顯示
   // 如果字串裡沒有手掌法 emoji，就直接原樣顯示
   const hasPalmEmoji = Object.keys(PALM_PORTION_ICON_MAP).some((emoji) =>
     amountText.includes(emoji)
@@ -253,7 +310,6 @@ function renderPalmAmountText(amountText?: string): React.ReactNode {
     </span>
   );
 }
-
 type ToastType = 'success' | 'error' | 'warning' | 'info';
 
 
@@ -3167,7 +3223,35 @@ useEffect(() => {
     {m.amountText && (
       <>
         <span>·</span>
-        <span>{renderPalmAmountText(m.amountText)}</span>
+        <span>
+  {m.counts ? (
+    // 如果有 counts 資料，顯示圖片
+    <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
+      {Object.entries(m.counts).map(([key, count]) => {
+        if (count <= 0 || !ICON_MAP[key]) return null;
+        return (
+          <span key={key} style={{ 
+            display: 'inline-flex', alignItems: 'center', 
+            background: '#f3f4f6', padding: '0 4px', 
+            borderRadius: 4, border: '1px solid #e5e7eb' 
+          }}>
+            <img 
+              src={ICON_MAP[key]} 
+              alt={key} 
+              style={{ width: 14, height: 14, objectFit: 'contain', marginRight: 2 }} 
+            />
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#4b5563' }}>
+              ×{count}
+            </span>
+          </span>
+        );
+      })}
+    </span>
+  ) : (
+    // 如果沒有 counts (舊資料)，顯示原本的文字
+    renderPalmAmountText(m.amountText, m.counts)
+  )}
+</span>
       </>
     )}
 
@@ -4115,6 +4199,7 @@ useEffect(() => {
                     carb: data.carbs,
                     fat: data.fat,
                     amountText: data.amountText,
+                    counts: data.counts,
                   };
                   setMeals((prev) => [...prev, newMeal]);
                   showToast('success', `已加入 ${data.foodName}`);
@@ -4174,7 +4259,37 @@ useEffect(() => {
   {m.amountText && (
     <>
       <span>·</span>
-      <span>{renderPalmAmountText(m.amountText)}</span>
+      {/* --- 修改開始：優先顯示圖片 --- */}
+<span>
+  {m.counts ? (
+    // 如果有 counts 資料，顯示圖片
+    <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
+      {Object.entries(m.counts).map(([key, count]) => {
+        if (count <= 0 || !ICON_MAP[key]) return null;
+        return (
+          <span key={key} style={{ 
+            display: 'inline-flex', alignItems: 'center', 
+            background: '#f3f4f6', padding: '0 4px', 
+            borderRadius: 4, border: '1px solid #e5e7eb' 
+          }}>
+            <img 
+              src={ICON_MAP[key]} 
+              alt={key} 
+              style={{ width: 14, height: 14, objectFit: 'contain', marginRight: 2 }} 
+            />
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#4b5563' }}>
+              ×{count}
+            </span>
+          </span>
+        );
+      })}
+    </span>
+  ) : (
+    // 如果沒有 counts (舊資料)，顯示原本的文字
+    renderPalmAmountText(m.amountText, m.counts)
+  )}
+</span>
+{/* --- 修改結束 --- */}
     </>
   )}
 

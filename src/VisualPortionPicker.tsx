@@ -158,6 +158,7 @@ type VisualPortionPickerProps = {
     carbs: number;
     fat: number;
     amountText: string;
+    counts: PortionCounts;
   }) => void;
   onCancel: () => void;
   mealType: '早餐' | '午餐' | '晚餐' | '點心';
@@ -278,6 +279,7 @@ export const VisualPortionPicker: React.FC<VisualPortionPickerProps> = ({
       carbs: summary.carbs,
       fat: summary.fat,
       amountText,
+      counts,
     });
   };
 
