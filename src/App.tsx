@@ -3175,19 +3175,28 @@ useEffect(() => {
               <label>
   食物名稱
   <input
-    value={foodName}
-    onChange={(e) => {
-      setFoodName(e.target.value);
-      setSelectedUnitFood(null);
-      setSelectedFoodDbRow(null);
-      setEditingMealId(null);
-    }}
-    placeholder="輸入關鍵字,例如:白飯、雞蛋、午餐組合…"
-    name="foodSearchQuery"
-    autoComplete="off"
-    autoCorrect="off"
-    spellCheck="false"
-  />
+  value={foodName}
+  onChange={(e) => {
+    setFoodName(e.target.value);
+    setSelectedUnitFood(null);
+    setSelectedFoodDbRow(null);
+    setEditingMealId(null);
+  }}
+  placeholder="輸入關鍵字,例如:白飯、雞蛋、午餐組合…"
+  name="foodSearchQuery"
+  autoComplete="off"
+  autoCorrect="off"
+  spellCheck="false"
+  style={{
+    // 關鍵修正：iOS 必須 16px 才能防止點擊時畫面自動放大
+    fontSize: '16px', 
+    padding: '12px',
+    borderRadius: '8px',
+    border: '1px solid #ddd',
+    width: '100%',
+    boxSizing: 'border-box'
+  }}
+/>
 </label>
 
               {/* UX-05：從歷史紀錄快速加入（新版，版型比照「飲食明細」） */}
@@ -3541,20 +3550,34 @@ useEffect(() => {
                               setSelectedUnitFood(u);
                               setSelectedFoodDbRow(null);
                               setFallbackType('');
-                              // ✅ 修正: 把精準名稱帶回輸入框，取代原本關鍵字
                               setFoodName(u.Food ?? '');
                             }}
+                            // 修正：確保 Flex 佈局能正確處理長文字
+                            style={{ 
+                              display: 'flex', 
+                              justifyContent: 'space-between', 
+                              alignItems: 'center',
+                              paddingRight: '8px' // 右側留一點防撞空間
+                            }}
                           >
-                            <div>
-                              <div>{u.Food}</div>
-                              <div className="sub">
-                                單位:{u.Unit} · 每單位
-                                {u.ServingsPerUnit} 份 · 類別:
-                                {u.Type}
-                                {u.Notes && ` · 備註: ${u.Notes}`}
+                            {/* 左側：文字區塊，加入 minWidth: 0 防止撐開 */}
+                            <div style={{ flex: 1, minWidth: 0, paddingRight: 10 }}>
+                              <div style={{ 
+                                fontWeight: 600, 
+                                fontSize: '15px',
+                                wordBreak: 'break-word' // 確保長字換行
+                              }}>
+                                {u.Food}
+                              </div>
+                              <div className="sub" style={{ fontSize: '12px', color: '#666', lineHeight: 1.4 }}>
+                                單位:{u.Unit} · 每單位 {u.ServingsPerUnit} 份 
+                                {u.Type && ` · ${u.Type}`}
+                                {u.Notes && ` · ${u.Notes}`}
                               </div>
                             </div>
-                            <span className="tag">
+                            
+                            {/* 右側：標籤，防止被壓縮 */}
+                            <span className="tag" style={{ flexShrink: 0 }}>
                               {selectedUnitFood === u ? '已選' : '選擇'}
                             </span>
                           </div>
@@ -3577,17 +3600,32 @@ useEffect(() => {
                                 setSelectedFoodDbRow(f);
                                 setSelectedUnitFood(null);
                                 setFallbackType('');
-                                // ✅ 修正: 把精準名稱帶回輸入框，取代原本關鍵字
                                 setFoodName(f.food ?? '');
                               }}
+                              // 修正：同上，Flex 佈局保護
+                              style={{ 
+                                display: 'flex', 
+                                justifyContent: 'space-between', 
+                                alignItems: 'center',
+                                paddingRight: '8px'
+                              }}
                             >
-                              <div>
-                                <div>{f.food}</div>
-                                <div className="sub">
+                              {/* 左側：文字區塊 */}
+                              <div style={{ flex: 1, minWidth: 0, paddingRight: 10 }}>
+                                <div style={{ 
+                                  fontWeight: 600, 
+                                  fontSize: '15px',
+                                  wordBreak: 'break-word' 
+                                }}>
+                                  {f.food}
+                                </div>
+                                <div className="sub" style={{ fontSize: '12px', color: '#666' }}>
                                   {f.kcal} kcal / 100g
                                 </div>
                               </div>
-                              <span className="tag">
+                              
+                              {/* 右側：標籤 */}
+                              <span className="tag" style={{ flexShrink: 0 }}>
                                 {selectedFoodDbRow === f ? '已選' : '選擇'}
                               </span>
                             </div>
