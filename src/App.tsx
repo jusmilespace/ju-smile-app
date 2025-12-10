@@ -2718,9 +2718,11 @@ useEffect(() => {
 
       // === A. Unit_Map：以「份」為基準 ===
       if (selectedUnitFood) {
-        const qty = Number(unitQuantity || '0');
+        // 🟢 修改：將 || '0' 改為 || '1' (若未輸入，預設為 1 份)
+        const qty = Number(unitQuantity || '1'); 
         if (!qty || isNaN(qty)) return zero;
 
+        
         const perUnitServ =
           Number(selectedUnitFood.ServingsPerUnit || '0') || 0;
         const servings = perUnitServ * qty;
@@ -2766,7 +2768,8 @@ useEffect(() => {
 
       // === B. Food_DB：每 100g 精準資料 ===
       if (selectedFoodDbRow) {
-        const g = Number(foodAmountG || '0');
+        // 🟢 修改：將 || '0' 改為 || '100' (若未輸入，預設為 100g)
+        const g = Number(foodAmountG || '100'); 
         if (!g || isNaN(g)) return zero;
 
         const kcal100 = Number(selectedFoodDbRow.kcal || 0) || 0;
@@ -2800,7 +2803,8 @@ useEffect(() => {
       const name = foodName.trim();
       if (!name || !fallbackType) return zero;
 
-      const servings = Number(fallbackServings || '0');
+      // 🟢 修改：將 || '0' 改為 || '1' (若未輸入，預設為 1 份)
+      const servings = Number(fallbackServings || '1');
       if (!servings || isNaN(servings)) return zero;
 
       let kcalPerServ = 0;
@@ -3561,9 +3565,9 @@ useEffect(() => {
                   <div 
                     onClick={() => {
                       setShowUnitQtyModal(true);
-                      if (!unitQuantity) setUnitQuantity('1'); // 預設 1
+                      setUnitQuantity(''); // 🟢 開啟時清空，方便直接輸入
                     }}
-                    style={{ 
+                    style={{
                       height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center',
                       background: '#f9fafc', border: '1px solid #e5e7eb', borderRadius: 10,
                       fontSize: 18, fontWeight: 600, color: '#1f2937', cursor: 'pointer',
@@ -3669,9 +3673,9 @@ useEffect(() => {
                   <div 
                     onClick={() => {
                       setShowGramModal(true);
-                      if (!foodAmountG) setFoodAmountG('100'); 
+                      setFoodAmountG(''); // 🟢 開啟時清空，方便直接輸入
                     }}
-                    style={{ 
+                    style={{
                       height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center',
                       background: '#f9fafc', border: '1px solid #e5e7eb', borderRadius: 10,
                       fontSize: 18, fontWeight: 600, color: '#1f2937', cursor: 'pointer',
@@ -4460,10 +4464,9 @@ useEffect(() => {
   <div 
     onClick={() => {
       setShowServingsModal(true);
-      // 如果目前是空的，打開時可以考慮預設切到小數或維持原狀
-      if (!fallbackServings) setFallbackServings('1');
+      setFallbackServings(''); // 🟢 開啟時清空，方便直接輸入
     }}
-    style={{ 
+    style={{
       height: 44,
       display: 'flex', 
       alignItems: 'center', 
@@ -4686,8 +4689,11 @@ useEffect(() => {
           
           {/* 左側：數量觸發鈕 (點擊跳出數字鍵盤) */}
           <div 
-            onClick={() => setShowQtyPad(true)}
-            style={{ 
+            onClick={() => {
+              setShowQtyPad(true);
+              setFallbackQty(''); // 🟢 開啟時清空，方便直接輸入
+            }}
+            style={{
               flex: 1, 
               height: 50, 
               background: '#fff', 
