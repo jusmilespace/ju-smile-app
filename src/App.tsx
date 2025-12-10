@@ -1525,9 +1525,33 @@ const [srcMet, setSrcMet] = useState<string>(
   const TodayPage: React.FC<TodayPageProps> = ({ onAddExercise }) => {
     const { showToast } = React.useContext(ToastContext);
     const todaySummary = getDay(todayLocal);
-    
-    // 🆕 點標題日期時打開原生 date picker
-    const todayDateInputRef = useRef<HTMLInputElement | null>(null);
+
+    // 🆕 週曆滑動動畫狀態（往左 / 往右）
+const [weekSwipeAnim, setWeekSwipeAnim] = useState<'left' | 'right' | null>(null);
+// 🧠 月份標題顯示邏輯：以「當週中間那天」為主，
+// 但如果「被選日期」在這週而且屬於另一個月份，就顯示被選日期的月份
+const todayWeekStart = dayjs(displayWeekStartRef.current);
+const todayWeekCenter = todayWeekStart.add(3, 'day'); // 當週中間那天
+const todayWeekEnd = todayWeekStart.add(6, 'day');
+const todaySelectedDay = dayjs(todayLocal);
+
+// 被選日期是否在這一週裡
+const isTodaySelectedInThisWeek =
+  todaySelectedDay.diff(todayWeekStart, 'day') >= 0 &&
+  todaySelectedDay.diff(todayWeekEnd, 'day') <= 0;
+
+// 最終要顯示的月份文字
+const todayMonthLabel =
+  isTodaySelectedInThisWeek &&
+  (
+    todaySelectedDay.month() !== todayWeekCenter.month() ||
+    todaySelectedDay.year() !== todayWeekCenter.year()
+  )
+    ? todaySelectedDay.format('MMMM, YYYY')   // 選到「另一個月」→ 顯示被選日期的月份
+    : todayWeekCenter.format('MMMM, YYYY');   // 其他情況 → 以當週為主（維持原本設定）
+
+// 🆕 點標題日期時打開原生 date picker
+const todayDateInputRef = useRef<HTMLInputElement | null>(null);
     const openTodayDatePicker = () => {
       const input = todayDateInputRef.current;
       if (!input) return;
@@ -1564,20 +1588,28 @@ useEffect(() => {
   };
 
               const handleTouchEnd = () => {
-              const diff = touchStartX - touchEndX;
-              const threshold = 50;
-              if (Math.abs(diff) > threshold) {
-                if (diff > 0) { // 左滑 -> 下週
-                  displayWeekStartRef.current = dayjs(displayWeekStartRef.current).add(7, 'day').format('YYYY-MM-DD');
-                  // 保留原本選擇的日期，不因為切換週而改變
-                  setWeekKey(k => k + 1);
-                } else { // 右滑 -> 上週
-                  displayWeekStartRef.current = dayjs(displayWeekStartRef.current).subtract(7, 'day').format('YYYY-MM-DD');
-                  // 保留原本選擇的日期，不因為切換週而改變
-                  setWeekKey(k => k + 1);
-                }
-              }
-            };
+  const diff = touchStartX - touchEndX;
+  const threshold = 50;
+
+  if (Math.abs(diff) > threshold) {
+    if (diff > 0) {
+      // 左滑 → 下一週
+      displayWeekStartRef.current = dayjs(displayWeekStartRef.current)
+        .add(7, 'day')
+        .format('YYYY-MM-DD');
+      setWeekKey((k) => k + 1);
+      setWeekSwipeAnim('left');
+    } else {
+      // 右滑 → 上一週
+      displayWeekStartRef.current = dayjs(displayWeekStartRef.current)
+        .subtract(7, 'day')
+        .format('YYYY-MM-DD');
+      setWeekKey((k) => k + 1);
+      setWeekSwipeAnim('right');
+    }
+  }
+};
+
 
 
   el.addEventListener('touchstart', handleTouchStart, { passive: true });
@@ -1722,10 +1754,11 @@ useEffect(() => {
       
       {/* 中間日期文字區塊：設為 relative 以便放置 absolute 的 input */}
       <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ fontSize: 13, color: '#666', fontWeight: 500 }}>
-          {dayjs(todayLocal).format('MMMM, YYYY')}
-          <span style={{ marginLeft: 4 }}>▼</span>
-        </div>
+  <div style={{ fontSize: 13, color: '#666', fontWeight: 500 }}>
+    {todayMonthLabel}
+    <span style={{ marginLeft: 4 }}>▼</span>
+  </div>
+
         
         {/* 👻 幽靈 Input：蓋在文字上面，透明，點擊直接觸發原生月曆 */}
         <input
@@ -1782,18 +1815,27 @@ useEffect(() => {
     
    
     {/* 2. 週曆區域：加入左右箭頭 */}
-    <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: 4 }}>
-     {/* 左箭頭 */}
-      <button
-        onClick={() => {
-          displayWeekStartRef.current = dayjs(displayWeekStartRef.current).subtract(7, 'day').format('YYYY-MM-DD');
-          // 保留原本選擇的日期，不因為切換週而改變
-          setWeekKey(k => k + 1);
-        }}
-        style={{ padding: '0 4px', border: 'none', background: 'transparent', color: '#ccc', fontSize: 18, cursor: 'pointer' }}
-      >
-        ‹
-      </button>
+<div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: 4 }}>
+  {/* 左箭頭 */}
+  <button
+    onClick={() => {
+      displayWeekStartRef.current = dayjs(displayWeekStartRef.current)
+        .subtract(7, 'day')
+        .format('YYYY-MM-DD');
+      setWeekKey((k) => k + 1);
+      setWeekSwipeAnim('right'); // 看起來像是向右滑回上一週
+    }}
+    style={{
+      padding: '0 4px',
+      border: 'none',
+      background: 'transparent',
+      color: '#ccc',
+      fontSize: 18,
+      cursor: 'pointer',
+    }}
+  >
+    ‹
+  </button>
 
       {/*原本的滑動區塊 (保留 touch 事件) */}
 <div 
@@ -1806,8 +1848,27 @@ useEffect(() => {
   }}
 >
 
-        <div style={{ display: 'flex', gap: 4 }}>
-          {Array.from({ length: 7 }).map((_, i) => {
+        <div
+  style={{
+    display: 'flex',
+    gap: 4,
+    transform:
+      weekSwipeAnim === 'left'
+        ? 'translateX(-12px)'
+        : weekSwipeAnim === 'right'
+        ? 'translateX(12px)'
+        : 'translateX(0)',
+    opacity: weekSwipeAnim ? 0.9 : 1,
+    transition: 'transform 0.18s ease-out, opacity 0.18s ease-out',
+  }}
+  onTransitionEnd={() => {
+    // 動畫結束後把狀態清掉
+    if (weekSwipeAnim) {
+      setWeekSwipeAnim(null);
+    }
+  }}
+>
+  {Array.from({ length: 7 }).map((_, i) => {
             const date = dayjs(displayWeekStartRef.current).add(i, 'day');
             const dateStr = date.format('YYYY-MM-DD');
             const isSelected = dateStr === todayLocal;
@@ -1849,11 +1910,13 @@ useEffect(() => {
 
       {/* 右箭頭 */}
             <button
-        onClick={() => {
-          displayWeekStartRef.current = dayjs(displayWeekStartRef.current).add(7, 'day').format('YYYY-MM-DD');
-          // 保留原本選擇的日期，不因為切換週而改變
-          setWeekKey(k => k + 1);
-        }}
+  onClick={() => {
+    displayWeekStartRef.current = dayjs(displayWeekStartRef.current)
+      .add(7, 'day')
+      .format('YYYY-MM-DD');
+    setWeekKey((k) => k + 1);
+    setWeekSwipeAnim('left'); // 看起來像向左滑到下一週
+  }}
         style={{ padding: '0 4px', border: 'none', background: 'transparent', color: '#ccc', fontSize: 18, cursor: 'pointer' }}
       >
         ›
@@ -2260,8 +2323,93 @@ const COMMON_EXERCISES = [
   }> = ({ recordTab, setRecordTab, defaultMealType, foodMealType, setFoodMealType }) => {
     const { showToast } = React.useContext(ToastContext);
 
-    const [selectedDate, setSelectedDate] = useState(todayLocal);
+const [selectedDate, setSelectedDate] = useState(todayLocal);
+
+// 使用 useRef 保持週起點固定
+const recordsWeekStartRef = useRef(
+  dayjs(todayLocal).startOf('week').format('YYYY-MM-DD')
+);
+const [recordsWeekKey, setRecordsWeekKey] = useState(0);
+
+// 🆕 紀錄頁用的 週曆滑動區域 & 動畫狀態
 const recordsWeekSwipeRef = useRef<HTMLDivElement | null>(null);
+const [recordsWeekSwipeAnim, setRecordsWeekSwipeAnim] =
+  useState<'left' | 'right' | null>(null);
+
+// 🆕 週曆左右滑動（touch 事件）— 完全比照今日頁
+useEffect(() => {
+  const el = recordsWeekSwipeRef.current;
+  if (!el) return;
+
+  let touchStartX = 0;
+  let touchEndX = 0;
+
+  const handleTouchStart = (e: TouchEvent) => {
+    touchStartX = e.touches[0].clientX;
+    touchEndX = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e: TouchEvent) => {
+    touchEndX = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    const diff = touchStartX - touchEndX;
+    const threshold = 50;
+
+    if (Math.abs(diff) > threshold) {
+      if (diff > 0) {
+        // 左滑 → 下一週
+        recordsWeekStartRef.current = dayjs(recordsWeekStartRef.current)
+          .add(7, 'day')
+          .format('YYYY-MM-DD');
+        setRecordsWeekKey((k) => k + 1);
+        setRecordsWeekSwipeAnim('left');
+      } else {
+        // 右滑 → 上一週
+        recordsWeekStartRef.current = dayjs(recordsWeekStartRef.current)
+          .subtract(7, 'day')
+          .format('YYYY-MM-DD');
+        setRecordsWeekKey((k) => k + 1);
+        setRecordsWeekSwipeAnim('right');
+      }
+    }
+  };
+
+  el.addEventListener('touchstart', handleTouchStart, { passive: true });
+  el.addEventListener('touchmove', handleTouchMove, { passive: true });
+  el.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+  return () => {
+    el.removeEventListener('touchstart', handleTouchStart);
+    el.removeEventListener('touchmove', handleTouchMove);
+    el.removeEventListener('touchend', handleTouchEnd);
+  };
+}, []);
+
+  // 🧠 記錄頁月份標題：以「當週中間那天」為主，
+  // 但如果被選日期在這週且屬於另一個月份 → 顯示被選日期的月份
+  const recordsWeekStart = dayjs(recordsWeekStartRef.current);
+  const recordsWeekCenter = recordsWeekStart.add(3, 'day');
+  const recordsWeekEnd = recordsWeekStart.add(6, 'day');
+  const recordsSelectedDay = dayjs(selectedDate);
+
+
+  const isRecordsSelectedInThisWeek =
+    recordsSelectedDay.diff(recordsWeekStart, 'day') >= 0 &&
+    recordsSelectedDay.diff(recordsWeekEnd, 'day') <= 0;
+
+  const recordsMonthLabel =
+    isRecordsSelectedInThisWeek &&
+    (
+      recordsSelectedDay.month() !== recordsWeekCenter.month() ||
+      recordsSelectedDay.year() !== recordsWeekCenter.year()
+    )
+      ? recordsSelectedDay.format('MMMM, YYYY')
+      : recordsWeekCenter.format('MMMM, YYYY');
+
+  
+
 // 🆕 份量彈窗專用的 State
     const [showServingsModal, setShowServingsModal] = useState(false);
     const [servingsTab, setServingsTab] = useState<'dec' | 'frac'>('dec'); // 控制彈窗內的 Tab
@@ -2289,65 +2437,8 @@ const recordsWeekSwipeRef = useRef<HTMLDivElement | null>(null);
     ];
 
 
-useEffect(() => {
-  const el = recordsWeekSwipeRef.current;
-  if (!el) return;
-
-  let touchStartX = 0;
-  let touchEndX = 0;
-
-  const handleTouchStart = (e: TouchEvent) => {
-    touchStartX = e.touches[0].clientX;
-    touchEndX = e.touches[0].clientX;
-  };
-
-  const handleTouchMove = (e: TouchEvent) => {
-    touchEndX = e.touches[0].clientX;
-  };
-
-              const handleTouchEnd = () => {
-              const diff = touchStartX - touchEndX;
-              const threshold = 50;
-              if (Math.abs(diff) > threshold) {
-                if (diff > 0) { // 左 -> 下週
-                  recordsWeekStartRef.current = dayjs(recordsWeekStartRef.current).add(7, 'day').format('YYYY-MM-DD');
-                  // 保留原本選擇的日期，不因為切換週而改變
-                  setRecordsWeekKey(k => k + 1);
-                } else { // 右 -> 上週
-                  recordsWeekStartRef.current = dayjs(recordsWeekStartRef.current).subtract(7, 'day').format('YYYY-MM-DD');
-                  // 保留原本選擇的日期，不因為切換週而改變
-                  setRecordsWeekKey(k => k + 1);
-                }
-              }
-            };
 
 
-  el.addEventListener('touchstart', handleTouchStart, { passive: true });
-  el.addEventListener('touchmove', handleTouchMove, { passive: true });
-  el.addEventListener('touchend', handleTouchEnd, { passive: true });
-
-  return () => {
-    el.removeEventListener('touchstart', handleTouchStart);
-    el.removeEventListener('touchmove', handleTouchMove);
-    el.removeEventListener('touchend', handleTouchEnd);
-  };
-}, []);
-    // 使用 useRef 保持週起點固定
-    const recordsWeekStartRef = useRef(dayjs(todayLocal).startOf('week').format('YYYY-MM-DD'));
-    const [recordsWeekKey, setRecordsWeekKey] = useState(0);
-// 🆕 點標題日期時打開原生 date picker
-  const recordsDateInputRef = useRef<HTMLInputElement | null>(null);
-  const openRecordsDatePicker = () => {
-    const input = recordsDateInputRef.current;
-    if (!input) return;
-    const withPicker = input as HTMLInputElement & { showPicker?: () => void };
-    if (withPicker.showPicker) {
-      withPicker.showPicker();
-    } else {
-      input.focus();
-      input.click();
-    }
-  };
     // 🔧 修正：移除 local state，改用從 App 傳入的 props
     // 這樣餐別就不會在切換頁籤時消失
     
@@ -2390,51 +2481,58 @@ useEffect(() => {
     const [foodAmountG, setFoodAmountG] = useState('');
 
     // C：類別估算 / 其他類 / 自定義熱量
-    const [fallbackType, setFallbackType] = useState<string>('');
-    const [fallbackServings, setFallbackServings] = useState(''); // 幾份
-    const [fallbackQty, setFallbackQty] = useState(''); // 參考數量, 例如 2
-    const [fallbackUnitLabel, setFallbackUnitLabel] = useState('份'); // 參考單位, 例如 片、碗…
+const [fallbackType, setFallbackType] = useState<string>('');
+const [fallbackServings, setFallbackServings] = useState(''); // 幾份
+const [fallbackQty, setFallbackQty] = useState('');           // 參考數量, 例如 2
+const [fallbackUnitLabel, setFallbackUnitLabel] = useState('份'); // 參考單位, 例如 片、碗…
 
-    // UX-07：份量 / 數量輸入模式（十進位 or 分數）
+// UX-07：份量 / 數量輸入模式（十進位 or 分數）
 const [servingsInputMode, setServingsInputMode] =
   useState<'dec' | 'frac'>('dec');
 const [unitQtyInputMode, setUnitQtyInputMode] =
   useState<'dec' | 'frac'>('dec');
 
-    // C2：其他類 - 每份 P/C/F
-    const [fallbackProtPerServ, setFallbackProtPerServ] = useState('');
-    const [fallbackCarbPerServ, setFallbackCarbPerServ] = useState('');
-    const [fallbackFatPerServ, setFallbackFatPerServ] = useState('');
+// C2：其他類 - 每份 P/C/F
+const [fallbackProtPerServ, setFallbackProtPerServ] = useState('');
+const [fallbackCarbPerServ, setFallbackCarbPerServ] = useState('');
+const [fallbackFatPerServ, setFallbackFatPerServ] = useState('');
 
-    // C3：自定義熱量 - 每份 kcal
-    const [fallbackKcalPerServ, setFallbackKcalPerServ] = useState('');
+// C3：自定義熱量 - 每份 kcal
+const [fallbackKcalPerServ, setFallbackKcalPerServ] = useState('');
 
-    const [manualFoodKcal, setManualFoodKcal] = useState(''); // 給你保留舊有「直接輸入總熱量」備用
+// 保留舊有「直接輸入總熱量」
+const [manualFoodKcal, setManualFoodKcal] = useState('');
 
-    const [editingMealId, setEditingMealId] = useState<string | null>(null);
-    // 🆕 新增：控制自訂鍵盤與選擇器的開關
-    const [showQtyPad, setShowQtyPad] = useState(false);
-    const [showUnitPicker, setShowUnitPicker] = useState(false);
+// 編輯中的紀錄 id
+const [editingMealId, setEditingMealId] = useState<string | null>(null);
 
-    // 1. 定義單位列表 (固定順序，方便計算索引)
-    const unitList = [
-      '個', '杯', '碗', '盤', '片', '瓶', '包', '湯匙', '茶匙', 
-      '根', '粒', '張', 'g', '米杯', '瓣'
-    ];
-    
-    // 2. 建立 Ref 用來控制捲動位置
-    const unitPickerRef = useRef<HTMLDivElement>(null);
+// 🆕 自訂鍵盤 / 單位選擇器 開關
+const [showQtyPad, setShowQtyPad] = useState(false);
+const [showUnitPicker, setShowUnitPicker] = useState(false);
 
-    // 3. 當彈窗打開時，自動捲動到目前選中的單位
-    useEffect(() => {
-      if (showUnitPicker && unitPickerRef.current) {
-        const index = unitList.indexOf(fallbackUnitLabel || '個');
-        if (index >= 0) {
-          // 每個項目高度 50px，直接捲動到對應位置
-          unitPickerRef.current.scrollTop = index * 50;
-        }
-      }
-    }, [showUnitPicker, fallbackUnitLabel]); // 依賴 showUnitPicker
+// 單位列表 (固定順序，方便計算索引)
+const unitList = [
+  '個', '杯', '碗', '盤', '片', '瓶', '包', '湯匙', '茶匙',
+  '根', '粒', '張', 'g', '米杯', '瓣',
+];
+
+// 用來捲動「單位滾輪」的位置
+const unitPickerRef = useRef<HTMLDivElement>(null);
+
+// 3. 當彈窗打開時，自動捲動至目前選擇的單位
+useEffect(() => {
+  if (showUnitPicker && unitPickerRef.current) {
+    const targetLabel = fallbackUnitLabel || '份';
+    const index = unitList.indexOf(targetLabel);
+    if (index >= 0) {
+      unitPickerRef.current.scrollTo({
+        top: index * 48, // 每個選項高度約 48px
+        behavior: 'smooth',
+      });
+    }
+  }
+}, [showUnitPicker, fallbackUnitLabel, unitList]);
+
     
     // 🆕 飲食輸入模式（快速搜尋 vs 手掌法）
     const [foodInputMode, setFoodInputMode] = useState<'search' | 'palm'>('search');
@@ -3036,9 +3134,11 @@ useEffect(() => {
       <div style={{ flex: 1 }} />
       <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ fontSize: 13, color: '#666', fontWeight: 500 }}>
-          {dayjs(selectedDate).format('MMMM, YYYY')}
-          <span style={{ marginLeft: 4 }}>▼</span>
-        </div>
+  {recordsMonthLabel}
+  <span style={{ marginLeft: 4 }}>▼</span>
+</div>
+
+
         <input
           type="date"
           value={selectedDate}
@@ -3083,11 +3183,13 @@ useEffect(() => {
     {/* 2. 週曆區域：加入左右箭頭 */}
     <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: 4 }}>
       <button
-        onClick={() => {
-          recordsWeekStartRef.current = dayjs(recordsWeekStartRef.current).subtract(7, 'day').format('YYYY-MM-DD');
-          // 保留原本選擇的日期，不因為切換週而改變
-          setRecordsWeekKey(k => k + 1);
-        }}
+  onClick={() => {
+    recordsWeekStartRef.current = dayjs(recordsWeekStartRef.current)
+      .subtract(7, 'day')
+      .format('YYYY-MM-DD');
+    setRecordsWeekKey((k) => k + 1);
+    setRecordsWeekSwipeAnim('right');
+  }}
         style={{ padding: '0 4px', border: 'none', background: 'transparent', color: '#ccc', fontSize: 18, cursor: 'pointer' }}
       >
         ‹
@@ -3098,8 +3200,26 @@ useEffect(() => {
   ref={recordsWeekSwipeRef}
   style={{ flex: 1, padding: '0', touchAction: 'pan-y', overflow: 'hidden' }}
 >
-        <div style={{ display: 'flex', gap: 4 }}>
-          {Array.from({ length: 7 }).map((_, i) => {
+        <div
+  style={{
+    display: 'flex',
+    gap: 4,
+    transform:
+      recordsWeekSwipeAnim === 'left'
+        ? 'translateX(-12px)'
+        : recordsWeekSwipeAnim === 'right'
+        ? 'translateX(12px)'
+        : 'translateX(0)',
+    opacity: recordsWeekSwipeAnim ? 0.9 : 1,
+    transition: 'transform 0.18s ease-out, opacity 0.18s ease-out',
+  }}
+  onTransitionEnd={() => {
+    if (recordsWeekSwipeAnim) {
+      setRecordsWeekSwipeAnim(null);
+    }
+  }}
+>
+  {Array.from({ length: 7 }).map((_, i) => {
             const date = dayjs(recordsWeekStartRef.current).add(i, 'day');
             const dateStr = date.format('YYYY-MM-DD');
             const isSelected = dateStr === selectedDate;
@@ -3131,11 +3251,13 @@ useEffect(() => {
       </div>
 
             <button
-        onClick={() => {
-          recordsWeekStartRef.current = dayjs(recordsWeekStartRef.current).add(7, 'day').format('YYYY-MM-DD');
-          // 保留原本選擇的日期，不因為切換週而改變
-          setRecordsWeekKey(k => k + 1);
-        }}
+  onClick={() => {
+    recordsWeekStartRef.current = dayjs(recordsWeekStartRef.current)
+      .add(7, 'day')
+      .format('YYYY-MM-DD');
+    setRecordsWeekKey((k) => k + 1);
+    setRecordsWeekSwipeAnim('left');
+  }}
         style={{ padding: '0 4px', border: 'none', background: 'transparent', color: '#ccc', fontSize: 18, cursor: 'pointer' }}
       >
         ›
