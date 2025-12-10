@@ -1526,11 +1526,12 @@ const [srcMet, setSrcMet] = useState<string>(
     const { showToast } = React.useContext(ToastContext);
     const todaySummary = getDay(todayLocal);
 
-    // 🆕 週曆滑動動畫狀態（往左 / 往右）
-const [weekSwipeAnim, setWeekSwipeAnim] = useState<'left' | 'right' | null>(null);
-// 🧠 月份標題顯示邏輯：以「當週中間那天」為主，
-// 但如果「被選日期」在這週而且屬於另一個月份，就顯示被選日期的月份
+// 🆕 週曆滑動偏移量（跟著手指滑動的距離）
+const [weekSwipeOffset, setWeekSwipeOffset] = useState(0);
+
+// 🧠 月份標題顯示邏輯...
 const todayWeekStart = dayjs(displayWeekStartRef.current);
+
 const todayWeekCenter = todayWeekStart.add(3, 'day'); // 當週中間那天
 const todayWeekEnd = todayWeekStart.add(6, 'day');
 const todaySelectedDay = dayjs(todayLocal);
@@ -1576,53 +1577,54 @@ useEffect(() => {
   if (!el) return;
 
   let touchStartX = 0;
-  let touchEndX = 0;
+  let touchCurrentX = 0;
 
   const handleTouchStart = (e: TouchEvent) => {
     touchStartX = e.touches[0].clientX;
-    touchEndX = e.touches[0].clientX;
+    touchCurrentX = touchStartX;
+    setWeekSwipeOffset(0);
   };
 
   const handleTouchMove = (e: TouchEvent) => {
-    touchEndX = e.touches[0].clientX;
+    touchCurrentX = e.touches[0].clientX;
+    setWeekSwipeOffset(touchCurrentX - touchStartX); // 🛝 跟著手指移動
   };
 
-              const handleTouchEnd = () => {
-  const diff = touchStartX - touchEndX;
-  const threshold = 50;
+  const handleTouchEnd = () => {
+    const diff = touchStartX - touchCurrentX; // >0 左滑，<0 右滑
+    const threshold = 50;
 
-  if (Math.abs(diff) > threshold) {
-    if (diff > 0) {
-      // 左滑 → 下一週
-      displayWeekStartRef.current = dayjs(displayWeekStartRef.current)
-        .add(7, 'day')
-        .format('YYYY-MM-DD');
-      setWeekKey((k) => k + 1);
-      setWeekSwipeAnim('left');
-    } else {
-      // 右滑 → 上一週
-      displayWeekStartRef.current = dayjs(displayWeekStartRef.current)
-        .subtract(7, 'day')
-        .format('YYYY-MM-DD');
-      setWeekKey((k) => k + 1);
-      setWeekSwipeAnim('right');
+    if (Math.abs(diff) > threshold) {
+      if (diff > 0) {
+        // 左滑 → 下一週
+        displayWeekStartRef.current = dayjs(displayWeekStartRef.current)
+          .add(7, 'day')
+          .format('YYYY-MM-DD');
+        setWeekKey((k) => k + 1);
+      } else {
+        // 右滑 → 上一週
+        displayWeekStartRef.current = dayjs(displayWeekStartRef.current)
+          .subtract(7, 'day')
+          .format('YYYY-MM-DD');
+        setWeekKey((k) => k + 1);
+      }
     }
-  }
-};
 
-
+    // 放手後，條回到中間
+    setWeekSwipeOffset(0);
+  };
 
   el.addEventListener('touchstart', handleTouchStart, { passive: true });
   el.addEventListener('touchmove', handleTouchMove, { passive: true });
   el.addEventListener('touchend', handleTouchEnd, { passive: true });
 
-  // ✅ 清掉舊的 listener，避免越滑越多 handler 卡住主執行緒
   return () => {
     el.removeEventListener('touchstart', handleTouchStart);
     el.removeEventListener('touchmove', handleTouchMove);
     el.removeEventListener('touchend', handleTouchEnd);
   };
 }, []);
+
     // 🗑️ 已移除 showBodyModal 與 bodyMetricsExpanded 相關狀態
 
     // 初始化輸入框數值
@@ -1823,7 +1825,7 @@ useEffect(() => {
         .subtract(7, 'day')
         .format('YYYY-MM-DD');
       setWeekKey((k) => k + 1);
-      setWeekSwipeAnim('right'); // 看起來像是向右滑回上一週
+      
     }}
     style={{
       padding: '0 4px',
@@ -1844,35 +1846,21 @@ useEffect(() => {
     flex: 1,
     padding: '0',
     touchAction: 'pan-y',
-    overflow: 'hidden' // 防止溢出
+    overflow: 'hidden'
   }}
 >
-
-        <div
-  style={{
-    display: 'flex',
-    gap: 4,
-    transform:
-      weekSwipeAnim === 'left'
-        ? 'translateX(-12px)'
-        : weekSwipeAnim === 'right'
-        ? 'translateX(12px)'
-        : 'translateX(0)',
-    opacity: weekSwipeAnim ? 0.9 : 1,
-    transition: 'transform 0.18s ease-out, opacity 0.18s ease-out',
-  }}
-  onTransitionEnd={() => {
-    // 動畫結束後把狀態清掉
-    if (weekSwipeAnim) {
-      setWeekSwipeAnim(null);
-    }
-  }}
->
-  {Array.from({ length: 7 }).map((_, i) => {
-            const date = dayjs(displayWeekStartRef.current).add(i, 'day');
-            const dateStr = date.format('YYYY-MM-DD');
-            const isSelected = dateStr === todayLocal;
-            const isToday = dateStr === dayjs().format('YYYY-MM-DD');
+  <div
+    style={{
+      display: 'flex',
+      gap: 4,
+      transform: `translateX(${weekSwipeOffset}px)`, // 🛝 跟手位移
+    }}
+  >
+    {Array.from({ length: 7 }).map((_, i) => {
+      const date = dayjs(displayWeekStartRef.current).add(i, 'day');
+      const dateStr = date.format('YYYY-MM-DD');
+      const isSelected = dateStr === todayLocal;
+      const isToday = dateStr === dayjs().format('YYYY-MM-DD');
             
             return (
               <button
@@ -1915,7 +1903,7 @@ useEffect(() => {
       .add(7, 'day')
       .format('YYYY-MM-DD');
     setWeekKey((k) => k + 1);
-    setWeekSwipeAnim('left'); // 看起來像向左滑到下一週
+    
   }}
         style={{ padding: '0 4px', border: 'none', background: 'transparent', color: '#ccc', fontSize: 18, cursor: 'pointer' }}
       >
@@ -2323,90 +2311,106 @@ const COMMON_EXERCISES = [
   }> = ({ recordTab, setRecordTab, defaultMealType, foodMealType, setFoodMealType }) => {
     const { showToast } = React.useContext(ToastContext);
 
-const [selectedDate, setSelectedDate] = useState(todayLocal);
+      const [selectedDate, setSelectedDate] = useState(todayLocal);
 
-// 使用 useRef 保持週起點固定
-const recordsWeekStartRef = useRef(
-  dayjs(todayLocal).startOf('week').format('YYYY-MM-DD')
-);
-const [recordsWeekKey, setRecordsWeekKey] = useState(0);
+    // 使用 useRef 保持週起點固定（星期日）
+    const recordsWeekStartRef = useRef(
+      dayjs(todayLocal).startOf('week').format('YYYY-MM-DD')
+    );
+    const [recordsWeekKey, setRecordsWeekKey] = useState(0);
 
-// 🆕 紀錄頁用的 週曆滑動區域 & 動畫狀態
-const recordsWeekSwipeRef = useRef<HTMLDivElement | null>(null);
-const [recordsWeekSwipeAnim, setRecordsWeekSwipeAnim] =
-  useState<'left' | 'right' | null>(null);
+    // 紀錄頁用的週曆滑動區域 & 動畫狀態（邏輯跟 Today 頁一樣）
+    const recordsWeekSwipeRef = useRef<HTMLDivElement | null>(null);
+    const [recordsWeekSwipeOffset, setRecordsWeekSwipeOffset] = useState(0);
+  
 
-// 🆕 週曆左右滑動（touch 事件）— 完全比照今日頁
-useEffect(() => {
-  const el = recordsWeekSwipeRef.current;
-  if (!el) return;
+    // 週曆左右滑動（touch 事件）
+    useEffect(() => {
+      const el = recordsWeekSwipeRef.current;
+      if (!el) return;
 
-  let touchStartX = 0;
-  let touchEndX = 0;
+      let touchStartX = 0;
+      let touchEndX = 0;
 
-  const handleTouchStart = (e: TouchEvent) => {
-    touchStartX = e.touches[0].clientX;
-    touchEndX = e.touches[0].clientX;
-  };
+      const handleTouchStart = (e: TouchEvent) => {
+        touchStartX = e.touches[0].clientX;
+        touchEndX = e.touches[0].clientX;
+      };
 
-  const handleTouchMove = (e: TouchEvent) => {
-    touchEndX = e.touches[0].clientX;
-  };
+      const handleTouchMove = (e: TouchEvent) => {
+        touchEndX = e.touches[0].clientX;
+      };
 
-  const handleTouchEnd = () => {
-    const diff = touchStartX - touchEndX;
-    const threshold = 50;
+      const handleTouchEnd = () => {
+        const diff = touchStartX - touchEndX;
+        const threshold = 50;
 
-    if (Math.abs(diff) > threshold) {
-      if (diff > 0) {
-        // 左滑 → 下一週
-        recordsWeekStartRef.current = dayjs(recordsWeekStartRef.current)
-          .add(7, 'day')
-          .format('YYYY-MM-DD');
-        setRecordsWeekKey((k) => k + 1);
-        setRecordsWeekSwipeAnim('left');
+        if (Math.abs(diff) > threshold) {
+          if (diff > 0) {
+            // 左滑 → 下一週
+            recordsWeekStartRef.current = dayjs(recordsWeekStartRef.current)
+              .add(7, 'day')
+              .format('YYYY-MM-DD');
+            setRecordsWeekKey((k) => k + 1);
+           
+          } else {
+            // 右滑 → 上一週
+            recordsWeekStartRef.current = dayjs(recordsWeekStartRef.current)
+              .subtract(7, 'day')
+              .format('YYYY-MM-DD');
+            setRecordsWeekKey((k) => k + 1);
+            
+          }
+        }
+      };
+
+      el.addEventListener('touchstart', handleTouchStart, { passive: true });
+      el.addEventListener('touchmove', handleTouchMove, { passive: true });
+      el.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+      return () => {
+        el.removeEventListener('touchstart', handleTouchStart);
+        el.removeEventListener('touchmove', handleTouchMove);
+        el.removeEventListener('touchend', handleTouchEnd);
+      };
+    }, []);
+
+    // 🧠 記錄頁月份標題：以「當週中間那天」為主，
+    // 但如果被選日期在這週且屬於另一個月份 → 顯示被選日期的月份（格式跟 Today 頁相同）
+    const recordsWeekStart = dayjs(recordsWeekStartRef.current);
+    const recordsWeekCenter = recordsWeekStart.add(3, 'day');
+    const recordsWeekEnd = recordsWeekStart.add(6, 'day');
+    const recordsSelectedDay = dayjs(selectedDate);
+
+    const isRecordsSelectedInThisWeek =
+      recordsSelectedDay.diff(recordsWeekStart, 'day') >= 0 &&
+      recordsSelectedDay.diff(recordsWeekEnd, 'day') <= 0;
+
+    const recordsMonthLabel =
+      isRecordsSelectedInThisWeek &&
+      (
+        recordsSelectedDay.month() !== recordsWeekCenter.month() ||
+        recordsSelectedDay.year() !== recordsWeekCenter.year()
+      )
+        ? recordsSelectedDay.format('MMMM, YYYY')  // ← 跟 Today 月份格式一樣
+        : recordsWeekCenter.format('MMMM, YYYY');
+
+    // 點月份標題時打開原生 date picker（跟 Today 頁同樣行為）
+    const recordsDateInputRef = useRef<HTMLInputElement | null>(null);
+    const openRecordsDatePicker = () => {
+      const input = recordsDateInputRef.current;
+      if (!input) return;
+
+      const withPicker = input as HTMLInputElement & { showPicker?: () => void };
+
+      if (withPicker.showPicker) {
+        withPicker.showPicker();
       } else {
-        // 右滑 → 上一週
-        recordsWeekStartRef.current = dayjs(recordsWeekStartRef.current)
-          .subtract(7, 'day')
-          .format('YYYY-MM-DD');
-        setRecordsWeekKey((k) => k + 1);
-        setRecordsWeekSwipeAnim('right');
+        input.focus();
+        input.click();
       }
-    }
-  };
+    };
 
-  el.addEventListener('touchstart', handleTouchStart, { passive: true });
-  el.addEventListener('touchmove', handleTouchMove, { passive: true });
-  el.addEventListener('touchend', handleTouchEnd, { passive: true });
-
-  return () => {
-    el.removeEventListener('touchstart', handleTouchStart);
-    el.removeEventListener('touchmove', handleTouchMove);
-    el.removeEventListener('touchend', handleTouchEnd);
-  };
-}, []);
-
-  // 🧠 記錄頁月份標題：以「當週中間那天」為主，
-  // 但如果被選日期在這週且屬於另一個月份 → 顯示被選日期的月份
-  const recordsWeekStart = dayjs(recordsWeekStartRef.current);
-  const recordsWeekCenter = recordsWeekStart.add(3, 'day');
-  const recordsWeekEnd = recordsWeekStart.add(6, 'day');
-  const recordsSelectedDay = dayjs(selectedDate);
-
-
-  const isRecordsSelectedInThisWeek =
-    recordsSelectedDay.diff(recordsWeekStart, 'day') >= 0 &&
-    recordsSelectedDay.diff(recordsWeekEnd, 'day') <= 0;
-
-  const recordsMonthLabel =
-    isRecordsSelectedInThisWeek &&
-    (
-      recordsSelectedDay.month() !== recordsWeekCenter.month() ||
-      recordsSelectedDay.year() !== recordsWeekCenter.year()
-    )
-      ? recordsSelectedDay.format('MMMM, YYYY')
-      : recordsWeekCenter.format('MMMM, YYYY');
 
   
 
@@ -3126,19 +3130,45 @@ useEffect(() => {
       <div className="page page-records"
         style={{ paddingBottom: '90px' }}
       >
-<header className="top-bar">
-  <div className="date-text" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-    
-    {/* 1. 月份標題 + 幽靈 Date Input + 今天按鈕 */}
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '0 8px' }}>
+      {/* 🗓️ 記錄頁 - 月份標題 + 週曆 */}
+      <header className="top-bar">
+  <div
+    className="date-text"
+    style={{
+      flex: 1,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      gap: 6,
+    }}
+  >
+    {/* 1. 月份標題 + 幽靈 Date Input + 今天按鈕（跟今日頁同一套寫法） */}
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        width: '100%',
+        padding: '0 8px',
+      }}
+    >
       <div style={{ flex: 1 }} />
-      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+
+      {/* 中間月份文字：relative 方便放透明 input */}
+      <div
+        style={{
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
         <div style={{ fontSize: 13, color: '#666', fontWeight: 500 }}>
-  {recordsMonthLabel}
-  <span style={{ marginLeft: 4 }}>▼</span>
-</div>
+          {recordsMonthLabel}
+          <span style={{ marginLeft: 4 }}>▼</span>
+        </div>
 
-
+        {/* 👻 幽靈 Input：蓋在文字上面，透明，點擊就開原生日期選擇器 */}
         <input
           type="date"
           value={selectedDate}
@@ -3146,31 +3176,62 @@ useEffect(() => {
             if (!e.target.value) return;
             const newDate = e.target.value;
             setSelectedDate(newDate);
-            const newWeekStart = dayjs(newDate).startOf('week').format('YYYY-MM-DD');
+
+            // 同步更新該日期所屬的週
+            const newWeekStart = dayjs(newDate)
+              .startOf('week')
+              .format('YYYY-MM-DD');
             if (recordsWeekStartRef.current !== newWeekStart) {
               recordsWeekStartRef.current = newWeekStart;
               setRecordsWeekKey((k) => k + 1);
             }
           }}
           style={{
-            position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-            opacity: 0, zIndex: 10, cursor: 'pointer'
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            opacity: 0,
+            zIndex: 10,
+            cursor: 'pointer',
           }}
         />
       </div>
-      <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+
+      {/* 右邊「今天」按鈕 */}
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          justifyContent: 'flex-end',
+        }}
+      >
         <button
           onClick={() => {
             const today = dayjs().format('YYYY-MM-DD');
             setSelectedDate(today);
-            recordsWeekStartRef.current = dayjs().startOf('week').format('YYYY-MM-DD');
-            setRecordsWeekKey(k => k + 1);
+            recordsWeekStartRef.current = dayjs()
+              .startOf('week')
+              .format('YYYY-MM-DD');
+            setRecordsWeekKey((k) => k + 1);
           }}
           style={{
-            padding: '4px 12px', fontSize: 12, fontWeight: 500,
-            color: selectedDate === dayjs().format('YYYY-MM-DD') ? '#fff' : '#97d0ba',
-            background: selectedDate === dayjs().format('YYYY-MM-DD') ? '#97d0ba' : 'transparent',
-            border: '1px solid #97d0ba', borderRadius: 12, cursor: 'pointer', transition: 'all 0.2s ease',
+            padding: '4px 12px',
+            fontSize: 12,
+            fontWeight: 500,
+            color:
+              selectedDate === dayjs().format('YYYY-MM-DD')
+                ? '#fff'
+                : '#97d0ba',
+            background:
+              selectedDate === dayjs().format('YYYY-MM-DD')
+                ? '#97d0ba'
+                : 'transparent',
+            border: '1px solid #97d0ba',
+            borderRadius: 12,
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
           }}
         >
           今天
@@ -3178,70 +3239,109 @@ useEffect(() => {
       </div>
     </div>
 
-
-    
-    {/* 2. 週曆區域：加入左右箭頭 */}
-    <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: 4 }}>
+    {/* 2. 週曆區塊：左右箭頭 + 可滑動日期（寫法也跟今日頁一致） */}
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        width: '100%',
+        gap: 4,
+      }}
+    >
+      {/* 左箭頭：上一週 */}
       <button
-  onClick={() => {
-    recordsWeekStartRef.current = dayjs(recordsWeekStartRef.current)
-      .subtract(7, 'day')
-      .format('YYYY-MM-DD');
-    setRecordsWeekKey((k) => k + 1);
-    setRecordsWeekSwipeAnim('right');
-  }}
-        style={{ padding: '0 4px', border: 'none', background: 'transparent', color: '#ccc', fontSize: 18, cursor: 'pointer' }}
+        onClick={() => {
+          recordsWeekStartRef.current = dayjs(recordsWeekStartRef.current)
+            .subtract(7, 'day')
+            .format('YYYY-MM-DD');
+          setRecordsWeekKey((k) => k + 1);
+        }}
+        style={{
+          padding: '0 4px',
+          border: 'none',
+          background: 'transparent',
+          color: '#ccc',
+          fontSize: 18,
+          cursor: 'pointer',
+        }}
       >
         ‹
       </button>
 
-      {/* Touch 區域 (內容與之前相同，僅樣式微調以配合 flex) */}
-      <div 
-  ref={recordsWeekSwipeRef}
-  style={{ flex: 1, padding: '0', touchAction: 'pan-y', overflow: 'hidden' }}
->
+      {/* 可滑動週曆區域 */}
+      <div
+        ref={recordsWeekSwipeRef}
+        style={{
+          flex: 1,
+          padding: '0',
+          touchAction: 'pan-y',
+          overflow: 'hidden',
+        }}
+      >
         <div
-  style={{
-    display: 'flex',
-    gap: 4,
-    transform:
-      recordsWeekSwipeAnim === 'left'
-        ? 'translateX(-12px)'
-        : recordsWeekSwipeAnim === 'right'
-        ? 'translateX(12px)'
-        : 'translateX(0)',
-    opacity: recordsWeekSwipeAnim ? 0.9 : 1,
-    transition: 'transform 0.18s ease-out, opacity 0.18s ease-out',
-  }}
-  onTransitionEnd={() => {
-    if (recordsWeekSwipeAnim) {
-      setRecordsWeekSwipeAnim(null);
-    }
-  }}
->
-  {Array.from({ length: 7 }).map((_, i) => {
+          style={{
+            display: 'flex',
+            gap: 4,
+            transform: `translateX(${recordsWeekSwipeOffset}px)`,
+          }}
+        >
+          {Array.from({ length: 7 }).map((_, i) => {
             const date = dayjs(recordsWeekStartRef.current).add(i, 'day');
             const dateStr = date.format('YYYY-MM-DD');
             const isSelected = dateStr === selectedDate;
             const isToday = dateStr === dayjs().format('YYYY-MM-DD');
+
             return (
               <button
                 key={dateStr}
                 onClick={() => setSelectedDate(dateStr)}
                 style={{
-                  flex: 1, height: 56, borderRadius: 10,
-                  border: isSelected ? '2px solid #97d0ba' : (isToday ? '2px solid #d1f0e3' : '1px solid #e9ecef'),
-                  background: isSelected ? '#97d0ba' : (isToday ? '#fff' : 'transparent'),
-                  color: isSelected ? '#fff' : (isToday ? '#97d0ba' : '#333'),
-                  cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  gap: 2, boxShadow: isSelected ? '0 2px 8px rgba(151, 208, 186, 0.3)' : 'none',
-                  padding: '6px 0', minWidth: 0
+                  flex: 1,
+                  height: 56,
+                  borderRadius: 10,
+                  border: isSelected
+                    ? '2px solid #97d0ba'
+                    : isToday
+                    ? '2px solid #d1f0e3'
+                    : '1px solid #e9ecef',
+                  background: isSelected
+                    ? '#97d0ba'
+                    : isToday
+                    ? '#fff'
+                    : 'transparent',
+                  color: isSelected
+                    ? '#fff'
+                    : isToday
+                    ? '#97d0ba'
+                    : '#333',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 2,
+                  boxShadow: isSelected
+                    ? '0 2px 8px rgba(151, 208, 186, 0.3)'
+                    : 'none',
+                  padding: '6px 0',
+                  minWidth: 0,
                 }}
               >
-                <span style={{ fontSize: 10, fontWeight: 500, opacity: isSelected ? 1 : 0.7 }}>
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 500,
+                    opacity: isSelected ? 1 : 0.7,
+                  }}
+                >
                   {date.format('ddd')}
                 </span>
-                <span style={{ fontSize: 16, fontWeight: isSelected ? 700 : (isToday ? 600 : 500) }}>
+                <span
+                  style={{
+                    fontSize: 16,
+                    fontWeight: isSelected ? 700 : isToday ? 600 : 500,
+                  }}
+                >
                   {date.format('D')}
                 </span>
               </button>
@@ -3250,22 +3350,29 @@ useEffect(() => {
         </div>
       </div>
 
-            <button
-  onClick={() => {
-    recordsWeekStartRef.current = dayjs(recordsWeekStartRef.current)
-      .add(7, 'day')
-      .format('YYYY-MM-DD');
-    setRecordsWeekKey((k) => k + 1);
-    setRecordsWeekSwipeAnim('left');
-  }}
-        style={{ padding: '0 4px', border: 'none', background: 'transparent', color: '#ccc', fontSize: 18, cursor: 'pointer' }}
+      {/* 右箭頭：下一週 */}
+      <button
+        onClick={() => {
+          recordsWeekStartRef.current = dayjs(recordsWeekStartRef.current)
+            .add(7, 'day')
+            .format('YYYY-MM-DD');
+          setRecordsWeekKey((k) => k + 1);
+        }}
+        style={{
+          padding: '0 4px',
+          border: 'none',
+          background: 'transparent',
+          color: '#ccc',
+          fontSize: 18,
+          cursor: 'pointer',
+        }}
       >
         ›
       </button>
-
     </div>
   </div>
 </header>
+
 
 
         <div className="subtabs">
@@ -5012,11 +5119,23 @@ useEffect(() => {
                         系統估算總熱量約 {autoFoodInfo.kcal} kcal
                       </div>
                     )}
+
+                    {/* 🆕 補回這裡遺失的「加入記錄」按鈕 */}
+                    <button 
+                      className="primary" 
+                      onClick={saveMeal}
+                      style={{ marginTop: 16, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6 }}
+                    >
+                      <span>{editingMealId ? '更新記錄' : '加入記錄'}</span>
+                      {effectiveFoodKcal > 0 && (
+                        <span style={{ background: 'rgba(255,255,255,0.25)', padding: '2px 8px', borderRadius: 99, fontSize: 13, fontWeight: 600 }}>
+                          {Math.round(effectiveFoodKcal)} kcal
+                        </span>
+                      )}
+                    </button>
                   </div>
                 )}
       
-              
-
               {editingMealId && (
                 <button
                   onClick={() => {
