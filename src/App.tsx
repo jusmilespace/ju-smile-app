@@ -2329,7 +2329,13 @@ const COMMON_EXERCISES = [
     selectedDate, setSelectedDate, weekStart, setWeekStart 
   }) => {
     const { showToast } = React.useContext(ToastContext);
+// 👇 [新增] 1. 建立一個本地 State 來管理表單選中的餐別，避免觸發 App 重繪
+    const [formMealType, setFormMealType] = useState(foodMealType);
 
+    // 👇 [新增] 2. 監聽 props 變化：如果從外部(如首頁)切換進來，同步更新本地 State
+    useEffect(() => {
+      setFormMealType(foodMealType);
+    }, [foodMealType]);
 
     // 紀錄頁用的週曆滑動區域 & 動畫狀態（邏輯跟 Today 頁一樣）
     const recordsWeekSwipeRef = useRef<HTMLDivElement | null>(null);
@@ -2901,6 +2907,7 @@ useEffect(() => {
           return isNaN(v) ? 0 : v;
         })();
 
+    // 👇 [修改] 4. 修正 saveMeal：存檔時使用 formMealType
     function saveMeal() {
       if (!foodName.trim()) {
         showToast('error', '請先輸入食物名稱');
@@ -2948,7 +2955,7 @@ useEffect(() => {
               ? {
                 ...m,
                 date: selectedDate,
-                mealType: foodMealType,
+                mealType: formMealType, // 🟢 改用 formMealType
                 label: foodName.trim(),
                 kcal,
                 protein: protein || m.protein,
@@ -2964,7 +2971,7 @@ useEffect(() => {
         const entry: MealEntry = {
           id: uuid(),
           date: selectedDate,
-          mealType: foodMealType,
+          mealType: formMealType, // 🟢 改用 formMealType
           label: foodName.trim(),
           kcal,
           protein,
@@ -2974,7 +2981,6 @@ useEffect(() => {
         };
         setMeals((prev) => [...prev, entry]);
       }
-
       // 重置部分欄位
       setUnitQuantity('1');
       setFoodAmountG('');
@@ -2993,9 +2999,10 @@ useEffect(() => {
   setFallbackKcalPerServ('');
     }
 
+    // 👇 [修改] 3. 修正 startEditMeal：編輯時只更新本地 State，不觸發 App 重繪
     function startEditMeal(m: MealEntry) {
       setSelectedDate(m.date);
-      setFoodMealType(m.mealType);
+      setFormMealType(m.mealType); // 🟢 改用 setFormMealType
       setFoodName(m.label);
       setManualFoodKcal(String(m.kcal));
       setSelectedUnitFood(null);
@@ -3050,11 +3057,12 @@ useEffect(() => {
     }
 
     // 🆕 載入常用組合
+    // 👇 [修改] 5. 修正 addComboToMeals：使用 formMealType
     function addComboToMeals(combo: MealCombo, multiplier: number = 1) {
       const newEntries = combo.items.map((item) => ({
         id: uuid(),
         date: selectedDate,
-        mealType: foodMealType, // 套用目前選擇的餐別
+        mealType: formMealType, // 🟢 改用 formMealType
         label: `${item.label}`, // 移除 x1 顯示，因為預設就是 1 倍
         kcal: Math.round(item.kcal * multiplier),
         protein: item.protein ? round1(item.protein * multiplier) : 0,
@@ -3066,8 +3074,7 @@ useEffect(() => {
       }));
 
       setMeals((prev) => [...prev, ...newEntries]);
-     
-      showToast('success',`已將組合「${combo.name}」加入 ${foodMealType}。`);
+      showToast('success',`已將組合「${combo.name}」加入 ${formMealType}。`); // 🟢 提示文字也改
     }
     
     // 運動搜尋
@@ -3344,6 +3351,7 @@ useEffect(() => {
             <div className="form-section" style={{ marginBottom: 16 }}>
               <label>
                 餐別
+                {/* 👇 [修改] 6. BigSelect 改為綁定 formMealType */}
                 <BigSelect
                   options={[
                     { value: '早餐', label: '早餐' },
@@ -3351,9 +3359,9 @@ useEffect(() => {
                     { value: '晚餐', label: '晚餐' },
                     { value: '點心', label: '點心' },
                   ]}
-                  value={foodMealType}
+                  value={formMealType} // 🟢 值改為 formMealType
                   onChange={(v) => {
-                    setFoodMealType(v as any);
+                    setFormMealType(v as any); // 🟢 Setter 改為 setFormMealType
                   }}
                 />
               </label>
@@ -3797,7 +3805,7 @@ useEffect(() => {
                   ...m,
                   id: uuid(),
                   date: selectedDate,
-                  mealType: foodMealType,
+                  mealType: formMealType,
                 };
                 setMeals((prev) => [...prev, copied]);
               }}
@@ -4013,7 +4021,7 @@ useEffect(() => {
           ...m,
           id: uuid(),
           date: selectedDate,
-          mealType: foodMealType,
+          mealType: formMealType,
         };
         setMeals((prev) => [...prev, copied]);
         showToast('success', `已加入 ${m.label}`);
@@ -5103,12 +5111,12 @@ useEffect(() => {
             {/* 🆕 手掌法輸入模式 */}
             {foodInputMode === 'palm' && (
               <VisualPortionPicker
-                mealType={foodMealType}
+                mealType={formMealType}
                 onConfirm={(data) => {
                   const newMeal: MealEntry = {
                     id: uuid(),
                     date: selectedDate,
-                    mealType: foodMealType,
+                    mealType: formMealType,
                     label: data.foodName,
                     kcal: data.kcal,
                     protein: data.protein,
