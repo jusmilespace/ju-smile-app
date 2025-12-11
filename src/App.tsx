@@ -1028,81 +1028,69 @@ useEffect(() => {
     return;
   }
 
-  navigator.serviceWorker
-    .getRegistration()
-    .then((reg) => {
-      if (!reg) {
-        console.warn('⚠️ 沒有找到 Service Worker 註冊');
-        return;
-      }
+// 1. 註冊與監聽新版本發現
+  navigator.serviceWorker.getRegistration().then((reg) => {
+    if (!reg) return;
 
-      console.log('✅ Service Worker 已就緒，開始監聽更新');
+    // 如果頁面剛打開時，就已經有新版本在排隊 (waiting)，直接顯示更新提示
+    if (reg.waiting) {
+      console.log('👀 發現已經有新版本在等待中');
+      setShowUpdateBar(true);
+    }
 
-      // After（只在正式環境，每 30 分鐘檢查一次）
-if (!import.meta.env.DEV) {
-  // 🆕 每 30 分鐘檢查一次更新（僅正式環境）
-  const updateInterval = setInterval(() => {
-    console.log('🔄 定期檢查更新...');
-    reg.update();
-  }, 30 * 60 * 1000);
-}
+    // 監聽有沒有新的 SW 正在安裝
+    reg.addEventListener('updatefound', () => {
+      const newWorker = reg.installing;
+      if (!newWorker) return;
 
-      // 監聽更新
-      reg.addEventListener('updatefound', () => {
-        console.log('🆕 發現新的 Service Worker');
-        const newWorker = reg.installing;
-        if (!newWorker) return;
-
-        newWorker.addEventListener('statechange', () => {
-          console.log('📦 Service Worker 狀態:', newWorker.state);
-          
-          // 有舊 SW 在控制頁面，且新 SW 安裝完成 → 有「新版本」
-          if (
-            newWorker.state === 'installed' &&
-            navigator.serviceWorker.controller
-          ) {
-            console.log('✅ 新版本已安裝，顯示更新提示');
-            setShowUpdateBar(true);
-          }
-        });
+      newWorker.addEventListener('statechange', () => {
+        // 當新版本狀態變成 "installed" 且原本就有舊版本在控制 -> 代表有更新
+        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          console.log('✅ 新版本下載完成，等待使用者更新');
+          setShowUpdateBar(true);
+        }
       });
-
-      // 🆕 清理函數
-      return () => {
-        clearInterval(updateInterval);
-      };
-    })
-    .catch((err) => {
-      console.error('❌ Service Worker 錯誤:', err);
     });
 
-  // 🆕 監聽 Service Worker 控制權變更
-  let refreshing = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    console.log('🔄 Service Worker 控制權已變更');
-    if (!refreshing) {
-      refreshing = true;
-      console.log('♻️ 自動重新整理頁面');
-      window.location.reload();
+    // 定期檢查更新 (保持原樣)
+    if (!import.meta.env.DEV) {
+      const updateInterval = setInterval(() => {
+        reg.update();
+      }, 30 * 60 * 1000);
+      return () => clearInterval(updateInterval);
     }
   });
+
+  // 👇 [重要] 2. 監聽「控制權變更」事件
+  // 當 handleReloadForUpdate 送出 SKIP_WAITING 後，瀏覽器會切換 SW，這時觸發此事件 -> 自動重整
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        refreshing = true;
+        console.log('🔄 控制權已變更，正在重整頁面...');
+        window.location.reload();
+      }
+    });
+
 }, []);
 
-function handleReloadForUpdate() {
-  console.log('🔄 使用者點擊更新按鈕');
-  
-  // 告訴 SW：可以跳過 waiting，直接啟用新版本
-  if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-    console.log('📨 發送 SKIP_WAITING 訊息');
-    navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+// 👇 [修改] 讓按鈕真的有效的更新函式
+  function handleReloadForUpdate() {
+    console.log('🔄 使用者點擊更新按鈕');
+    
+    navigator.serviceWorker.getRegistration().then((reg) => {
+      // 1. 檢查是否有正在等待的新版本 (waiting)
+      if (reg && reg.waiting) {
+        console.log('📨 發送 SKIP_WAITING 給新版本');
+        // 告訴那個「正在排隊」的新 Service Worker：跳過等待，直接接管！
+        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+      } else {
+        // 2. 如果沒找到 waiting (可能已經變成 controller 或其他狀況)，就直接重整
+        console.log('⚠️ 沒找到 waiting worker，直接重整');
+        window.location.reload();
+      }
+    });
   }
-  
-  // 給 Service Worker 一點時間處理
-  setTimeout(() => {
-    console.log('♻️ 重新載入頁面');
-    window.location.reload();
-  }, 100);
-}
   // 監聽 Plan 頁送來的目標熱量：
   // 1) 更新「我的」頁的目標攝取熱量 (作為未來新日期的預設值)
   // 2) 只更新「今天這一天」的日目標，不改舊日期
@@ -7479,7 +7467,7 @@ return (
             zIndex: 50,
           }}
         >
-          <span>Ju Smile App 有新版本，請重新載入取得最新功能。</span>
+          <span>發現新版本！點擊更新以取得最新功能。</span>
           <button
             type="button"
             onClick={handleReloadForUpdate}
