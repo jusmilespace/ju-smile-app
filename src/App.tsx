@@ -985,6 +985,12 @@ const ToastContext = React.createContext<{
   const App: React.FC = () => {
   const [tab, setTab] = useState<Tab>('today');
   const [showUpdateBar, setShowUpdateBar] = useState(false);
+  // 👇 [新增] 1. 這裡新增兩行，專門記住「紀錄頁」選的日期與週曆起點
+  // 這樣就算 RecordsPage 重整，資料還是存在 App 這一層，不會消失
+  const [recordsDate, setRecordsDate] = useState(dayjs().format('YYYY-MM-DD'));
+  const [recordsWeekStart, setRecordsWeekStart] = useState(
+    dayjs().startOf('week').format('YYYY-MM-DD')
+  );
 
   // 🆕 在這裡加入 Toast 狀態
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -1183,13 +1189,34 @@ useEffect(() => {
     setTodayLocal(dayjs().format('YYYY-MM-DD'));
 }, []); // 僅在元件首次掛載時執行一次
 
+ // 👇 [新增] 1. 建立一個專門處理「從首頁跳轉去記飲食」的函式
+  function goToFoodRecord(type: '早餐' | '午餐' | '晚餐' | '點心') {
+    // A. 先同步日期：把紀錄頁的日期設為目前首頁選中的日期
+    setRecordsDate(todayLocal);
+    setRecordsWeekStart(dayjs(todayLocal).startOf('week').format('YYYY-MM-DD'));
+
+    // B. 設定餐別
+    setRecordDefaultMealType(type);
+    setCurrentFoodMealType(type);
+
+    // C. 切換頁面
+    setTab('records');
+    setRecordTab('food');
+    setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0);
+  }
+
+  // 👇 [修改] 2. 修正原本的運動跳轉函式，也要同步日期
   function goToExerciseRecord() {
+    // A. 同樣先同步日期
+    setRecordsDate(todayLocal);
+    setRecordsWeekStart(dayjs(todayLocal).startOf('week').format('YYYY-MM-DD'));
+
     setTab('records');         // 切到「記錄」頁
     setRecordTab('exercise');  // 切到「運動」子頁
 
     setTimeout(() => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 0);
+      window.scrollTo({ top: 0, behavior: 'smooth' }), 0;
+    });
   }
 
   // CSV 資料
@@ -1624,6 +1651,7 @@ useEffect(() => {
     el.removeEventListener('touchend', handleTouchEnd);
   };
 }, []);
+
 
     // 🗑️ 已移除 showBodyModal 與 bodyMetricsExpanded 相關狀態
 
@@ -2099,61 +2127,44 @@ useEffect(() => {
             gridTemplateColumns: '1fr 1fr',
             gap: 12 
           }}>
+            {/* 👇 [修改] 早餐卡片：改用 goToFoodRecord */}
             <MealCard
               title="早餐"
               kcal={breakfastKcal}
               protein={breakfastProt}
               carb={breakfastCarb}
               fat={breakfastFat}
-              onAdd={() => {
-                setRecordDefaultMealType('早餐');
-                setCurrentFoodMealType('早餐');
-                setTab('records');
-                setRecordTab('food');
-                setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0);
-              }}
+              onAdd={() => goToFoodRecord('早餐')}
             />
+            
+            {/* 👇 [修改] 午餐卡片 */}
             <MealCard
               title="午餐"
               kcal={lunchKcal}
               protein={lunchProt}
               carb={lunchCarb}
               fat={lunchFat}
-              onAdd={() => {
-                setRecordDefaultMealType('午餐');
-                setCurrentFoodMealType('午餐');
-                setTab('records');
-                setRecordTab('food');
-                setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0);
-              }}
+              onAdd={() => goToFoodRecord('午餐')}
             />
+
+            {/* 👇 [修改] 晚餐卡片 */}
             <MealCard
               title="晚餐"
               kcal={dinnerKcal}
               protein={dinnerProt}
               carb={dinnerCarb}
               fat={dinnerFat}
-              onAdd={() => {
-                setRecordDefaultMealType('晚餐');
-                setCurrentFoodMealType('晚餐');
-                setTab('records');
-                setRecordTab('food');
-                setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0);
-              }}
+              onAdd={() => goToFoodRecord('晚餐')}
             />
+
+            {/* 👇 [修改] 點心卡片 */}
             <MealCard
               title="點心"
               kcal={snackKcal}
               protein={snackProt}
               carb={snackCarb}
               fat={snackFat}
-              onAdd={() => {
-                setRecordDefaultMealType('點心');
-                setCurrentFoodMealType('點心');
-                setTab('records');
-                setRecordTab('food');
-                setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0);
-              }}
+              onAdd={() => goToFoodRecord('點心')}
             />
           </div>
         </section>
@@ -2308,16 +2319,17 @@ const COMMON_EXERCISES = [
     defaultMealType: '早餐' | '午餐' | '晚餐' | '點心';
     foodMealType: '早餐' | '午餐' | '晚餐' | '點心';
     setFoodMealType: (type: '早餐' | '午餐' | '晚餐' | '點心') => void;
-  }> = ({ recordTab, setRecordTab, defaultMealType, foodMealType, setFoodMealType }) => {
+    selectedDate: string;
+    setSelectedDate: (d: string) => void;
+    weekStart: string;
+    setWeekStart: (d: string) => void;
+  }> = ({ 
+    recordTab, setRecordTab, defaultMealType, foodMealType, setFoodMealType,
+    // 解構出來用
+    selectedDate, setSelectedDate, weekStart, setWeekStart 
+  }) => {
     const { showToast } = React.useContext(ToastContext);
 
-      const [selectedDate, setSelectedDate] = useState(todayLocal);
-
-    // 使用 useRef 保持週起點固定（星期日）
-    const recordsWeekStartRef = useRef(
-      dayjs(todayLocal).startOf('week').format('YYYY-MM-DD')
-    );
-    const [recordsWeekKey, setRecordsWeekKey] = useState(0);
 
     // 紀錄頁用的週曆滑動區域 & 動畫狀態（邏輯跟 Today 頁一樣）
     const recordsWeekSwipeRef = useRef<HTMLDivElement | null>(null);
@@ -2348,21 +2360,13 @@ const COMMON_EXERCISES = [
         if (Math.abs(diff) > threshold) {
           if (diff > 0) {
             // 左滑 → 下一週
-            recordsWeekStartRef.current = dayjs(recordsWeekStartRef.current)
-              .add(7, 'day')
-              .format('YYYY-MM-DD');
-            setRecordsWeekKey((k) => k + 1);
-           
+            setWeekStart(dayjs(weekStart).add(7, 'day').format('YYYY-MM-DD'));
           } else {
             // 右滑 → 上一週
-            recordsWeekStartRef.current = dayjs(recordsWeekStartRef.current)
-              .subtract(7, 'day')
-              .format('YYYY-MM-DD');
-            setRecordsWeekKey((k) => k + 1);
-            
+            setWeekStart(dayjs(weekStart).subtract(7, 'day').format('YYYY-MM-DD'));
           }
         }
-      };
+    };
 
       el.addEventListener('touchstart', handleTouchStart, { passive: true });
       el.addEventListener('touchmove', handleTouchMove, { passive: true });
@@ -2375,9 +2379,12 @@ const COMMON_EXERCISES = [
       };
     }, []);
 
-    // 🧠 記錄頁月份標題：以「當週中間那天」為主，
-    // 但如果被選日期在這週且屬於另一個月份 → 顯示被選日期的月份（格式跟 Today 頁相同）
-    const recordsWeekStart = dayjs(recordsWeekStartRef.current);
+   const jumpToToday = () => {
+        const today = dayjs().format('YYYY-MM-DD');
+        setSelectedDate(today);
+        setWeekStart(dayjs().startOf('week').format('YYYY-MM-DD'));
+    };
+    const recordsWeekStart = dayjs(weekStart);
     const recordsWeekCenter = recordsWeekStart.add(3, 'day');
     const recordsWeekEnd = recordsWeekStart.add(6, 'day');
     const recordsSelectedDay = dayjs(selectedDate);
@@ -3059,7 +3066,7 @@ useEffect(() => {
       }));
 
       setMeals((prev) => [...prev, ...newEntries]);
-      setTab('today'); // 紀錄完成後自動跳回首頁
+     
       showToast('success',`已將組合「${combo.name}」加入 ${foodMealType}。`);
     }
     
@@ -3172,54 +3179,27 @@ useEffect(() => {
           <span style={{ marginLeft: 4 }}>▼</span>
         </div>
 
-        {/* 👻 幽靈 Input：蓋在文字上面，透明，點擊就開原生日期選擇器 */}
         <input
-          type="date"
-          value={selectedDate}
-          onChange={(e) => {
-            if (!e.target.value) return;
-            const newDate = e.target.value;
-            setSelectedDate(newDate);
-
-            // 同步更新該日期所屬的週
-            const newWeekStart = dayjs(newDate)
-              .startOf('week')
-              .format('YYYY-MM-DD');
-            if (recordsWeekStartRef.current !== newWeekStart) {
-              recordsWeekStartRef.current = newWeekStart;
-              setRecordsWeekKey((k) => k + 1);
-            }
-          }}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            opacity: 0,
-            zIndex: 10,
-            cursor: 'pointer',
-          }}
-        />
-      </div>
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => {
+                    if (!e.target.value) return;
+                    const newDate = e.target.value;
+                    setSelectedDate(newDate);
+                    // 同步週曆
+                    const newWeekStart = dayjs(newDate).startOf('week').format('YYYY-MM-DD');
+                    if (weekStart !== newWeekStart) {
+                      setWeekStart(newWeekStart);
+                    }
+                  }}
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, zIndex: 10, cursor: 'pointer' }}
+                />
+              </div>
 
       {/* 右邊「今天」按鈕 */}
-      <div
-        style={{
-          flex: 1,
-          display: 'flex',
-          justifyContent: 'flex-end',
-        }}
-      >
-        <button
-          onClick={() => {
-            const today = dayjs().format('YYYY-MM-DD');
-            setSelectedDate(today);
-            recordsWeekStartRef.current = dayjs()
-              .startOf('week')
-              .format('YYYY-MM-DD');
-            setRecordsWeekKey((k) => k + 1);
-          }}
+      <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={jumpToToday} // 使用新的 jumpToToday
           style={{
             padding: '4px 12px',
             fontSize: 12,
@@ -3254,51 +3234,26 @@ useEffect(() => {
     >
       {/* 左箭頭：上一週 */}
       <button
-        onClick={() => {
-          recordsWeekStartRef.current = dayjs(recordsWeekStartRef.current)
-            .subtract(7, 'day')
-            .format('YYYY-MM-DD');
-          setRecordsWeekKey((k) => k + 1);
-        }}
-        style={{
-          padding: '0 4px',
-          border: 'none',
-          background: 'transparent',
-          color: '#ccc',
-          fontSize: 18,
-          cursor: 'pointer',
-        }}
-      >
-        ‹
-      </button>
+        onClick={() => setWeekStart(dayjs(weekStart).subtract(7, 'day').format('YYYY-MM-DD'))}
+                style={{ padding: '0 4px', border: 'none', background: 'transparent', color: '#ccc', fontSize: 18, cursor: 'pointer' }}
+              >
+                ‹
+              </button>
 
       {/* 可滑動週曆區域 */}
-      <div
-        ref={recordsWeekSwipeRef}
-        style={{
-          flex: 1,
-          padding: '0',
-          touchAction: 'pan-y',
-          overflow: 'hidden',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            gap: 4,
-            transform: `translateX(${recordsWeekSwipeOffset}px)`,
-          }}
-        >
-          {Array.from({ length: 7 }).map((_, i) => {
-            const date = dayjs(recordsWeekStartRef.current).add(i, 'day');
-            const dateStr = date.format('YYYY-MM-DD');
-            const isSelected = dateStr === selectedDate;
-            const isToday = dateStr === dayjs().format('YYYY-MM-DD');
+      <div ref={recordsWeekSwipeRef} style={{ flex: 1, padding: '0', touchAction: 'pan-y', overflow: 'hidden' }}>
+                <div style={{ display: 'flex', gap: 4, transform: `translateX(${recordsWeekSwipeOffset}px)` }}>
+                  {/* 👇 [修改] 這裡的迴圈要改用 weekStart */}
+                  {Array.from({ length: 7 }).map((_, i) => {
+                    const date = dayjs(weekStart).add(i, 'day'); // 改用 weekStart
+                    const dateStr = date.format('YYYY-MM-DD');
+                    const isSelected = dateStr === selectedDate;
+                    const isToday = dateStr === dayjs().format('YYYY-MM-DD');
 
-            return (
-              <button
-                key={dateStr}
-                onClick={() => setSelectedDate(dateStr)}
+                    return (
+                      <button
+                        key={dateStr}
+                        onClick={() => setSelectedDate(dateStr)}
                 style={{
                   flex: 1,
                   height: 56,
@@ -3356,26 +3311,14 @@ useEffect(() => {
 
       {/* 右箭頭：下一週 */}
       <button
-        onClick={() => {
-          recordsWeekStartRef.current = dayjs(recordsWeekStartRef.current)
-            .add(7, 'day')
-            .format('YYYY-MM-DD');
-          setRecordsWeekKey((k) => k + 1);
-        }}
-        style={{
-          padding: '0 4px',
-          border: 'none',
-          background: 'transparent',
-          color: '#ccc',
-          fontSize: 18,
-          cursor: 'pointer',
-        }}
-      >
-        ›
-      </button>
-    </div>
-  </div>
-</header>
+        onClick={() => setWeekStart(dayjs(weekStart).add(7, 'day').format('YYYY-MM-DD'))}
+                style={{ padding: '0 4px', border: 'none', background: 'transparent', color: '#ccc', fontSize: 18, cursor: 'pointer' }}
+              >
+                ›
+              </button>
+            </div>
+          </div>
+        </header>
 
 
 
@@ -7445,6 +7388,7 @@ return (
         <TodayPage onAddExercise={goToExerciseRecord} />
       )}
 
+      {/* 👇 [修改] 2. 找到渲染 RecordsPage 的地方，傳入這兩個變數 */}
       {tab === 'records' && (
         <RecordsPage
           recordTab={recordTab}
@@ -7452,6 +7396,11 @@ return (
           defaultMealType={recordDefaultMealType}
           foodMealType={currentFoodMealType}
           setFoodMealType={setCurrentFoodMealType}
+          // 新增以下這四個 Props
+          selectedDate={recordsDate}
+          setSelectedDate={setRecordsDate}
+          weekStart={recordsWeekStart}
+          setWeekStart={setRecordsWeekStart}
         />
       )}
 
