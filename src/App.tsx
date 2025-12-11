@@ -2317,8 +2317,14 @@ const COMMON_EXERCISES = [
     selectedDate, setSelectedDate, weekStart, setWeekStart 
   }) => {
     const { showToast } = React.useContext(ToastContext);
+
+     // 👇 [新增] 用於控制「快速加入」區塊的顯示分頁 ('history' 或 'combo')
+    const [quickAddTab, setQuickAddTab] = useState<'history' | 'combo'>('history');
+
 // 👇 [新增] 1. 建立一個本地 State 來管理表單選中的餐別，避免觸發 App 重繪
     const [formMealType, setFormMealType] = useState(foodMealType);
+
+ 
 
     // 👇 [新增] 2. 監聽 props 變化：如果從外部(如首頁)切換進來，同步更新本地 State
     useEffect(() => {
@@ -3707,201 +3713,180 @@ useEffect(() => {
               </>
             )}
 
-              {/* UX-05：從歷史紀錄快速加入（新版，版型比照「飲食明細」） */}
-{recentMealsForQuickAdd.length > 0 && (
-  <details style={{ marginTop: 8 }}>
-    <summary>從歷史紀錄快速加入</summary>
-
-    <div className="list-section" style={{ marginTop: 8 }}>
-      {recentMealsForQuickAdd.map((m: MealEntry) => (
-        <div
-          key={m.id}
-          className="list-item"
-          style={{
-            alignItems: 'center',
-            paddingLeft: 16,
-            paddingRight: 12,
-          }}
-        >
-          {/* 左邊：名稱＋小字說明（版型同飲食明細） */}
-<div style={{ flex: 1 }}>
-  <div>{m.label}</div>
-  <div
-    className="sub"
-    style={{
-      display: 'flex',
-      flexWrap: 'wrap',
-      alignItems: 'center',
-      gap: 4,
-    }}
-  >
-    <span>{m.mealType}</span>
-
-    {m.amountText && (
-      <>
-        <span>·</span>
-        <span>
-  {m.counts ? (
-    // 如果有 counts 資料，顯示圖片
-    <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
-      {Object.entries(m.counts).map(([key, count]) => {
-        if (count <= 0 || !ICON_MAP[key]) return null;
-        return (
-          <span key={key} style={{ 
-            display: 'inline-flex', alignItems: 'center', 
-            background: '#f3f4f6', padding: '0 4px', 
-            borderRadius: 4, border: '1px solid #e5e7eb' 
-          }}>
-            <img 
-              src={ICON_MAP[key]} 
-              alt={key} 
-              style={{ width: 14, height: 14, objectFit: 'contain', marginRight: 2 }} 
-            />
-            <span style={{ fontSize: 10, fontWeight: 700, color: '#4b5563' }}>
-              ×{count}
-            </span>
-          </span>
-        );
-      })}
-    </span>
-  ) : (
-    // 如果沒有 counts (舊資料)，顯示原本的文字
-    renderPalmAmountText(m.amountText, m.counts)
-  )}
-</span>
-      </>
-    )}
-
-    <span>·</span>
-    <span>{m.kcal} kcal</span>
-  </div>
-</div>
-
-
-
-          {/* 右邊：加入按鈕 */}
-          <div
-            className="btn-row"
-            style={{ flexShrink: 0 }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              className="small"
-              onClick={() => {
-                const copied: MealEntry = {
-                  ...m,
-                  id: uuid(),
-                  date: selectedDate,
-                  mealType: formMealType,
-                };
-                setMeals((prev) => [...prev, copied]);
-              }}
-            >
-              加入
-            </button>
-          </div>
-        </div>
-      ))}
-    </div>
-  </details>
-)}
-
-              {/* 🆕 常用組合清單 (根據搜尋結果顯示，且收納在 details 內) */}
-              {/* 修正：合併條件渲染，避免結構錯誤 */}
-              {/* 🆕 常用組合清單 (根據搜尋結果顯示，且收納在 details 內) */}
-          {/* 修正：優化常用組合列表的顯示，增加明細展開 */}
-          {(foodName.trim() === '' && combos.length > 0) ? (
-            <details style={{ marginBottom: '12px' }}>
-              <summary>🎯 常用組合 ({combos.length} 組)</summary>
-              <div className="search-results" style={{ padding: '4px 0', border: 'none', background: 'none' }}>
-                {combos.map((combo) => (
-                  <div key={combo.id} className="list-item combo-item" style={{ flexDirection: 'column', alignItems: 'flex-start', paddingBottom: '8px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                      <div style={{ flex: 1 }}>
-                        <div>{combo.name}</div>
-                        <div className="sub">
-                          總計約{' '}
-                          {combo.items.reduce((sum, item) => sum + item.kcal, 0)} kcal
-                        </div>
-                      </div>
-                      <button 
-                            className="primary small" 
-                            onClick={() => addComboToMeals(combo)}
-                            style={{ 
-                              flexShrink: 0, 
-                              width: '32px', // 設定固定寬度
-                              height: '32px', // 設定固定高度
-                              padding: 0, 
-                              fontSize: '20px', 
-                              lineHeight: 1, 
-                              borderRadius: '50%' // 讓它變成圓形
-                            }}
-                          >
-                            +
-                          </button>
-                    </div>
-                    <details style={{ width: '100%', marginTop: '4px' }}>
-                        <summary style={{ fontSize: '12px', color: '#666' }}>查看組合明細 ({combo.items.length} 項)</summary>
-                        <ul style={{ paddingLeft: '16px', margin: '4px 0 0 0', listStyleType: 'disc', fontSize: '13px', color: '#888' }}>
-                            {combo.items.map((item, index) => (
-                                <li key={index}>
-                                    {item.label}{' '}
-                                    {item.amountText ? `(${item.amountText})` : ''}
-                                    {item.kcal ? ` · ${item.kcal} kcal` : ''}
-                                </li>
-                            ))}
-                        </ul>
-                    </details>
-                  </div>
-                ))}
-              </div>
-            </details>
-          ) : (foodName.trim() !== '' && foodSearchResults.comboMatches.length > 0) && (
-                <div className="search-results" style={{ marginBottom: '12px' }}>
-                  <div className="result-title">🎯 常用組合 (搜尋結果)</div>
-              {foodSearchResults.comboMatches.map((combo) => (
-                <div key={combo.id} className="list-item combo-item" style={{ flexDirection: 'column', alignItems: 'flex-start', paddingBottom: '8px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                    <div style={{ flex: 1 }}>
-                      <div>{combo.name}</div>
-                      <div className="sub">
-                        總計約{' '}
-                        {combo.items.reduce((sum, item) => sum + item.kcal, 0)} kcal
-                      </div>
-                    </div>
-                    <button 
-                            className="primary small" 
-                            onClick={() => addComboToMeals(combo)}
-                            style={{ 
-                              flexShrink: 0, 
-                              width: '32px', // 設定固定寬度
-                              height: '32px', // 設定固定高度
-                              padding: 0, 
-                              fontSize: '20px', 
-                              lineHeight: 1, 
-                              borderRadius: '50%' // 讓它變成圓形
-                            }}
-                          >
-                            +
-                          </button>
-                  </div>
-                  <details style={{ width: '100%', marginTop: '4px' }}>
-                        <summary style={{ fontSize: '12px', color: '#666' }}>查看組合明細 ({combo.items.length} 項)</summary>
-                        <ul style={{ paddingLeft: '16px', margin: '4px 0 0 0', listStyleType: 'disc', fontSize: '13px', color: '#888' }}>
-                            {combo.items.map((item, index) => (
-                                <li key={index}>
-                                    {item.label}{' '}
-                                    {item.amountText ? `(${item.amountText})` : ''}
-                                    {item.kcal ? ` · ${item.kcal} kcal` : ''}
-                                </li>
-                            ))}
-                        </ul>
-                    </details>
+              {/* =========================================================
+                優化版：智慧快速加入面板 (含捲動、圓形按鈕、完整資訊)
+               ========================================================= */}
+            {!foodName.trim() && (
+              <div style={{ marginTop: 12, marginBottom: 16 }}>
+                
+               {/* 1. 分頁切換按鈕 (樣式同步：與上方的快速搜尋/手掌法一致) */}
+                <div style={{ 
+                  display: 'flex', 
+                  background: '#f0f2f5', // 底層淺灰軌道
+                  borderRadius: 999,     // 橢圓關鍵
+                  padding: 4,            // 內縮留白
+                  marginBottom: 16       // 統一間距
+                }}>
+                  <button
+                    onClick={() => setQuickAddTab('history')}
+                    style={{
+                      flex: 1,
+                      padding: '8px 0',
+                      border: 'none',
+                      borderRadius: 999, // 橢圓
+                      // 選中：白色背景 + 陰影 + 品牌色字
+                      // 未選：透明背景 + 灰色字
+                      background: quickAddTab === 'history' ? '#fff' : 'transparent',
+                      color: quickAddTab === 'history' ? 'var(--mint-dark, #5c9c84)' : '#888',
+                      boxShadow: quickAddTab === 'history' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
+                      fontWeight: quickAddTab === 'history' ? 600 : 400,
+                      fontSize: 14,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)', // 彈性動畫
+                    }}
+                  >
+                    🕒 最近紀錄
+                  </button>
+                  <button
+                    onClick={() => setQuickAddTab('combo')}
+                    style={{
+                      flex: 1,
+                      padding: '8px 0',
+                      border: 'none',
+                      borderRadius: 999,
+                      background: quickAddTab === 'combo' ? '#fff' : 'transparent',
+                      color: quickAddTab === 'combo' ? 'var(--mint-dark, #5c9c84)' : '#888',
+                      boxShadow: quickAddTab === 'combo' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
+                      fontWeight: quickAddTab === 'combo' ? 600 : 400,
+                      fontSize: 14,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
+                    }}
+                  >
+                    🎯 常用組合 ({combos.length})
+                  </button>
                 </div>
-              ))}
-            </div>
-          )}
+
+                {/* 2. 內容顯示區 */}
+                <div style={{ minHeight: 100 }}>
+                  
+                  {/* --- A. 歷史紀錄列表 (優化：捲動 + 圓形按鈕 + 保留資訊) --- */}
+                  {quickAddTab === 'history' && (
+                    <div>
+                      {recentMealsForQuickAdd.length === 0 ? (
+                        <div className="hint" style={{ textAlign: 'center', padding: 20 }}>
+                          尚無最近紀錄，快去新增第一筆飲食吧！
+                        </div>
+                      ) : (
+                        // ✨ 加入捲動容器
+                        <div className="quick-list-scroll">
+                          {recentMealsForQuickAdd.map((m, i) => (
+                            <div
+                              key={i}
+                              className="quick-item-compact" // ✨ 使用緊湊樣式
+                            >
+                              <div style={{ flex: 1, paddingRight: 8 }}>
+                                <div style={{ fontWeight: 600, color: '#333', fontSize: 15 }}>{m.label}</div>
+                                
+                                {/* 營養素資訊 */}
+                                <div className="sub" style={{ fontSize: 12, color: '#666', marginTop: 2 }}>
+                                  {m.amountText ? `${m.amountText} · ` : ''}{m.kcal} kcal
+                                  {m.protein ? ` · P: ${round1(m.protein)}g` : ''}
+                                </div>
+                                
+                                {/* 📅 保留：日期與餐別資訊 */}
+                                <div className="sub" style={{ fontSize: 11, color: '#999', marginTop: 2 }}>
+                                  {m.date} · {m.mealType}
+                                </div>
+                              </div>
+
+                              {/* ✨ 優化：圓形加入按鈕 */}
+                              <button
+                                type="button"
+                                className="btn-circle-add"
+                                onClick={() => {
+                                  const copied: MealEntry = {
+                                    ...m,
+                                    id: uuid(),
+                                    date: selectedDate,
+                                    mealType: formMealType,
+                                  };
+                                  setMeals((prev) => [...prev, copied]);
+                                  showToast('success', `已加入 ${m.label}`);
+                                }}
+                              >
+                                +
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* --- B. 常用組合列表 (優化：捲動 + 圓形按鈕) --- */}
+                  {quickAddTab === 'combo' && (
+                    <div>
+                      {combos.length === 0 ? (
+                        <div className="hint" style={{ textAlign: 'center', padding: 20 }}>
+                          尚未建立常用組合。<br/>
+                          試著在下方選取多個食物後點擊「儲存組合」！
+                        </div>
+                      ) : (
+                        // ✨ 加入捲動容器
+                        <div className="quick-list-scroll">
+                          {combos.map((combo) => (
+                            <div 
+                              key={combo.id} 
+                              className="quick-item-compact" // ✨ 使用緊湊樣式
+                              style={{ flexDirection: 'column', alignItems: 'flex-start' }}
+                            >
+                              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', marginBottom: 6 }}>
+                                <div>
+                                  <div style={{ fontWeight: 600, color: '#333' }}>{combo.name}</div>
+                                  <div style={{ fontSize: 12, color: '#666' }}>
+                                    約 {combo.items.reduce((sum, item) => sum + item.kcal, 0)} kcal
+                                  </div>
+                                </div>
+                                
+                                {/* ✨ 優化：圓形加入按鈕 */}
+                                <button 
+                                  className="btn-circle-add"
+                                  onClick={() => addComboToMeals(combo)}
+                                >
+                                  +
+                                </button>
+                              </div>
+                              
+                              {/* 組合內容預覽 (折疊式，保持原樣) */}
+                              <details style={{ width: '100%' }}>
+                                <summary style={{ fontSize: '11px', color: '#999', cursor: 'pointer', listStyle: 'none' }}>
+                                  查看內容 ({combo.items.length} 品項) ▾
+                                </summary>
+                                <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                                  {combo.items.map((item, idx) => (
+                                    <span key={idx} style={{ 
+                                      fontSize: 11, 
+                                      background: '#f3f4f6', 
+                                      padding: '2px 6px', 
+                                      borderRadius: 4,
+                                      color: '#4b5563'
+                                    }}>
+                                      {item.label}
+                                    </span>
+                                  ))}
+                                </div>
+                              </details>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                </div>
+              </div> 
+            )}
 
 
               {/* 搜尋結果：選到食物後就收起來 */}
