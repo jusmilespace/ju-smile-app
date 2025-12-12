@@ -7,6 +7,12 @@
   --text-main: #1f2933;
   --text-sub: #6b7785;
   --border-soft: #dde7e2;
+  /* 🆕 字級系統：給有點老花的人也能看得清楚 */
+  --font-xs: 12px;  /* 最小備註 */
+  --font-sm: 14px;  /* 次要說明、日期 */
+  --font-md: 16px;  /* 一般文字、列表、按鈕 */
+  --font-lg: 18px;  /* 卡片標題、重要數字 */
+  --font-xl: 20px;  /* 頁面主標題 */
 }
 
 *,
@@ -28,7 +34,9 @@ body {
 
 body {
   -webkit-font-smoothing: antialiased;
+  font-size: var(--font-md); /* 全域改成 16px */
 }
+
 
 button,
 input,
@@ -138,7 +146,7 @@ select {
 }
 
 .ring-target {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-sub);
 }
 
@@ -274,7 +282,7 @@ button.primary {
 }
 
 .list-item .sub {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-sub);
 }
 .list-item.clickable {
@@ -286,7 +294,7 @@ button.primary {
 }
 
 .tag {
-  font-size: 11px;
+  font-size: 13px;
   padding: 2px 8px;
   border-radius: 999px;
   background: #ecf7f2;
@@ -294,7 +302,7 @@ button.primary {
 }
 
 .hint {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-sub);
   margin-top: 6px;
 }
@@ -357,7 +365,7 @@ button.primary {
 }
 
 .result-title {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-sub);
   margin: 4px 0;
 }
@@ -415,7 +423,7 @@ button.primary {
 /* ---- Details ---- */
 
 details {
-  font-size: 13px;
+  font-size: 14px;
   margin-bottom: 8px;
 }
 
@@ -468,7 +476,7 @@ details summary {
 }
 
 .nav-label {
-  font-size: 12px;
+  font-size: 13px;
 }
 
 /* RecordsPage 子標籤佈局優化 */
@@ -610,7 +618,7 @@ input, select, textarea {
 }
 
 .macro-label {
-  font-size: 12px;
+  font-size: 13px;
   color: #888; /* 深灰字 */
   margin-bottom: 4px;
 }
@@ -622,7 +630,7 @@ input, select, textarea {
 }
 
 .macro-limit {
-  font-size: 11px;
+  font-size: 12px;
   color: #bbb;
   font-weight: 400;
   margin-left: 2px;
@@ -649,7 +657,7 @@ input, select, textarea {
 }
 
 .section-progress-target {
-  font-size: 12px;
+  font-size: 13px;
   color: #999;
 }
 
@@ -766,8 +774,10 @@ details.section-details[open] summary {
 }
 
 .quick-row-meta {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-sub);
+}
+
 }
 
 /* ==== 優化後的快速加入列表樣式 ==== */
@@ -819,4 +829,394 @@ details.section-details[open] summary {
   background: #fff;
   border-radius: 12px;
   border: 1px solid #f0f4f2;
+}
+
+/* ==== 老花友善字級調整（統一放大重要區塊）==== */
+
+/* 卡片標題、段落小標 */
+.card h2,
+.list-section h3 {
+  font-size: var(--font-lg);
+}
+
+/* 頂部日期區塊 */
+.top-bar .date-text {
+  font-size: var(--font-lg);
+}
+
+/* Summary 行：左邊 label / 右邊數值 */
+.summary-row .label {
+  font-size: var(--font-sm);
+}
+.summary-row .value {
+  font-size: var(--font-lg);
+}
+
+/* 營養環文字 */
+.ring-value {
+  font-size: var(--font-md);
+}
+.ring-label,
+.ring-sub,
+.ring-target {
+  font-size: var(--font-sm);
+}
+
+/* 飲水區 / 提示文字 */
+.water-amount,
+.hint,
+.result-title {
+  font-size: var(--font-sm);
+}
+
+/* 按鈕字級統一放大 */
+button,
+.import-btn,
+.bottom-nav button {
+  font-size: var(--font-md);
+}
+
+/* 餐別卡片：早餐 / 午餐 / 晚餐 / 點心 */
+.meal-title {
+  font-size: var(--font-lg);
+}
+.meal-kcal {
+  font-size: var(--font-md);
+}
+
+/* 列表：飲食明細、搜尋結果 */
+.list-item {
+  font-size: var(--font-md);
+}
+.list-item .sub,
+.quick-row-meta {
+  font-size: var(--font-sm);
+}
+.quick-row-name {
+  font-size: var(--font-md);
+}
+
+/* 搜尋結果區塊中的標題文字 */
+.result-title {
+  font-size: var(--font-sm);
+}
+
+/* 表單 label 與輸入框字級 */
+.form-section label {
+  font-size: var(--font-md);
+}
+.form-section input,
+.form-section select {
+  font-size: var(--font-md);
+}
+
+/* bottom nav 文字稍微放大一點 */
+.nav-label {
+  font-size: var(--font-sm);
+}
+
+/* ==== 老花友善字級調整 Override ==== */
+
+/* 1. 全域基準字級：整體放大一級 */
+body {
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* 2. 首頁 Hero 區：今天淨熱量最重要，要看得清楚 */
+.hero-title {
+  font-size: 15px;
+}
+
+.hero-number {
+  font-size: 48px; /* 保持大數字，易讀 */
+}
+
+.hero-unit {
+  font-size: 16px;
+}
+
+.hero-subtitle {
+  font-size: 13px;
+}
+
+/* 3. 營養環 & 身體組成環：% 與數字放大 */
+.ring-value {
+  font-size: 16px;
+}
+
+.ring-label,
+.ring-sub,
+.ring-target {
+  font-size: 13px;
+}
+
+/* 4. 上方 Summary 列（今日總攝取 / 剩餘熱量） */
+.summary-row .label {
+  font-size: 13px;
+}
+
+.summary-row .value {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* 5. 飲水與提示文字 */
+.water-amount {
+  font-size: 15px;
+}
+
+.hint {
+  font-size: 13px;
+}
+
+/* 6. 每餐卡片：早餐 / 午餐 / 晚餐 / 點心 */
+.meal-title {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.meal-kcal {
+  font-size: 15px;
+}
+
+/* 7. 列表：飲食明細 & 搜尋結果 */
+.list-item {
+  font-size: 15px;
+}
+
+.list-item .sub {
+  font-size: 13px;
+}
+
+/* 最近紀錄 / 常用組合列表 */
+.quick-row-name {
+  font-size: 15px;
+}
+
+.quick-row-meta {
+  font-size: 13px;
+}
+/* ==== Records Page：搜尋 / 明細 / 最近紀錄 / 常用組合 放大字級 ==== */
+
+/* 1. 食物搜尋結果區塊 */
+
+/* 「我的歷史紀錄 / Unit Map / FoodDB」小標題 */
+.search-results .result-title {
+  font-size: 14px;
+}
+
+/* 每筆搜尋結果裡的副資訊（份量、kcal、P/C/F 等） */
+/* 有 inline fontSize: 12px，所以這裡用 !important 壓過去 */
+.search-results .sub {
+  font-size: 14px !important;
+}
+
+/* 每筆搜尋結果主行文字 */
+.search-results .list-item {
+  font-size: 15px;
+}
+
+
+/* 2. 記錄頁下方的明細列表（一般 list-item） */
+
+/* 主行維持 15px（你原本是 14px） */
+.list-item {
+  font-size: 15px;
+}
+
+/* 副資訊從 12px → 13px，避免太小 */
+.list-item .sub {
+  font-size: 13px;
+}
+
+
+/* 3. 「最近紀錄 / 常用組合」列表 */
+
+/* 最近紀錄 & 常用組合列表裡主文字（品名） */
+.quick-row-name {
+  font-size: 15px;
+}
+
+/* 副資訊（kcal、P/C/F 等）從 12px → 14px */
+.quick-row-meta {
+  font-size: 14px;
+}
+
+/* 歷史紀錄快速加入區塊底下的小字（目前也是 12px inline） */
+.quick-item-compact .sub {
+  font-size: 14px !important;
+}
+
+
+/* 4. 常用組合：展開內容的 summary & 小 tag */
+
+/* 「查看內容 (x 品項) ▾」這一行：11px → 13px */
+details summary {
+  font-size: 13px !important;
+}
+
+/* 展開後每個品項的小 pill：11px → 13px */
+details summary + div span {
+  font-size: 13px !important;
+}
+/* ==========================================================
+   通用份量代換、食物搜尋細節、明細區的小字放大統一修正
+   ========================================================== */
+
+/* 1. 搜尋結果卡片中的小字（份量、單位、類別、g/份 等） */
+.search-results .sub,
+.search-results .meta,
+.search-results .unit,
+.search-results .note,
+.unit-map-row .sub,
+.unit-map-row .meta {
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+
+/* 橘色小字（≈40g、1/4 碗=1份 等） */
+.search-results .sub span,
+.search-results .note span,
+.unit-map-row span {
+  font-size: 14px !important;
+}
+
+/* 2. 自訂份量區塊的所有小字 */
+.portion-editor small,
+.portion-editor .unit,
+.portion-editor .label,
+.portion-editor .desc,
+.portion-editor .note {
+  font-size: 14px !important;
+}
+
+/* 自訂份量區塊下方的 "Px4 + Cx4 + Fx9" 說明 */
+.portion-editor .formula {
+  font-size: 14px !important;
+}
+
+/* 營養素小卡 P / C / F 底下的 g/份 */
+.nutrition-card small,
+.nutrition-card .unit,
+.nutrition-card .sub {
+  font-size: 14px !important;
+}
+
+/* 3. 今日總覽的餐卡（早餐 / 午餐 / 晚餐 / 點心）裡的 P C F 小字 */
+.meal-card .macros,
+.meal-card .sub,
+.meal-card .detail,
+.meal-card .meta {
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+
+/* 餐卡裡 kcal 旁邊的 “kcal” 調大一點 */
+.meal-card .meal-kcal-unit {
+  font-size: 14px !important;
+}
+
+/* 4. 其他所有被你用 inline style 壓成 11px/12px 的地方全部保護起來 */
+.sub,
+.meta,
+.note,
+.small-text {
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+/* ==== Ju Smile 老花友善字級調整 ==== */
+
+/* 全域基準字級稍微拉高 */
+body {
+  font-size: 15px;
+}
+
+/* 列表主文字：食物明細、最近紀錄、常用組合等 */
+.list-item,
+.quick-row-item {
+  font-size: 15px;
+}
+
+/* 列表內的小字：份量、P/C/F、備註等 */
+.list-item .sub,
+.quick-row-meta,
+.summary-row .label,
+.result-title,
+.hint,
+.tag,
+.macro-label,
+.macro-limit,
+.nav-label {
+  font-size: 14px !important;
+}
+
+/* 卡片裡比較重要的數字（例如每餐 kcal、營養素數字） */
+.meal-kcal,
+.macro-val {
+  font-size: 16px;
+}
+
+/* 搜尋結果區塊內的小標題（例如「通用份量代換」那種） */
+.search-results,
+.search-results .result-title {
+  font-size: 14px;
+}
+/* 手掌法：下面「參考：…」的小字放大 */
+.portion-desc {
+  font-size: 14px;
+  color: #6b7280;
+  padding-left: 52px;
+  line-height: 1.6;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+
+.portion-desc-main {
+  color: #9ca3af;
+}
+
+.portion-desc-tag {
+  color: #97d0ba;
+  font-weight: 600;
+  background: #f0f9f6;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+/* ==== 今日總覽餐卡：Apple Fitness 風格字級層次 ==== */
+
+/* 餐別標題（早餐／午餐／晚餐／點心） */
+.meal-title {
+  font-size: 18px;          /* Level 2 */
+  font-weight: 700;
+  color: #111827;
+}
+
+/* kcal 主數字一行 */
+.meal-kcal-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.meal-kcal-number {
+  font-size: 24px;          /* Level 1：最重要 */
+  font-weight: 800;
+  color: var(--mint-dark);
+}
+
+.meal-kcal-unit {
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+/* P / C / F 小字（但要老花友善） */
+.meal-macros {
+  font-size: 15px;          /* Level 3：次要資訊，但清楚可讀 */
+  color: #6b7280;
+  line-height: 1.4;
 }

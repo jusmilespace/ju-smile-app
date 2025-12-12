@@ -605,7 +605,7 @@ const InstallGuideWidget: React.FC = () => {
                 borderRadius: 999,
                 border: 'none',
                 padding: '4px 8px',
-                fontSize: 12,
+                fontSize: 15,
                 cursor: 'pointer',
               }}
             >
@@ -618,7 +618,7 @@ const InstallGuideWidget: React.FC = () => {
                 borderRadius: 999,
                 border: 'none',
                 padding: '4px 8px',
-                fontSize: 12,
+                fontSize: 15,
                 background: 'transparent',
                 color: '#fff',
                 textDecoration: 'underline',
@@ -1466,7 +1466,7 @@ const [srcMet, setSrcMet] = useState<string>(
   };
 
   // 優化樣式：更緊湊，移除按鈕改為整張卡片可點擊
-  const MealCard: React.FC<{
+    const MealCard: React.FC<{
     title: '早餐' | '午餐' | '晚餐' | '點心';
     kcal: number;
     protein: number;
@@ -1485,15 +1485,13 @@ const [srcMet, setSrcMet] = useState<string>(
           height: '100%',
           cursor: 'pointer',
           position: 'relative',
-          padding: '16px', // 增加內距
-          transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)', // 平滑動畫
-          borderRadius: '20px', // 更圓
+          padding: '16px',
+          transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
+          borderRadius: '20px',
           background: '#fff',
-          // ✨ 魔法：預設有輕微陰影，按下去或 hover 時浮起
-          boxShadow: '0 4px 12px rgba(0,0,0,0.03)', 
+          boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
           border: '1px solid #f0f0f0'
         }}
-        // 加入 Hover 效果 (React inline style 模擬)
         onMouseEnter={(e) => {
           e.currentTarget.style.transform = 'translateY(-4px)';
           e.currentTarget.style.boxShadow = '0 12px 20px rgba(0,0,0,0.08)';
@@ -1503,34 +1501,47 @@ const [srcMet, setSrcMet] = useState<string>(
           e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.03)';
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <div className="meal-title" style={{ fontSize: 16, fontWeight: 700, color: '#333' }}>{title}</div>
-          <div style={{ 
-            background: '#5c9c84', 
-            color: '#fff', 
-            borderRadius: '50%', 
-            width: 24, 
-            height: 24, 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center',
-            fontSize: 16,
-            fontWeight: 'bold',
-            lineHeight: 1
-          }}>+</div>
+        {/* 上排：餐別標題 + 加號 */}
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          marginBottom: 8 
+        }}>
+          <div className="meal-title">{title}</div>
+          <div
+            style={{
+              background: '#5c9c84',
+              color: '#fff',
+              borderRadius: '50%',
+              width: 24,
+              height: 24,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 16,
+              fontWeight: 'bold',
+              lineHeight: 1
+            }}
+          >
+            +
+          </div>
         </div>
 
+        {/* 下排：kcal 主數字 + P/C/F */}
         <div style={{ flex: 1 }}>
-           <div className="meal-kcal" style={{ fontSize: 20, fontWeight: 800, color: '#5c9c84', marginBottom: 4 }}>
-             {kcal} <span style={{ fontSize: 12, fontWeight: 400, color: '#888' }}>kcal</span>
-           </div>
-           <div style={{ fontSize: 11, color: '#888', lineHeight: 1.4 }}>
-             P {round1(protein)} · C {round1(carb)} · F {round1(fat)}
-           </div>
+          <div className="meal-kcal-row">
+            <span className="meal-kcal-number">{kcal}</span>
+            <span className="meal-kcal-unit">kcal</span>
+          </div>
+          <div className="meal-macros">
+            P {round1(protein)} · C {round1(carb)} · F {round1(fat)}
+          </div>
         </div>
       </div>
     );
   };
+
   // ======== 首頁 ========
 
   type TodayPageProps = {
@@ -1816,7 +1827,7 @@ useEffect(() => {
           }}
           style={{
             padding: '4px 12px',
-            fontSize: 12,
+            fontSize: 15,
             fontWeight: 500,
             color: todayLocal === dayjs().format('YYYY-MM-DD') ? '#fff' : '#97d0ba',
             background: todayLocal === dayjs().format('YYYY-MM-DD') ? '#97d0ba' : 'transparent',
@@ -2019,7 +2030,7 @@ useEffect(() => {
                 <span className="section-progress-current" style={{ color: '#5eb6e6' }}>
                   {todaySummary.waterMl}
                 </span> 
-                <span style={{ fontSize: 12, marginLeft: 2 }}>ml</span>
+                <span style={{ fontSize: 15, marginLeft: 2 }}>ml</span>
               </div>
               <div className="section-progress-target">
                 目標 {settings.waterGoalMl || 2000} ml
@@ -2171,7 +2182,7 @@ useEffect(() => {
                 <span className="section-progress-current" style={{ color: '#f59e0b' }}>
                   {todayExerciseMinutes}
                 </span> 
-                <span style={{ fontSize: 12, marginLeft: 2 }}>分鐘</span>
+                <span style={{ fontSize: 15, marginLeft: 2 }}>分鐘</span>
               </div>
               <div className="section-progress-target">
                 目標 {settings.exerciseMinutesGoal || 30} 分鐘
@@ -2217,7 +2228,7 @@ useEffect(() => {
           <div className="form-section" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             {/* 1. 體重 */}
             <div style={{ background: '#f9fafb', padding: '12px', borderRadius: '12px', border: '1px solid #e9ecef' }}>
-              <label style={{ fontSize: 12, color: '#666', marginBottom: 4, display: 'block' }}>體重 (kg)</label>
+              <label style={{ fontSize: 15, color: '#666', marginBottom: 4, display: 'block' }}>體重 (kg)</label>
               <input 
                 type="number" 
                 value={wInput} 
@@ -2229,7 +2240,7 @@ useEffect(() => {
 
             {/* 2. 體脂率 */}
             <div style={{ background: '#f9fafb', padding: '12px', borderRadius: '12px', border: '1px solid #e9ecef' }}>
-              <label style={{ fontSize: 12, color: '#666', marginBottom: 4, display: 'block' }}>體脂率 (%)</label>
+              <label style={{ fontSize: 15, color: '#666', marginBottom: 4, display: 'block' }}>體脂率 (%)</label>
               <input 
                 type="number" 
                 value={bfInput} 
@@ -2241,7 +2252,7 @@ useEffect(() => {
 
             {/* 3. 骨骼肌率 */}
             <div style={{ background: '#f9fafb', padding: '12px', borderRadius: '12px', border: '1px solid #e9ecef' }}>
-              <label style={{ fontSize: 12, color: '#666', marginBottom: 4, display: 'block' }}>骨骼肌率 (%)</label>
+              <label style={{ fontSize: 15, color: '#666', marginBottom: 4, display: 'block' }}>骨骼肌率 (%)</label>
               <input 
                 type="number" 
                 value={smInput} 
@@ -2253,7 +2264,7 @@ useEffect(() => {
 
             {/* 4. 內臟脂肪 */}
             <div style={{ background: '#f9fafb', padding: '12px', borderRadius: '12px', border: '1px solid #e9ecef' }}>
-              <label style={{ fontSize: 12, color: '#666', marginBottom: 4, display: 'block' }}>內臟脂肪</label>
+              <label style={{ fontSize: 15, color: '#666', marginBottom: 4, display: 'block' }}>內臟脂肪</label>
               <input 
                 type="number" 
                 value={vfInput} 
@@ -2300,6 +2311,7 @@ const COMMON_EXERCISES = [
   { name: 'HIIT', met: 8.5 },
 ];
   // ======== 記錄頁 ========
+  
 
   const RecordsPage: React.FC<{
     recordTab: RecordSubTab;
@@ -3203,7 +3215,7 @@ useEffect(() => {
                   onClick={jumpToToday} // 使用新的 jumpToToday
           style={{
             padding: '4px 12px',
-            fontSize: 12,
+            fontSize: 15,
             fontWeight: 500,
             color:
               selectedDate === dayjs().format('YYYY-MM-DD')
@@ -3362,50 +3374,71 @@ useEffect(() => {
             </div>
 
             {/* 🆕 輸入模式切換 */}
-            <div style={{ 
-  display: 'flex', 
-  background: '#f0f2f5', // 底層淺灰軌道
-  borderRadius: 999,     // 橢圓關鍵
-  padding: 4,            // 內縮留白
-  marginBottom: 16 
-}}>
+            <div
+  style={{
+    display: 'flex',
+    gap: 8,
+    background: '#f3f4f6',
+    borderRadius: 999,
+    padding: 4,
+    marginBottom: 16,
+    overflow: 'hidden',
+    height: 44,
+    alignItems: 'center',
+  }}
+>
   <button
+    type="button"
     onClick={() => setFoodInputMode('search')}
     style={{
       flex: 1,
-      padding: '8px 0', // 上下高度
+      height: 36,
+      padding: '0 10px',
       border: 'none',
-      borderRadius: 999, // 按鈕本身也要橢圓
-      // 選中：白色背景 + 陰影 + 深色字
-      // 未選：透明背景 + 灰色字
+      borderRadius: 999,
       background: foodInputMode === 'search' ? '#fff' : 'transparent',
-      color: foodInputMode === 'search' ? 'var(--mint-dark, #5c9c84)' : '#888',
-      boxShadow: foodInputMode === 'search' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
-      fontWeight: foodInputMode === 'search' ? 600 : 400,
-      fontSize: 14,
+      color: foodInputMode === 'search' ? 'var(--mint-dark, #5c9c84)' : '#6b7280',
+      boxShadow: foodInputMode === 'search' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+      fontWeight: foodInputMode === 'search' ? 800 : 700,
+      fontSize: 13,
       cursor: 'pointer',
-      transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)', // 增加彈性動畫
+      transition: 'all 0.18s ease',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      lineHeight: 1,
+      whiteSpace: 'nowrap',
+      minWidth: 0,
     }}
   >
-    🔍 快速搜尋
+    🔍&nbsp;快速搜尋
   </button>
+
   <button
+    type="button"
     onClick={() => setFoodInputMode('palm')}
     style={{
       flex: 1,
-      padding: '8px 0',
+      height: 36,
+      padding: '0 10px',
       border: 'none',
       borderRadius: 999,
       background: foodInputMode === 'palm' ? '#fff' : 'transparent',
-      color: foodInputMode === 'palm' ? 'var(--mint-dark, #5c9c84)' : '#888',
-      boxShadow: foodInputMode === 'palm' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
-      fontWeight: foodInputMode === 'palm' ? 600 : 400,
-      fontSize: 14,
+      color: foodInputMode === 'palm' ? 'var(--mint-dark, #5c9c84)' : '#6b7280',
+      boxShadow: foodInputMode === 'palm' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+      fontWeight: foodInputMode === 'palm' ? 800 : 700,
+      fontSize: 13,
       cursor: 'pointer',
-      transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
+      transition: 'all 0.18s ease',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      lineHeight: 1,
+      whiteSpace: 'nowrap',
+      minWidth: 0,
     }}
   >
-    🖐️ 手掌法
+    🖐️&nbsp;手掌法
   </button>
 </div>
 
@@ -3416,7 +3449,7 @@ useEffect(() => {
             <div className="form-section">
               {/* 貼上這一段新的搜尋框程式碼 */}
 
-  <div ref={searchTopRef} style={{ marginBottom: 16 }}>
+  <div ref={searchTopRef} style={{ marginBottom: 0 }}>
   <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
     搜尋食物
   </label>
@@ -3628,7 +3661,7 @@ useEffect(() => {
                     }}
                   >
                     {foodAmountG || '100'} 
-                    <span style={{ fontSize: 12, color: '#9ca3af', marginLeft: 4, fontWeight: 400 }}>g</span>
+                    <span style={{ fontSize: 15, color: '#9ca3af', marginLeft: 4, fontWeight: 400 }}>g</span>
                   </div>
 
                   {/* === Gram Modal (重量輸入彈窗) === */}
@@ -3717,54 +3750,79 @@ useEffect(() => {
                 優化版：智慧快速加入面板 (含捲動、圓形按鈕、完整資訊)
                ========================================================= */}
             {!foodName.trim() && (
-              <div style={{ marginTop: 12, marginBottom: 16 }}>
+              <div style={{ marginTop: 16, marginBottom: 16 }}>
                 
-               {/* 1. 分頁切換按鈕 (樣式同步：與上方的快速搜尋/手掌法一致) */}
-                <div style={{ 
-                  display: 'flex', 
-                  background: '#f0f2f5', // 底層淺灰軌道
-                  borderRadius: 999,     // 橢圓關鍵
-                  padding: 4,            // 內縮留白
-                  marginBottom: 16       // 統一間距
-                }}>
+               {/* 1. 分頁切換按鈕 (完全比照上方快速搜尋樣式) */}
+              
+<div
+  style={{
+    display: 'flex',
+    gap: 8,
+    background: '#f3f4f6',
+    borderRadius: 999,
+    padding: 4,
+    marginBottom: 16,
+    overflow: 'hidden',
+    height: 44,
+    alignItems: 'center',
+  }}
+>
+
+
+<button
+  type="button"
+  onClick={() => setQuickAddTab('history')}
+  style={{
+    flex: 1,
+    height: 36,
+    padding: '0 10px',
+    border: 'none',
+    borderRadius: 999,
+    background: quickAddTab === 'history' ? '#fff' : 'transparent',
+    color: quickAddTab === 'history' ? 'var(--mint-dark, #5c9c84)' : '#6b7280',
+    boxShadow: quickAddTab === 'history' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+    fontWeight: quickAddTab === 'history' ? 800 : 700,
+    fontSize: 13,
+    cursor: 'pointer',
+    transition: 'all 0.18s ease',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    lineHeight: 1,
+    whiteSpace: 'nowrap',
+    minWidth: 0,
+  }}
+>
+  🕒&nbsp;最近紀錄
+</button>
+
+
                   <button
-                    onClick={() => setQuickAddTab('history')}
-                    style={{
-                      flex: 1,
-                      padding: '8px 0',
-                      border: 'none',
-                      borderRadius: 999, // 橢圓
-                      // 選中：白色背景 + 陰影 + 品牌色字
-                      // 未選：透明背景 + 灰色字
-                      background: quickAddTab === 'history' ? '#fff' : 'transparent',
-                      color: quickAddTab === 'history' ? 'var(--mint-dark, #5c9c84)' : '#888',
-                      boxShadow: quickAddTab === 'history' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
-                      fontWeight: quickAddTab === 'history' ? 600 : 400,
-                      fontSize: 14,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)', // 彈性動畫
-                    }}
-                  >
-                    🕒 最近紀錄
-                  </button>
-                  <button
-                    onClick={() => setQuickAddTab('combo')}
-                    style={{
-                      flex: 1,
-                      padding: '8px 0',
-                      border: 'none',
-                      borderRadius: 999,
-                      background: quickAddTab === 'combo' ? '#fff' : 'transparent',
-                      color: quickAddTab === 'combo' ? 'var(--mint-dark, #5c9c84)' : '#888',
-                      boxShadow: quickAddTab === 'combo' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
-                      fontWeight: quickAddTab === 'combo' ? 600 : 400,
-                      fontSize: 14,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
-                    }}
-                  >
-                    🎯 常用組合 ({combos.length})
-                  </button>
+  type="button"
+  onClick={() => setQuickAddTab('combo')}
+  style={{
+    flex: 1,
+    height: 36,
+    padding: '0 10px',
+    border: 'none',
+    borderRadius: 999,
+    background: quickAddTab === 'combo' ? '#fff' : 'transparent',
+    color: quickAddTab === 'combo' ? 'var(--mint-dark, #5c9c84)' : '#6b7280',
+    boxShadow: quickAddTab === 'combo' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+    fontWeight: quickAddTab === 'combo' ? 800 : 700,
+    fontSize: 13,
+    cursor: 'pointer',
+    transition: 'all 0.18s ease',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    lineHeight: 1,
+    whiteSpace: 'nowrap',
+    minWidth: 0,
+  }}
+>
+  ⭐&nbsp;常用組合&nbsp;({combos.length})
+</button>
                 </div>
 
                 {/* 2. 內容顯示區 */}
@@ -3789,7 +3847,7 @@ useEffect(() => {
                                 <div style={{ fontWeight: 600, color: '#333', fontSize: 15 }}>{m.label}</div>
                                 
                                 {/* 營養素資訊 */}
-                                <div className="sub" style={{ fontSize: 12, color: '#666', marginTop: 2 }}>
+                                <div className="sub" style={{ fontSize: 15, color: '#666', marginTop: 2 }}>
                                   {m.amountText ? `${m.amountText} · ` : ''}{m.kcal} kcal
                                   {m.protein ? ` · P: ${round1(m.protein)}g` : ''}
                                 </div>
@@ -3844,7 +3902,7 @@ useEffect(() => {
                               <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', marginBottom: 6 }}>
                                 <div>
                                   <div style={{ fontWeight: 600, color: '#333' }}>{combo.name}</div>
-                                  <div style={{ fontSize: 12, color: '#666' }}>
+                                  <div style={{ fontSize: 15, color: '#666' }}>
                                     約 {combo.items.reduce((sum, item) => sum + item.kcal, 0)} kcal
                                   </div>
                                 </div>
@@ -3956,7 +4014,7 @@ useEffect(() => {
           alignItems: 'center',
           gap: 8,
           flexWrap: 'wrap',
-          fontSize: 12,
+          fontSize: 15,
         }}
       >
         <span
@@ -4067,7 +4125,7 @@ useEffect(() => {
           <div style={{ fontWeight: 600, color: '#1f2937', fontSize: 15, marginBottom: 4, wordBreak: 'break-word' }}>
             {u.Food}
           </div>
-          <div style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.4 }}>
+          <div style={{ fontSize: 15, color: '#6b7280', lineHeight: 1.4 }}>
             單位: {u.Unit} ({u.ServingsPerUnit} 份)
             {u.Type && <span style={{ opacity: 0.8 }}> · {u.Type}</span>}
             {/* 這裡加入 Notes 顯示，並用深一點的顏色強調 */}
@@ -4147,7 +4205,7 @@ useEffect(() => {
             <div style={{ fontWeight: 600, color: '#1f2937', fontSize: 15, marginBottom: 4, wordBreak: 'break-word' }}>
               {f.food}
             </div>
-            <div style={{ fontSize: 12, color: '#6b7280' }}>
+            <div style={{ fontSize: 15, color: '#6b7280' }}>
               精準秤重估算
             </div>
           </div>
@@ -4270,7 +4328,7 @@ useEffect(() => {
       display: 'flex',
       alignItems: 'center',
       gap: 8,
-      fontSize: 12,
+      fontSize: 15,
     }}
   >
     {/* DEC / FRAC 小開關 */}
@@ -4291,7 +4349,7 @@ useEffect(() => {
           background:
             servingsInputMode === 'dec' ? '#1e88e5' : 'transparent',
           color: servingsInputMode === 'dec' ? '#fff' : 'inherit',
-          fontSize: 12,
+          fontSize: 15,
         }}
       >
         DEC
@@ -4306,7 +4364,7 @@ useEffect(() => {
           background:
             servingsInputMode === 'frac' ? '#1e88e5' : 'transparent',
           color: servingsInputMode === 'frac' ? '#fff' : 'inherit',
-          fontSize: 12,
+          fontSize: 15,
         }}
       >
         FRAC
@@ -4328,7 +4386,7 @@ useEffect(() => {
         display: 'flex',
         flexWrap: 'wrap',
         gap: 4,
-        fontSize: 12,
+        fontSize: 15,
       }}
     >
       {[
@@ -4407,7 +4465,7 @@ useEffect(() => {
   >
     {/* 顯示邏輯：如果沒值預設顯示 1，如果有值則顯示 */}
     {fallbackServings || '1'} 
-    <span style={{ fontSize: 12, color: '#9ca3af', marginLeft: 4, fontWeight: 400 }}>份</span>
+    <span style={{ fontSize: 15, color: '#9ca3af', marginLeft: 4, fontWeight: 400 }}>份</span>
   </div>
 
   {/* === 份量輸入彈窗 (Servings Modal) === */}
@@ -4567,7 +4625,7 @@ useEffect(() => {
                   {item.label}
                   {/* 如果數值相同，顯示數值對照 (例: 1/2 = 0.5) */}
                   {String(fallbackServings) === item.value && (
-                    <span style={{ fontSize: 12, color: '#5c9c84', marginLeft: 8, fontWeight: 400 }}>
+                    <span style={{ fontSize: 15, color: '#5c9c84', marginLeft: 8, fontWeight: 400 }}>
                        ({item.value})
                     </span>
                   )}
@@ -4656,7 +4714,7 @@ useEffect(() => {
             }}
           >
             {fallbackUnitLabel || '選擇單位'} 
-            <span style={{ fontSize: 12, marginLeft: 6, color: '#cbd5e1' }}>▼</span>
+            <span style={{ fontSize: 15, marginLeft: 6, color: '#cbd5e1' }}>▼</span>
           </div>
         </div>
 
@@ -5010,7 +5068,7 @@ useEffect(() => {
                             </div>
                           </div>
                           
-                          <div style={{ textAlign: 'center', marginTop: 12, fontSize: 12, color: '#666' }}>
+                          <div style={{ textAlign: 'center', marginTop: 12, fontSize: 15, color: '#666' }}>
                             系統將依 <b>P×4 + C×4 + F×9</b> 自動計算熱量
                           </div>
                         </div>
@@ -6632,7 +6690,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
         <div className="ring" style={{ ['--p' as any]: 85 }}>
           <div className="ring-center">
             <div className="ring-value" style={{ fontSize: 22, fontWeight: 800 }}>{value || 0}</div>
-            <div style={{ fontSize: 12, opacity: 0.75 }}>{label}</div>
+            <div style={{ fontSize: 15, opacity: 0.75 }}>{label}</div>
           </div>
         </div>
         <div className="ring-label" style={{ color: 'var(--mint-dark)', fontWeight: 700 }}>
@@ -6732,12 +6790,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
           <h2>計算結果</h2>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: 16, background: '#f6fbff' }}>
-              <div style={{ fontSize: 12, color: '#5c9c84', fontWeight: 700, letterSpacing: 1 }}>BMR</div>
+              <div style={{ fontSize: 15, color: '#5c9c84', fontWeight: 700, letterSpacing: 1 }}>BMR</div>
               <div style={{ fontSize: 28, fontWeight: 800, margin: '4px 0 8px 0' }}>{bmr || 0}</div>
               <div style={{ fontSize: 13, opacity: 0.8 }}>基礎代謝率 · 維持生命最低熱量</div>
             </div>
             <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: 16, background: '#fffaf6' }}>
-              <div style={{ fontSize: 12, color: '#e68a3a', fontWeight: 700, letterSpacing: 1 }}>TDEE</div>
+              <div style={{ fontSize: 15, color: '#e68a3a', fontWeight: 700, letterSpacing: 1 }}>TDEE</div>
               <div style={{ fontSize: 28, fontWeight: 800, margin: '4px 0 8px 0' }}>{tdee || 0}</div>
               <div style={{ fontSize: 13, opacity: 0.8 }}>每日總消耗 · 維持體重熱量</div>
             </div>
@@ -7235,7 +7293,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
                     <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                     <XAxis 
                       dataKey="date" 
-                      style={{ fontSize: 12 }}
+                      style={{ fontSize: 15 }}
                       interval="preserveStartEnd" 
                       tick={{ fontSize: 11 }}
                       angle={-45} // 傾斜標籤避免重疊
@@ -7313,7 +7371,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
                     <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                     <XAxis 
                       dataKey="date" 
-                      style={{ fontSize: 12 }}
+                      style={{ fontSize: 15 }}
                       interval="preserveStartEnd"
                       tick={{ fontSize: 11 }}
                       angle={-45}
@@ -7346,7 +7404,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
             </div>
             {/* 底部提示 */}
             {(period === 'longTerm' || period === 'yearly') && (
-               <div style={{ textAlign: 'center', fontSize: 12, color: '#999', marginTop: 4 }}>
+               <div style={{ textAlign: 'center', fontSize: 15, color: '#999', marginTop: 4 }}>
                  ← 左右滑動查看更多數據 →
                </div>
             )}
@@ -7460,7 +7518,7 @@ return (
               borderRadius: 999,
               border: 'none',
               padding: '6px 10px',
-              fontSize: 12,
+              fontSize: 15,
               cursor: 'pointer',
             }}
           >

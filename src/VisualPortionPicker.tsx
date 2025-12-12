@@ -456,28 +456,16 @@ export const VisualPortionPicker: React.FC<VisualPortionPickerProps> = ({
                 </div>
 
                 {/* 第二列：說明文字 + 營養成分（精簡顯示） */}
-                <div style={{ 
-                  fontSize: 11.5, 
-                  color: '#6b7280',
-                  paddingLeft: 52,
-                  lineHeight: 1.5,
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: '4px 8px',
-                }}>
-                  <span style={{ color: '#9ca3af' }}>{portion.desc}</span>
-                  {count > 0 && (
-                    <span style={{ 
-                      color: '#97d0ba',
-                      fontWeight: 600,
-                      background: '#f0f9f6',
-                      padding: '1px 6px',
-                      borderRadius: 4,
-                    }}>
-                      {Math.round(portion.kcal * count)} kcal · P {Math.round(portion.protein * count * 10) / 10}g · C {Math.round(portion.carbs * count * 10) / 10}g · F {Math.round(portion.fat * count * 10) / 10}g
-                    </span>
-                  )}
-                </div>
+<div className="portion-desc">
+  <span className="portion-desc-main">{portion.desc}</span>
+  {count > 0 && (
+    <span className="portion-desc-tag">
+      {Math.round(portion.kcal * count)} kcal · P {Math.round(portion.protein * count * 10) / 10}g · C {Math.round(portion.carbs * count * 10) / 10}g · F {Math.round(portion.fat * count * 10) / 10}g
+    </span>
+  )}
+</div>
+
+
               </div>
             </div>
           );
@@ -500,19 +488,19 @@ export const VisualPortionPicker: React.FC<VisualPortionPickerProps> = ({
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
           <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 8, padding: 10, textAlign: 'center' }}>
             <div style={{ fontSize: 24, fontWeight: 700 }}>{summary.kcal}</div>
-            <div style={{ fontSize: 12, opacity: 0.9, marginTop: 5 }}>大卡</div>
+            <div style={{ fontSize: 14, opacity: 0.9, marginTop: 5 }}>大卡</div>
           </div>
           <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 8, padding: 10, textAlign: 'center' }}>
             <div style={{ fontSize: 24, fontWeight: 700 }}>{summary.protein}g</div>
-            <div style={{ fontSize: 12, opacity: 0.9, marginTop: 5 }}>蛋白質</div>
+            <div style={{ fontSize: 14, opacity: 0.9, marginTop: 5 }}>蛋白質</div>
           </div>
           <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 8, padding: 10, textAlign: 'center' }}>
             <div style={{ fontSize: 24, fontWeight: 700 }}>{summary.carbs}g</div>
-            <div style={{ fontSize: 12, opacity: 0.9, marginTop: 5 }}>碳水化合物</div>
+            <div style={{ fontSize: 14, opacity: 0.9, marginTop: 5 }}>碳水化合物</div>
           </div>
           <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 8, padding: 10, textAlign: 'center' }}>
             <div style={{ fontSize: 24, fontWeight: 700 }}>{summary.fat}g</div>
-            <div style={{ fontSize: 12, opacity: 0.9, marginTop: 5 }}>脂肪</div>
+            <div style={{ fontSize: 14, opacity: 0.9, marginTop: 5 }}>脂肪</div>
           </div>
         </div>
       </div>
