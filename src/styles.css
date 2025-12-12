@@ -1053,7 +1053,7 @@ body {
 
 /* 「查看內容 (x 品項) ▾」這一行：11px → 13px */
 details summary {
-  font-size: 13px !important;
+  font-size: 15px !important;
 }
 
 /* 展開後每個品項的小 pill：11px → 13px */
@@ -1219,4 +1219,13 @@ body {
   font-size: 15px;          /* Level 3：次要資訊，但清楚可讀 */
   color: #6b7280;
   line-height: 1.4;
+}
+/* P / C / F 區塊下方的說明文字 */
+.macro-legend {
+  margin-top: 16px;        /* 跟進度條拉開距離 */
+  padding: 0 16px 6px;    /* 左右各留 16px，底部多一點空氣 */
+  font-size: 11px;
+  color: #9ca3af;          /* 比上面的營養文字更淺 */
+  text-align: center;
+  font-weight: 400;
 }

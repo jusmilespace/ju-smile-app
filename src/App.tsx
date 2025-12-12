@@ -1967,10 +1967,12 @@ useEffect(() => {
           </div>
 
           {/* 營養素區塊 (P/C/F) */}
+          
+
           <div className="macro-grid">
             {/* 蛋白質 (P) */}
             <div className="macro-item">
-              <div className="macro-label">蛋白質</div>
+              <div className="macro-label">蛋白質 (g)</div>
               <div className="macro-val">
                 {Math.round(todayProtein)}<span className="macro-limit">/{Math.round(targetP)}</span>
               </div>
@@ -1987,7 +1989,7 @@ useEffect(() => {
 
             {/* 碳水 (C) */}
             <div className="macro-item">
-              <div className="macro-label">碳水</div>
+              <div className="macro-label">碳水 (g)</div>
               <div className="macro-val">
                 {Math.round(todayCarb)}<span className="macro-limit">/{Math.round(targetC)}</span>
               </div>
@@ -2004,7 +2006,7 @@ useEffect(() => {
 
             {/* 脂肪 (F) */}
             <div className="macro-item">
-              <div className="macro-label">脂肪</div>
+              <div className="macro-label">脂肪 (g)</div>
               <div className="macro-val">
                 {Math.round(todayFat)}<span className="macro-limit">/{Math.round(targetF)}</span>
               </div>
@@ -2019,7 +2021,11 @@ useEffect(() => {
               </div>
             </div>
           </div>
+          <div className="macro-legend">
+  數值顯示：今日攝取量 / 目標 
+</div>
         </div>
+        
         <section className="card">
           <h2>今日飲水</h2>
           
@@ -3400,7 +3406,7 @@ useEffect(() => {
       color: foodInputMode === 'search' ? 'var(--mint-dark, #5c9c84)' : '#6b7280',
       boxShadow: foodInputMode === 'search' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
       fontWeight: foodInputMode === 'search' ? 800 : 700,
-      fontSize: 13,
+      fontSize: 15,
       cursor: 'pointer',
       transition: 'all 0.18s ease',
       display: 'flex',
@@ -3427,7 +3433,7 @@ useEffect(() => {
       color: foodInputMode === 'palm' ? 'var(--mint-dark, #5c9c84)' : '#6b7280',
       boxShadow: foodInputMode === 'palm' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
       fontWeight: foodInputMode === 'palm' ? 800 : 700,
-      fontSize: 13,
+      fontSize: 15,
       cursor: 'pointer',
       transition: 'all 0.18s ease',
       display: 'flex',
@@ -3782,7 +3788,7 @@ useEffect(() => {
     color: quickAddTab === 'history' ? 'var(--mint-dark, #5c9c84)' : '#6b7280',
     boxShadow: quickAddTab === 'history' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
     fontWeight: quickAddTab === 'history' ? 800 : 700,
-    fontSize: 13,
+    fontSize: 15,
     cursor: 'pointer',
     transition: 'all 0.18s ease',
     display: 'flex',
@@ -3810,7 +3816,7 @@ useEffect(() => {
     color: quickAddTab === 'combo' ? 'var(--mint-dark, #5c9c84)' : '#6b7280',
     boxShadow: quickAddTab === 'combo' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
     fontWeight: quickAddTab === 'combo' ? 800 : 700,
-    fontSize: 13,
+    fontSize: 15,
     cursor: 'pointer',
     transition: 'all 0.18s ease',
     display: 'flex',
@@ -4139,7 +4145,7 @@ useEffect(() => {
              <div style={{ color: '#97d0ba', fontWeight: 700, fontSize: 15, lineHeight: 1 }}>
                {u.Kcal_per_serv ? Math.round(Number(u.Kcal_per_serv)) : '?'}
              </div>
-             <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 2 }}>
+             <div style={{ fontSize: 14, color: '#9ca3af', marginTop: 2 }}>
                kcal / 份
              </div>
            </div>
