@@ -1474,10 +1474,25 @@ const [srcMet, setSrcMet] = useState<string>(
     fat: number;
     onAdd: () => void;
   }> = ({ title, kcal, protein, carb, fat, onAdd }) => {
+
+    // 🆕 簡單的對照表：中文標題 -> 檔名
+    const iconMap: Record<string, string> = {
+      '早餐': 'breakfast.png',
+      '午餐': 'lunch.png',
+      '晚餐': 'dinner.png',
+      '點心': 'snack.png',
+    };
+
+    // 取得對應圖檔路徑 (考慮到 public/icons)
+    // 加上 APP_BASE_URL 確保未來上傳 GitHub Pages 路徑也正確
+    // 注意：這裡假設 APP_BASE_URL 結尾有斜線 (如預設)
+    const iconSrc = `${APP_BASE_URL}icons/${iconMap[title]}`;
+
     return (
       <div 
         className="meal-card"
         onClick={onAdd}
+        // ... (原本的 style 保持不變) ...
         style={{
           display: 'flex',
           flexDirection: 'column',
@@ -1501,15 +1516,23 @@ const [srcMet, setSrcMet] = useState<string>(
           e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.03)';
         }}
       >
-        {/* 上排：餐別標題 + 加號 */}
+        {/* 上排：餐別標題 (含 Icon) + 加號 */}
         <div style={{ 
           display: 'flex', 
           justifyContent: 'space-between', 
           alignItems: 'center', 
           marginBottom: 8 
         }}>
-          <div className="meal-title">{title}</div>
-          {/* 🔧 修改：移除原本長長的 style，改用 className */}
+          <div className="meal-title" style={{ display: 'flex', alignItems: 'center' }}>
+             {/* 🆕 顯示 PNG Icon */}
+             <img 
+               src={iconSrc} 
+               alt={title} 
+               style={{ width: 24, height: 24, marginRight: 8, objectFit: 'contain' }} 
+               onError={(e) => (e.currentTarget.style.display = 'none')} // 若圖片讀取失敗則隱藏
+             />
+             {title}
+          </div>
           <div className="meal-add-btn">
             +
           </div>
@@ -2009,7 +2032,15 @@ useEffect(() => {
         </div>
         
         <section className="card">
-          <h2>今日飲水</h2>
+          <h2 style={{ display: 'flex', alignItems: 'center' }}>
+            {/* 🆕 水的 Icon */}
+            <img 
+              src={`${APP_BASE_URL}icons/water.png`} 
+              alt="water" 
+              style={{ width: 24, height: 24, marginRight: 8, objectFit: 'contain' }} 
+            />
+            今日飲水
+          </h2>
           
           {/* 1. 進度條 (藍色 #5eb6e6，代表水) */}
           <div className="section-progress-wrap">
@@ -2158,7 +2189,15 @@ useEffect(() => {
 
         <section className="card">
           <div className="card-header">
-            <h2>今日運動</h2>
+            <h2 style={{ display: 'flex', alignItems: 'center' }}>
+              {/* 🆕 運動的 Icon */}
+              <img 
+                src={`${APP_BASE_URL}icons/exercise.png`} 
+                alt="exercise" 
+                style={{ width: 24, height: 24, marginRight: 8, objectFit: 'contain' }} 
+              />
+              今日運動
+            </h2>
             <button className="secondary" onClick={onAddExercise}>
               新增運動
             </button>
@@ -2206,7 +2245,15 @@ useEffect(() => {
 
         <section className="card">
           <div className="card-header">
-            <h2>今日身體紀錄</h2>
+            <h2 style={{ display: 'flex', alignItems: 'center' }}>
+              {/* 🆕 身體紀錄 Icon */}
+              <img 
+                src={`${APP_BASE_URL}icons/body.png`} 
+                alt="body" 
+                style={{ width: 24, height: 24, marginRight: 8, objectFit: 'contain' }} 
+              />
+              今日身體紀錄
+            </h2>
             {/* 把儲存按鈕移到標題旁，省去下方空間，也更順手 */}
             <button className="secondary small" onClick={saveBody}>
               儲存
