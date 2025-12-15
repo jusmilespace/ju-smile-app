@@ -1509,21 +1509,8 @@ const [srcMet, setSrcMet] = useState<string>(
           marginBottom: 8 
         }}>
           <div className="meal-title">{title}</div>
-          <div
-            style={{
-              background: '#5c9c84',
-              color: '#fff',
-              borderRadius: '50%',
-              width: 24,
-              height: 24,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 16,
-              fontWeight: 'bold',
-              lineHeight: 1
-            }}
-          >
+          {/* 🔧 修改：移除原本長長的 style，改用 className */}
+          <div className="meal-add-btn">
             +
           </div>
         </div>

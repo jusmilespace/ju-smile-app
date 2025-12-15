@@ -267,6 +267,27 @@ button.primary {
   margin-top: 8px;
 }
 
+/* 餐點標題旁的「+」按鈕樣式 */
+.meal-add-btn {
+  width: 32px;        
+  height: 32px;       
+  font-size: 20px;    
+  border-radius: 50%;
+  background: var(--mint); /* 核心目標：改成 #97d0ba */
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;  /* 補上：原本有的粗體 */
+  line-height: 1;     /* 補上：原本有的行高 */
+  cursor: pointer;    /* 補上：讓滑鼠游標變手指 */
+  transition: opacity 0.2s; /* 保留：一點點互動效果 */
+}
+
+.meal-add-btn:active {
+  opacity: 0.8;
+}
+
 /* ---- List & hints ---- */
 
 .list-item {
