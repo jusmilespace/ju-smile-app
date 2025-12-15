@@ -1,3 +1,4 @@
+
 :root {
   --mint: #97d0ba;
   --mint-dark: #5c9c84;
@@ -7,12 +8,12 @@
   --text-main: #1f2933;
   --text-sub: #6b7785;
   --border-soft: #dde7e2;
-  /* 🆕 字級系統：給有點老花的人也能看得清楚 */
-  --font-xs: 12px;  /* 最小備註 */
-  --font-sm: 14px;  /* 次要說明、日期 */
-  --font-md: 16px;  /* 一般文字、列表、按鈕 */
-  --font-lg: 18px;  /* 卡片標題、重要數字 */
-  --font-xl: 20px;  /* 頁面主標題 */
+  /* 🆕 字級系統：給有點老花的人也能看得清楚 -> 整體加大一階 */
+  --font-xs: 13px;  /* 最小備註 (12->13) */
+  --font-sm: 15px;  /* 次要說明、日期 (14->15) */
+  --font-md: 17px;  /* 一般文字 (符合 iOS 標準)、列表、按鈕 (16->17) */
+  --font-lg: 20px;  /* 卡片標題、重要數字 (18->20) */
+  --font-xl: 24px;  /* 頁面主標題 (20->24) */
 }
 
 *,
@@ -565,6 +566,34 @@ input, select, textarea {
   box-shadow: 0 8px 16px rgba(92, 156, 132, 0.25); /* 讓綠色塊浮起來 */
   position: relative;
   overflow: hidden;
+}
+
+/* 右上角裝飾性淺色圓形 */
+.hero-gradient-block::before {
+  content: '';
+  position: absolute;
+  width: 80px;          /* 200px → 80px */
+  height: 80px;         /* 200px → 80px */
+  background: rgba(255, 255, 255, 0.1);  /* 0.15 → 0.1 */
+  border-radius: 50%;
+  top: -20px;           /* -80px → -20px */
+  right: -20px;         /* -80px → -20px */
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 左下角裝飾性淺色圓形 */
+.hero-gradient-block::after {
+  content: '';
+  position: absolute;
+  width: 60px;          /* 180px → 60px */
+  height: 60px;         /* 180px → 60px */
+  background: rgba(255, 255, 255, 0.1);  /* 0.12 → 0.1 */
+  border-radius: 50%;
+  bottom: -10px;        /* -70px → -10px */
+  left: -10px;          /* -70px → -10px */
+  pointer-events: none;
+  z-index: 0;
 }
 
 .hero-title {
