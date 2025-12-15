@@ -860,314 +860,33 @@ details.section-details[open] summary {
   border: 1px solid #f0f4f2;
 }
 
-/* ==== 老花友善字級調整（統一放大重要區塊）==== */
 
-/* 卡片標題、段落小標 */
+/* ==== 老花友善字級調整（整合版）==== */
+
+/* 1. 全域基準字級 */
+body {
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* 2. 卡片標題、段落小標 */
 .card h2,
 .list-section h3 {
   font-size: var(--font-lg);
 }
 
-/* 頂部日期區塊 */
+/* 3. 頂部日期區塊 */
 .top-bar .date-text {
   font-size: var(--font-lg);
 }
 
-/* Summary 行：左邊 label / 右邊數值 */
-.summary-row .label {
-  font-size: var(--font-sm);
-}
-.summary-row .value {
-  font-size: var(--font-lg);
-}
-
-/* 營養環文字 */
-.ring-value {
-  font-size: var(--font-md);
-}
-.ring-label,
-.ring-sub,
-.ring-target {
-  font-size: var(--font-sm);
-}
-
-/* 飲水區 / 提示文字 */
-.water-amount,
-.hint,
-.result-title {
-  font-size: var(--font-sm);
-}
-
-/* 按鈕字級統一放大 */
-button,
-.import-btn,
-.bottom-nav button {
-  font-size: var(--font-md);
-}
-
-/* 餐別卡片：早餐 / 午餐 / 晚餐 / 點心 */
-.meal-title {
-  font-size: var(--font-lg);
-}
-.meal-kcal {
-  font-size: var(--font-md);
-}
-
-/* 列表：飲食明細、搜尋結果 */
-.list-item {
-  font-size: var(--font-md);
-}
-.list-item .sub,
-.quick-row-meta {
-  font-size: var(--font-sm);
-}
-.quick-row-name {
-  font-size: var(--font-md);
-}
-
-/* 搜尋結果區塊中的標題文字 */
-.result-title {
-  font-size: var(--font-sm);
-}
-
-/* 表單 label 與輸入框字級 */
-.form-section label {
-  font-size: var(--font-md);
-}
-.form-section input,
-.form-section select {
-  font-size: var(--font-md);
-}
-
-/* bottom nav 文字稍微放大一點 */
-.nav-label {
-  font-size: var(--font-sm);
-}
-
-/* ==== 老花友善字級調整 Override ==== */
-
-/* 1. 全域基準字級：整體放大一級 */
-body {
-  font-size: 16px;
-  line-height: 1.6;
-}
-
-/* 2. 首頁 Hero 區：今天淨熱量最重要，要看得清楚 */
-.hero-title {
-  font-size: 15px;
-}
-
-.hero-number {
-  font-size: 48px; /* 保持大數字，易讀 */
-}
-
-.hero-unit {
-  font-size: 16px;
-}
-
-.hero-subtitle {
-  font-size: 13px;
-}
-
-/* 3. 營養環 & 身體組成環：% 與數字放大 */
-.ring-value {
-  font-size: 16px;
-}
-
-.ring-label,
-.ring-sub,
-.ring-target {
-  font-size: 13px;
-}
-
-/* 4. 上方 Summary 列（今日總攝取 / 剩餘熱量） */
-.summary-row .label {
-  font-size: 13px;
-}
-
-.summary-row .value {
-  font-size: 18px;
-  font-weight: 700;
-}
-
-/* 5. 飲水與提示文字 */
-.water-amount {
-  font-size: 15px;
-}
-
-.hint {
-  font-size: 13px;
-}
-
-/* 6. 每餐卡片：早餐 / 午餐 / 晚餐 / 點心 */
-.meal-title {
-  font-size: 17px;
-  font-weight: 700;
-}
-
-.meal-kcal {
-  font-size: 15px;
-}
-
-/* 7. 列表：飲食明細 & 搜尋結果 */
-.list-item {
-  font-size: 15px;
-}
-
-.list-item .sub {
-  font-size: 13px;
-}
-
-/* 最近紀錄 / 常用組合列表 */
-.quick-row-name {
-  font-size: 15px;
-}
-
-.quick-row-meta {
-  font-size: 13px;
-}
-/* ==== Records Page：搜尋 / 明細 / 最近紀錄 / 常用組合 放大字級 ==== */
-
-/* 1. 食物搜尋結果區塊 */
-
-/* 「我的歷史紀錄 / Unit Map / FoodDB」小標題 */
-.search-results .result-title {
-  font-size: 14px;
-}
-
-/* 每筆搜尋結果裡的副資訊（份量、kcal、P/C/F 等） */
-/* 有 inline fontSize: 12px，所以這裡用 !important 壓過去 */
-.search-results .sub {
-  font-size: 14px !important;
-}
-
-/* 每筆搜尋結果主行文字 */
-.search-results .list-item {
-  font-size: 15px;
-}
-
-
-/* 2. 記錄頁下方的明細列表（一般 list-item） */
-
-/* 主行維持 15px（你原本是 14px） */
-.list-item {
-  font-size: 15px;
-}
-
-/* 副資訊從 12px → 13px，避免太小 */
-.list-item .sub {
-  font-size: 13px;
-}
-
-
-/* 3. 「最近紀錄 / 常用組合」列表 */
-
-/* 最近紀錄 & 常用組合列表裡主文字（品名） */
-.quick-row-name {
-  font-size: 15px;
-}
-
-/* 副資訊（kcal、P/C/F 等）從 12px → 14px */
-.quick-row-meta {
-  font-size: 14px;
-}
-
-/* 歷史紀錄快速加入區塊底下的小字（目前也是 12px inline） */
-.quick-item-compact .sub {
-  font-size: 14px !important;
-}
-
-
-/* 4. 常用組合：展開內容的 summary & 小 tag */
-
-/* 「查看內容 (x 品項) ▾」這一行：11px → 13px */
-details summary {
-  font-size: 15px !important;
-}
-
-/* 展開後每個品項的小 pill：11px → 13px */
-details summary + div span {
-  font-size: 13px !important;
-}
-/* ==========================================================
-   通用份量代換、食物搜尋細節、明細區的小字放大統一修正
-   ========================================================== */
-
-/* 1. 搜尋結果卡片中的小字（份量、單位、類別、g/份 等） */
-.search-results .sub,
-.search-results .meta,
-.search-results .unit,
-.search-results .note,
-.unit-map-row .sub,
-.unit-map-row .meta {
-  font-size: 14px !important;
-  line-height: 1.5 !important;
-}
-
-/* 橘色小字（≈40g、1/4 碗=1份 等） */
-.search-results .sub span,
-.search-results .note span,
-.unit-map-row span {
-  font-size: 14px !important;
-}
-
-/* 2. 自訂份量區塊的所有小字 */
-.portion-editor small,
-.portion-editor .unit,
-.portion-editor .label,
-.portion-editor .desc,
-.portion-editor .note {
-  font-size: 14px !important;
-}
-
-/* 自訂份量區塊下方的 "Px4 + Cx4 + Fx9" 說明 */
-.portion-editor .formula {
-  font-size: 14px !important;
-}
-
-/* 營養素小卡 P / C / F 底下的 g/份 */
-.nutrition-card small,
-.nutrition-card .unit,
-.nutrition-card .sub {
-  font-size: 14px !important;
-}
-
-/* 3. 今日總覽的餐卡（早餐 / 午餐 / 晚餐 / 點心）裡的 P C F 小字 */
-.meal-card .macros,
-.meal-card .sub,
-.meal-card .detail,
-.meal-card .meta {
-  font-size: 14px !important;
-  line-height: 1.5 !important;
-}
-
-/* 餐卡裡 kcal 旁邊的 “kcal” 調大一點 */
-.meal-card .meal-kcal-unit {
-  font-size: 14px !important;
-}
-
-/* 4. 其他所有被你用 inline style 壓成 11px/12px 的地方全部保護起來 */
-.sub,
-.meta,
-.note,
-.small-text {
-  font-size: 14px !important;
-  line-height: 1.5 !important;
-}
-/* ==== Ju Smile 老花友善字級調整 ==== */
-
-/* 全域基準字級稍微拉高 */
-body {
-  font-size: 15px;
-}
-
-/* 列表主文字：食物明細、最近紀錄、常用組合等 */
+/* 4. 列表主文字：食物明細、最近紀錄、常用組合等 */
 .list-item,
 .quick-row-item {
   font-size: 15px;
 }
 
-/* 列表內的小字：份量、P/C/F、備註等 */
+/* 5. 列表內的小字：份量、P/C/F、備註等 */
 .list-item .sub,
 .quick-row-meta,
 .summary-row .label,
@@ -1180,18 +899,29 @@ body {
   font-size: 14px !important;
 }
 
-/* 卡片裡比較重要的數字（例如每餐 kcal、營養素數字） */
+/* 6. 卡片裡比較重要的數字（例如每餐 kcal、營養素數字） */
 .meal-kcal,
 .macro-val {
   font-size: 16px;
 }
 
-/* 搜尋結果區塊內的小標題（例如「通用份量代換」那種） */
+/* 7. 搜尋結果區塊內的小標題 */
 .search-results,
 .search-results .result-title {
   font-size: 14px;
 }
-/* 手掌法：下面「參考：…」的小字放大 */
+
+/* 8. 表單 label 與輸入框字級 */
+.form-section label {
+  font-size: var(--font-md);
+}
+
+.form-section input,
+.form-section select {
+  font-size: var(--font-md);
+}
+
+/* 9. 手掌法：下面「參考：…」的小字放大 */
 .portion-desc {
   font-size: 14px;
   color: #6b7280;
@@ -1249,6 +979,7 @@ body {
   color: #6b7280;
   line-height: 1.4;
 }
+
 /* P / C / F 區塊下方的說明文字 */
 .macro-legend {
   margin-top: 16px;        /* 跟進度條拉開距離 */
