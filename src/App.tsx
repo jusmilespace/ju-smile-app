@@ -2569,7 +2569,7 @@ useEffect(() => {
   const map = new Map<string, MealEntry>();
 
   for (const m of meals) {
-    if (m.date === selectedDate) continue;
+   
     const d = dayjs(m.date);
     if (d.isBefore(cutoff)) continue;
 
@@ -3829,119 +3829,132 @@ useEffect(() => {
                 {/* 2. 內容顯示區 */}
                 <div style={{ minHeight: 100 }}>
                   
-                  {/* --- A. 歷史紀錄列表 (優化：捲動 + 圓形按鈕 + 保留資訊) --- */}
-                  {quickAddTab === 'history' && (
-                    <div>
-                      {recentMealsForQuickAdd.length === 0 ? (
-                        <div className="hint" style={{ textAlign: 'center', padding: 20 }}>
-                          尚無最近紀錄，快去新增第一筆飲食吧！
-                        </div>
-                      ) : (
-                        // ✨ 加入捲動容器
-                        <div className="quick-list-scroll">
-                          {recentMealsForQuickAdd.map((m, i) => (
-                            <div
-                              key={i}
-                              className="quick-item-compact" // ✨ 使用緊湊樣式
-                            >
-                              <div style={{ flex: 1, paddingRight: 8 }}>
-                                <div style={{ fontWeight: 600, color: '#333', fontSize: 15 }}>{m.label}</div>
-                                
-                                {/* 營養素資訊 */}
-                                <div className="sub" style={{ fontSize: 15, color: '#666', marginTop: 2 }}>
-                                  {m.amountText ? `${m.amountText} · ` : ''}{m.kcal} kcal
-                                  {m.protein ? ` · P: ${round1(m.protein)}g` : ''}
-                                </div>
-                                
-                                {/* 📅 保留：日期與餐別資訊 */}
-                                <div className="sub" style={{ fontSize: 11, color: '#999', marginTop: 2 }}>
-                                  {m.date} · {m.mealType}
-                                </div>
-                              </div>
+                  {/* --- A. 歷史紀錄列表 (橫向滑動) --- */}
+{quickAddTab === 'history' && (
+  <div>
+    {recentMealsForQuickAdd.length === 0 ? (
+      <div className="hint" style={{ textAlign: 'center', padding: 20 }}>
+        尚無最近紀錄，快去新增第一筆飲食吧！
+      </div>
+    ) : (
+      <div className="quick-list-scroll-horizontal">
+        {recentMealsForQuickAdd.map((m, i) => (
+          <div
+            key={i}
+            className="quick-item-card"
+          >
+            <div style={{ marginBottom: 8 }}>
+              <div style={{ fontWeight: 600, color: '#333', fontSize: 14 }}>{m.label}</div>
+              <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>
+                {m.date} · {m.mealType}
+              </div>
+            </div>
+            
+            {/* 完整營養素資訊 */}
+            <div style={{ fontSize: 13, color: '#666', marginBottom: 4 }}>
+              {m.amountText || ''}
+            </div>
+            <div style={{ fontSize: 13, color: '#333', fontWeight: 500 }}>
+              {m.kcal} kcal
+            </div>
+            <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+              P: {round1(m.protein || 0)}g · C: {round1(m.carbs || 0)}g · F: {round1(m.fats || 0)}g
+            </div>
 
-                              {/* ✨ 優化：圓形加入按鈕 */}
-                              <button
-                                type="button"
-                                className="btn-circle-add"
-                                onClick={() => {
-                                  const copied: MealEntry = {
-                                    ...m,
-                                    id: uuid(),
-                                    date: selectedDate,
-                                    mealType: formMealType,
-                                  };
-                                  setMeals((prev) => [...prev, copied]);
-                                  showToast('success', `已加入 ${m.label}`);
-                                }}
-                              >
-                                +
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
+            <button
+              type="button"
+              className="btn-circle-add"
+              style={{ position: 'absolute', top: 8, right: 8 }}
+              onClick={() => {
+                const copied: MealEntry = {
+                  ...m,
+                  id: uuid(),
+                  date: selectedDate,
+                  mealType: formMealType,
+                };
+                setMeals((prev) => [...prev, copied]);
+                showToast('success', `已加入 ${m.label}`);
+              }}
+            >
+              +
+            </button>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+)}
 
-                  {/* --- B. 常用組合列表 (優化：捲動 + 圓形按鈕) --- */}
-                  {quickAddTab === 'combo' && (
-                    <div>
-                      {combos.length === 0 ? (
-                        <div className="hint" style={{ textAlign: 'center', padding: 20 }}>
-                          尚未建立常用組合。<br/>
-                          試著在下方選取多個食物後點擊「儲存組合」！
-                        </div>
-                      ) : (
-                        // ✨ 加入捲動容器
-                        <div className="quick-list-scroll">
-                          {combos.map((combo) => (
-                            <div 
-                              key={combo.id} 
-                              className="quick-item-compact" // ✨ 使用緊湊樣式
-                              style={{ flexDirection: 'column', alignItems: 'flex-start' }}
-                            >
-                              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', marginBottom: 6 }}>
-                                <div>
-                                  <div style={{ fontWeight: 600, color: '#333' }}>{combo.name}</div>
-                                  <div style={{ fontSize: 15, color: '#666' }}>
-                                    約 {combo.items.reduce((sum, item) => sum + item.kcal, 0)} kcal
-                                  </div>
-                                </div>
-                                
-                                {/* ✨ 優化：圓形加入按鈕 */}
-                                <button 
-                                  className="btn-circle-add"
-                                  onClick={() => addComboToMeals(combo)}
-                                >
-                                  +
-                                </button>
-                              </div>
-                              
-                              {/* 組合內容預覽 (折疊式，保持原樣) */}
-                              <details style={{ width: '100%' }}>
-                                <summary style={{ fontSize: '11px', color: '#999', cursor: 'pointer', listStyle: 'none' }}>
-                                  查看內容 ({combo.items.length} 品項) ▾
-                                </summary>
-                                <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                                  {combo.items.map((item, idx) => (
-                                    <span key={idx} style={{ 
-                                      fontSize: 11, 
-                                      background: '#f3f4f6', 
-                                      padding: '2px 6px', 
-                                      borderRadius: 4,
-                                      color: '#4b5563'
-                                    }}>
-                                      {item.label}
-                                    </span>
-                                  ))}
-                                </div>
-                              </details>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                  {/* --- B. 常用組合列表 (橫向滑動) --- */}
+{quickAddTab === 'combo' && (
+  <div>
+    {combos.length === 0 ? (
+      <div className="hint" style={{ textAlign: 'center', padding: 20 }}>
+        尚未建立常用組合。<br/>
+        試著在下方選取多個食物後點擊「儲存組合」！
+      </div>
+    ) : (
+      <div className="quick-list-scroll-horizontal">
+        {combos.map((combo) => {
+          const totalKcal = combo.items.reduce((sum, item) => sum + item.kcal, 0);
+          const totalProtein = combo.items.reduce((sum, item) => sum + (item.protein || 0), 0);
+          const totalCarbs = combo.items.reduce((sum, item) => sum + (item.carbs || 0), 0);
+          const totalFats = combo.items.reduce((sum, item) => sum + (item.fats || 0), 0);
+          
+          return (
+            <div 
+              key={combo.id} 
+              className="quick-item-card"
+            >
+              <div style={{ marginBottom: 8 }}>
+                <div style={{ fontWeight: 600, color: '#333', fontSize: 14 }}>{combo.name}</div>
+                
+              </div>
+              
+              <div style={{ fontSize: 13, color: '#333', fontWeight: 500, marginBottom: 4 }}>
+                約 {totalKcal} kcal
+              </div>
+              <div style={{ fontSize: 12, color: '#666', marginBottom: 8 }}>
+                P: {round1(totalProtein)}g · C: {round1(totalCarbs)}g · F: {round1(totalFats)}g
+              </div>
+              
+              {/* 組合內容預覽 (折疊式) */}
+              <details style={{ width: '100%' }}>
+                <summary style={{ fontSize: '11px', color: '#999', cursor: 'pointer', listStyle: 'none' }}>
+                  查看內容 ▾
+                </summary>
+                <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {combo.items.map((item, idx) => (
+                    <div key={idx} style={{ 
+                      fontSize: 11, 
+                      background: '#f3f4f6', 
+                      padding: '4px 6px', 
+                      borderRadius: 4,
+                      color: '#4b5563'
+                    }}>
+                      <div style={{ fontWeight: 600 }}>{item.label}</div>
+                      <div style={{ color: '#6b7280', marginTop: 2 }}>
+                        {item.kcal} kcal · P: {round1(item.protein || 0)}g · C: {round1(item.carbs || 0)}g · F: {round1(item.fats || 0)}g
+                      </div>
                     </div>
-                  )}
+                  ))}
+                </div>
+              </details>
+
+              <button 
+                className="btn-circle-add"
+                style={{ position: 'absolute', top: 8, right: 8 }}
+                onClick={() => addComboToMeals(combo)}
+              >
+                +
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    )}
+  </div>
+)}
 
                 </div>
               </div> 

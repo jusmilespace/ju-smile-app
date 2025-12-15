@@ -771,6 +771,59 @@ details.section-details[open] summary {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch; /* iOS 捲動優化 */
 }
+/* 橫向滑動容器 */
+.quick-list-scroll-horizontal {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 12px;
+  padding-right: 4px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #ccc transparent;
+}
+
+.quick-list-scroll-horizontal::-webkit-scrollbar {
+  height: 6px;
+}
+
+.quick-list-scroll-horizontal::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.quick-list-scroll-horizontal::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.quick-list-scroll-horizontal::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* 橫向卡片樣式 */
+.quick-item-card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #f0f4f2;
+  padding: 12px;
+  min-width: 220px;
+  max-width: 220px;
+  flex-shrink: 0;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.quick-item-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+}
+
+.quick-item-card:active {
+  transform: translateY(0);
+}
 
 /* 條列式項目 */
 .quick-row-item {
