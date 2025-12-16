@@ -3389,27 +3389,63 @@ useEffect(() => {
         {/* 飲食 */}
         {recordTab === 'food' && (
           <div className="card">
-    
-            <div className="form-section" style={{ marginBottom: 16 }}>
-              {/* 1. 把「餐別」文字獨立出來，套用置中大樣式 */}
-              <div className="form-section-title">
-                餐別
-              </div>
+    <div className="form-section" style={{ marginBottom: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+                {(['早餐', '午餐', '晚餐', '點心'] as const).map((t) => {
+                  const isSelected = formMealType === t;
+                  
+                  // 使用跟你首頁一樣的圖片路徑邏輯
+                  const iconMap: Record<string, string> = {
+                    '早餐': 'breakfast.png',
+                    '午餐': 'lunch.png',
+                    '晚餐': 'dinner.png',
+                    '點心': 'snack.png',
+                  };
+                  const iconSrc = `${APP_BASE_URL}icons/${iconMap[t]}`;
 
-              {/* 2. BigSelect 獨立放在下面 (拿掉原本包住它的 label) */}
-              <BigSelect
-                options={[
-                  { value: '早餐', label: '早餐' },
-                  { value: '午餐', label: '午餐' },
-                  { value: '晚餐', label: '晚餐' },
-                  { value: '點心', label: '點心' },
-                ]}
-                value={formMealType}
-                onChange={(v) => {
-                  setFormMealType(v as any);
-                }}
-              />
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setFormMealType(t)}
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '10px 4px',
+                        borderRadius: 12,
+                        // 選中時顯示品牌綠框與淺綠底，沒選中顯示灰框白底
+                        border: isSelected ? '2px solid #97d0ba' : '1px solid #e9ecef',
+                        background: isSelected ? '#f0fdf9' : '#fff',
+                        color: isSelected ? '#1f2937' : '#6b7280',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        minWidth: 0,
+                      }}
+                    >
+                      <img 
+                        src={iconSrc} 
+                        alt={t}
+                        style={{ 
+                          width: 32, 
+                          height: 32, 
+                          marginBottom: 4, 
+                          objectFit: 'contain',
+                          // 沒選中時稍微讓圖片淡一點，凸顯選中項
+                          opacity: isSelected ? 1 : 0.6 
+                        }}
+                        onError={(e) => (e.currentTarget.style.display = 'none')}
+                      />
+                      <span style={{ fontSize: 13, fontWeight: isSelected ? 700 : 500 }}>
+                        {t}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
+            
 
             {/* 🆕 輸入模式切換 */}
             <div
