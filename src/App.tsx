@@ -365,6 +365,7 @@ const BigSelect: React.FC<{
     <div ref={rootRef} style={{ position: 'relative', width: width ?? '100%' }}>
       <button
         type="button"
+        className="big-select-btn"
         onClick={() => {
           // 在打開前，先廣播自己的 ID，讓其他元件關閉
           if (!open) {
@@ -3371,41 +3372,43 @@ useEffect(() => {
 
 
         <div className="subtabs">
-          <button
-            className={recordTab === 'food' ? 'active' : ''}
-            onClick={() => setRecordTab('food')}
-          >
-            飲食
-          </button>
-          <button
-            className={recordTab === 'exercise' ? 'active' : ''}
-            onClick={() => setRecordTab('exercise')}
-          >
-            運動
-          </button>
-        </div>
+  <button
+    className={`tab-btn-large ${recordTab === 'food' ? 'active' : ''}`} // 👈 套用
+    onClick={() => setRecordTab('food')}
+  >
+    飲食
+  </button>
+  <button
+    className={`tab-btn-large ${recordTab === 'exercise' ? 'active' : ''}`} // 👈 套用
+    onClick={() => setRecordTab('exercise')}
+  >
+    運動
+  </button>
+</div>
 
         {/* 飲食 */}
         {recordTab === 'food' && (
           <div className="card">
-            {/* 🆕 餐別選項（移到最上面） */}
+    
             <div className="form-section" style={{ marginBottom: 16 }}>
-              <label>
+              {/* 1. 把「餐別」文字獨立出來，套用置中大樣式 */}
+              <div className="form-section-title">
                 餐別
-                {/* 👇 [修改] 6. BigSelect 改為綁定 formMealType */}
-                <BigSelect
-                  options={[
-                    { value: '早餐', label: '早餐' },
-                    { value: '午餐', label: '午餐' },
-                    { value: '晚餐', label: '晚餐' },
-                    { value: '點心', label: '點心' },
-                  ]}
-                  value={formMealType} // 🟢 值改為 formMealType
-                  onChange={(v) => {
-                    setFormMealType(v as any); // 🟢 Setter 改為 setFormMealType
-                  }}
-                />
-              </label>
+              </div>
+
+              {/* 2. BigSelect 獨立放在下面 (拿掉原本包住它的 label) */}
+              <BigSelect
+                options={[
+                  { value: '早餐', label: '早餐' },
+                  { value: '午餐', label: '午餐' },
+                  { value: '晚餐', label: '晚餐' },
+                  { value: '點心', label: '點心' },
+                ]}
+                value={formMealType}
+                onChange={(v) => {
+                  setFormMealType(v as any);
+                }}
+              />
             </div>
 
             {/* 🆕 輸入模式切換 */}
@@ -3485,9 +3488,6 @@ useEffect(() => {
               {/* 貼上這一段新的搜尋框程式碼 */}
 
   <div ref={searchTopRef} style={{ marginBottom: 0 }}>
-  <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-    搜尋食物
-  </label>
   <div style={{ position: 'relative' }}>
     {/* 左側搜尋 Icon */}
     <div style={{ 

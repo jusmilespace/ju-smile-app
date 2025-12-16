@@ -3,228 +3,184 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ju Smile App - UI Preview</title>
+    <title>Ju Smile App - Style Preview</title>
     <style>
-        /* 基礎設定 (模擬 App 全域樣式) */
+        /* =========================================
+           1. 這是您原本 styles.css 的內容 (模擬)
+           (原本設定按鈕是黑底白字)
+           ========================================= */
+        :root {
+            font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            font-weight: 400;
+            color-scheme: light dark;
+            color: rgba(255, 255, 255, 0.87);
+            background-color: #242424;
+            font-synthesis: none;
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f7faf9; /* App 背景色 */
-            color: #1f2937; /* Charcoal */
             margin: 0;
-            padding: 20px;
             display: flex;
-            flex-direction: column;
-            align-items: center;
+            place-items: center;
+            min-width: 320px;
+            min-height: 100vh;
+            background-color: #f7faf9; /* 模擬 App 背景色 */
+            color: #333; /* 模擬 App 文字色 */
         }
 
-        .container {
+        /* 原本的 button 設定 (黑底) */
+        button {
+            border-radius: 8px;
+            border: 1px solid transparent;
+            padding: 0.6em 1.2em;
+            font-size: 1em;
+            font-weight: 500;
+            font-family: inherit;
+            background-color: #1a1a1a; /* <--- 注意這裡：原本是深色 */
+            color: white;              /* <--- 原本是白字 */
+            cursor: pointer;
+            transition: border-color 0.25s;
+        }
+        button:hover {
+            border-color: #646cff;
+        }
+
+        /* =========================================
+           2. 這是我們新加入的內容
+           (加在下方，用來覆蓋上面的設定)
+           ========================================= */
+
+        /* --- 下拉選單按鈕 (BigSelect) --- */
+        /* 透過 class 覆蓋原本 button 的黑底樣式，改為白底黑字 */
+        button.big-select-btn {
             width: 100%;
-            max-width: 390px; /* 模擬手機寬度 */
+            padding: 12px 16px;
+            font-size: 18px;       /* 加大字體 */
+            text-align: left;
+            background-color: #fff; /* 覆蓋為白色 */
+            color: #333;            /* 覆蓋為深色字 */
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
         }
 
-        /* 卡片通用樣式 */
-        .card {
-            background: #fff;
-            border-radius: 20px;
-            padding: 16px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-            border: 1px solid #f0f0f0;
-            margin-bottom: 24px;
+        button.big-select-btn:hover {
+            border-color: #97d0ba; /* Mint color */
         }
 
-        /* 標題樣式 */
-        h2 {
+        /* --- 頁籤按鈕 (飲食/運動) --- */
+        button.tab-btn-large {
+            flex: 1;
+            font-size: 18px;       /* 加大字體 */
+            padding: 12px 0;
+            background-color: transparent; /* 覆蓋為透明 */
+            color: #888;
+            border: none;
+            border-bottom: 3px solid transparent;
+            border-radius: 0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button.tab-btn-large:hover {
+            background-color: transparent; /* 避免變黑 */
+            color: #666;
+            border-color: transparent;
+        }
+
+        /* 選中狀態 */
+        button.tab-btn-large.active {
+            color: #5c9c84;
+            border-bottom: 3px solid #5c9c84;
+            font-weight: 700;
+        }
+
+        /* --- 區塊標題 (Icon Header) --- */
+        .icon-header {
+            display: flex;
+            align-items: center;
             margin: 0 0 16px 0;
             font-size: 1.25rem;
             color: #333;
-            display: flex;
-            align-items: center;
-            gap: 8px; /* Icon 與文字的間距 */
+            font-weight: bold;
         }
 
-        /* 餐點卡片網格 */
-        .meal-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-
-        /* 餐點卡片內部樣式 */
-        .meal-card {
-            background: #fff;
-            border-radius: 20px;
-            padding: 16px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-            border: 1px solid #f0f0f0;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            height: 100px;
-            position: relative;
+        .icon-header img {
+            width: 32px;
+            height: 32px;
+            margin-right: 10px;
+            object-fit: contain;
+            background: #eee; /* 預覽用：因為讀不到本地圖檔，加個灰底示意 */
+            border-radius: 50%; /* 預覽用：示意圖示位置 */
         }
         
-        .meal-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
+        /* 預覽容器佈局 */
+        .preview-container {
+            width: 100%;
+            max-width: 390px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f7faf9;
         }
-
-        .meal-title {
-            font-weight: 600;
-            font-size: 1rem;
-            display: flex;
-            align-items: center;
-            color: #1f2937;
-        }
-
-        .meal-add-btn {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: #f0fdf9;
-            color: #5c9c84;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            font-weight: bold;
-            line-height: 1;
-        }
-
-        .meal-info {
-            font-size: 0.85rem;
-            color: #666;
-        }
-        .kcal-num {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: #1f2937;
-        }
-
-        /* 模擬按鈕 */
-        .btn-secondary {
-            margin-left: auto;
-            background: #fff;
-            border: 1px solid #ddd;
-            border-radius: 99px;
-            padding: 4px 12px;
-            font-size: 0.85rem;
-            color: #666;
-            cursor: pointer;
+        .card {
+            background: white;
+            padding: 16px;
+            border-radius: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <p style="text-align: center; color: #888; margin-bottom: 20px;">UI 預覽：首頁 Icon 修改後</p>
+<div class="preview-container">
+    <p style="text-align: center; color: #888; font-size: 14px;">模擬：App.tsx 套用 styles.css 後的樣子</p>
 
-    <section class="card">
-        <h2>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5eb6e6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 22a7 7 0 0 0 7-7c0-2-2-3-4-3-3 0-3-8-3-8s0 8-3 8c-2 0-4 1-4 3a7 7 0 0 0 7 7z" />
-            </svg>
+    <div style="display: flex; border-bottom: 1px solid #eee; background: #fff; margin-bottom: 20px;">
+        <button class="tab-btn-large active">飲食</button>
+        <button class="tab-btn-large">運動</button>
+    </div>
+
+    <div class="card">
+        <div style="position: relative;">
+            <div style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); opacity: 0.5;">🔍</div>
+            <input type="text" placeholder="輸入關鍵字 (例: 拿鐵, 雞胸肉)..." 
+                   style="width: 100%; padding: 12px 12px 12px 40px; border-radius: 99px; border: 1px solid #dde7e2; font-size: 16px; box-sizing: border-box;">
+        </div>
+    </div>
+
+    <div class="card">
+        <div style="margin-bottom: 8px; font-weight: 600; color: #374151;">餐別</div>
+        <button class="big-select-btn">
+            <span>早餐</span>
+            <span>▾</span>
+        </button>
+    </div>
+    
+    <div class="card">
+        <div style="margin-bottom: 8px; font-weight: 600; color: #374151;">食物類別</div>
+        <button class="big-select-btn">
+            <span>請選擇食物類型或估算模式</span>
+            <span>▾</span>
+        </button>
+    </div>
+
+    <div class="card">
+        <div class="icon-header">
+            <img src="" alt="Icon" /> 
             今日飲水
-        </h2>
-        <div style="background: #f0f9fc; height: 10px; border-radius: 5px; width: 100%; position: relative;">
-            <div style="background: #5eb6e6; width: 40%; height: 100%; border-radius: 5px;"></div>
         </div>
-        <div style="margin-top: 10px; font-size: 14px; color: #666;">800 / 2000 ml</div>
-    </section>
+        <div style="font-size: 14px; color: #666;">進度條區域...</div>
+    </div>
 
-    <section style="margin-bottom: 24px;">
-        <div class="meal-grid">
-            <div class="meal-card">
-                <div class="meal-top">
-                    <div class="meal-title">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="#e68a3a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px; margin-right: 6px;">
-                            <path d="M17 8h1a4 4 0 1 1 0 8h-1" />
-                            <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" />
-                            <line x1="6" y1="2" x2="6" y2="4" />
-                            <line x1="10" y1="2" x2="10" y2="4" />
-                            <line x1="14" y1="2" x2="14" y2="4" />
-                        </svg>
-                        早餐
-                    </div>
-                    <div class="meal-add-btn">+</div>
-                </div>
-                <div class="meal-info">
-                    <span class="kcal-num">420</span> kcal
-                </div>
-            </div>
-
-            <div class="meal-card">
-                <div class="meal-top">
-                    <div class="meal-title">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px; margin-right: 6px;">
-                            <circle cx="12" cy="12" r="4" />
-                            <path d="M12 2v2" /><path d="M12 20v2" />
-                            <path d="M4.93 4.93l1.41 1.41" /><path d="M17.66 17.66l1.41 1.41" />
-                            <path d="M2 12h2" /><path d="M20 12h2" />
-                            <path d="M6.34 17.66l-1.41 1.41" /><path d="M19.07 4.93l-1.41 1.41" />
-                        </svg>
-                        午餐
-                    </div>
-                    <div class="meal-add-btn">+</div>
-                </div>
-                <div class="meal-info">
-                    <span class="kcal-num">650</span> kcal
-                </div>
-            </div>
-
-            <div class="meal-card">
-                <div class="meal-top">
-                    <div class="meal-title">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="#1f2937" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px; margin-right: 6px;">
-                            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-                        </svg>
-                        晚餐
-                    </div>
-                    <div class="meal-add-btn">+</div>
-                </div>
-                <div class="meal-info">
-                    <span class="kcal-num">0</span> kcal
-                </div>
-            </div>
-
-            <div class="meal-card">
-                <div class="meal-top">
-                    <div class="meal-title">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px; margin-right: 6px;">
-                            <circle cx="12" cy="12" r="10" />
-                            <path d="M8.5 8.5h.01" /><path d="M16 9h.01" /><path d="M12 14h.01" /><path d="M9 16h.01" /><path d="M15 13h.01" />
-                        </svg>
-                        點心
-                    </div>
-                    <div class="meal-add-btn">+</div>
-                </div>
-                <div class="meal-info">
-                    <span class="kcal-num">0</span> kcal
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-            <h2 style="margin: 0;">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M6.5 6.5h11" />
-                    <path d="M6.5 17.5h11" />
-                    <path d="M6 20v-5" />
-                    <path d="M18 20v-5" />
-                    <path d="M6 9V4" />
-                    <path d="M18 9V4" />
-                </svg>
-                今日運動
-            </h2>
-            <button class="btn-secondary">新增運動</button>
-        </div>
-        <div style="background: #fff8e1; height: 10px; border-radius: 5px; width: 100%;">
-            <div style="background: #f59e0b; width: 20%; height: 100%; border-radius: 5px;"></div>
-        </div>
-        <div style="margin-top: 10px; font-size: 14px; color: #666;">30 / 60 min</div>
-    </section>
 </div>
 
 </body>

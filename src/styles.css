@@ -1063,3 +1063,72 @@ body {
   text-align: center;
   font-weight: 400;
 }
+
+/* =========================================
+   Ju Smile App - 尺寸與排版優化 (保留原樣式)
+   ========================================= */
+
+/* 1. 下拉選單按鈕 (只加大，不改色) */
+.big-select-btn {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  
+  /* 關鍵修改：加大字體與觸控範圍 */
+  font-size: 18px;  
+  padding: 12px 16px; 
+}
+
+/* 2. 頁籤按鈕 (只加大，不改色) */
+.tab-btn-large {
+  flex: 1;
+  /* 關鍵修改：加大字體 */
+  font-size: 18px;
+  padding: 10px 0;
+}
+
+/* 3. 區塊標題 (Icon 排版輔助) */
+.icon-header {
+  display: flex;
+  align-items: center;
+  margin: 0; 
+}
+
+.icon-header img {
+  width: 32px;
+  height: 32px;
+  margin-right: 10px;
+  object-fit: contain;
+}
+
+/* =========================================
+   紀錄頁面 (RecordsPage) 專用樣式
+   ========================================= */
+
+/* 1. 表單區塊標題 (如：餐別) - 置中且加大 */
+.form-section-title {
+  font-size: 22px;        /* 加大，與首頁標題一致 */
+  font-weight: 700;       /* 加粗 */
+  text-align: center;     /* 🟢 關鍵：置中對齊 */
+  color: #333;
+  margin-bottom: 12px;    /* 與下方選單保持距離 */
+}
+
+/* 2. 頁籤按鈕 (飲食/運動) - 確保夠大 */
+.tab-btn-large {
+  flex: 1;
+  font-size: 22px;        /* 加大字體 */
+  padding: 12px 0;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: #999;
+  cursor: pointer;
+}
+
+.tab-btn-large.active {
+  color: #5c9c84;
+  border-bottom-color: #5c9c84;
+  font-weight: 700;
+}
