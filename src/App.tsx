@@ -2604,15 +2604,15 @@ useEffect(() => {
   const map = new Map<string, MealEntry>();
 
   for (const m of meals) {
-   
-    const d = dayjs(m.date);
-    if (d.isBefore(cutoff)) continue;
+      const d = dayjs(m.date);
+      if (d.isBefore(cutoff)) continue;
 
-    const key = `${m.label}|${m.amountText || ''}|${m.kcal}`;
-    if (!map.has(key)) {
-      map.set(key, m);
+      const key = `${m.label}|${m.amountText || ''}|${m.kcal}`;
+      
+      // ✅ 修正：直接 set，不要檢查 has。
+      // 這樣當迴圈跑到最後（最新的紀錄）時，會把 Map 裡的資料更新為今天的日期。
+      map.set(key, m); 
     }
-  }
 
   // 按日期排序,最新的在前面
   return Array.from(map.values())
@@ -3510,7 +3510,7 @@ useEffect(() => {
         setSelectedFoodDbRow(null);
         setEditingMealId(null);
       }}
-      placeholder="輸入關鍵字 (例: 拿鐵, 雞胸肉)..."
+      placeholder="輸入關鍵字 (例: 雞蛋, 雞胸肉)..."
       name="foodSearchQuery"
       autoComplete="off"
       autoCorrect="off"
@@ -3998,22 +3998,93 @@ useEffect(() => {
               {/* 修正：修正條件，確保在沒有選取 Unit/FoodDB 時才顯示搜尋結果列表 */}
               {/* 搜尋結果：只顯示 Unit Map 或 Food DB 的匹配清單 */}
               {foodName.trim() &&
-  !selectedUnitFood &&
-  !selectedFoodDbRow && 
-  (foodSearchResults.historyMatches.length > 0 ||
-   foodSearchResults.unitMatches.length > 0 || 
-   foodSearchResults.foodMatches.length > 0) && (
-    <div
-      className="search-results"
-      style={{
-        marginTop: 8,
-        marginBottom: '12px',
-        padding: '8px 8px',
-        borderRadius: 12,
-        background: '#f9fafb',
-        border: '1px solid #e5e7eb',
-      }}
-    >
+    !selectedUnitFood &&
+    !selectedFoodDbRow && 
+    (foodSearchResults.comboMatches.length > 0 ||  // ✅ 新增：檢查是否有搜到組合
+     foodSearchResults.historyMatches.length > 0 ||
+     foodSearchResults.unitMatches.length > 0 || 
+     foodSearchResults.foodMatches.length > 0) && (
+      <div
+        className="search-results"
+        style={{
+          marginTop: 8,
+          marginBottom: '12px',
+          padding: '8px 8px',
+          borderRadius: 12,
+          background: '#f9fafb',
+          border: '1px solid #e5e7eb',
+        }}
+      >
+        {/* === 🆕 新增區塊：常用組合搜尋結果 === */}
+        {foodSearchResults.comboMatches.length > 0 && (
+          <>
+            <div className="result-title" style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 8,
+              background: '#fffaf0', // 淡黃色背景區隔
+              padding: '8px 12px',
+              borderRadius: 6,
+              marginBottom: 8,
+              color: '#d97706'
+            }}>
+              <span style={{ fontSize: 18 }}>⭐</span>
+              <span>常用組合 ({foodSearchResults.comboMatches.length})</span>
+            </div>
+            {foodSearchResults.comboMatches.map((combo) => (
+              <div
+                key={combo.id}
+                className="list-item clickable"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 12px',
+                  marginBottom: 6,
+                  borderRadius: 8,
+                  borderLeft: '4px solid #f59e0b', // 橘黃色邊條
+                  background: '#fff',
+                }}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, marginBottom: 2 }}>{combo.name}</div>
+                  <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>
+                    包含 {combo.items.length} 個品項 · 約 {combo.items.reduce((sum, i) => sum + i.kcal, 0)} kcal
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="primary small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    addComboToMeals(combo); // 直接呼叫加入組合函式
+                    setFoodName(''); // 清空搜尋
+                  }}
+                  style={{
+                    padding: '6px 10px',
+                    fontSize: 13,
+                    flexShrink: 0,
+                    width: 'auto',
+                    minWidth: 84,
+                    whiteSpace: 'nowrap',
+                    alignSelf: 'center',
+                    background: '#f59e0b', // 按鈕也用橘黃色系區隔
+                    border: 'none'
+                  }}
+                >
+                  快速加入
+                </button>
+              </div>
+            ))}
+            {/* 分隔線 */}
+            {(foodSearchResults.historyMatches.length > 0 ||
+              foodSearchResults.unitMatches.length > 0 || 
+              foodSearchResults.foodMatches.length > 0) && (
+              <div style={{ height: 1, background: '#e5e7eb', margin: '12px 0' }} />
+            )}
+          </>
+        )}
       {/* 🆕 歷史記錄搜尋結果 */}
       {foodSearchResults.historyMatches.length > 0 && (
         <>
