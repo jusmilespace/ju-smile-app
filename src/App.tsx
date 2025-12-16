@@ -2037,7 +2037,7 @@ useEffect(() => {
             <img 
               src={`${APP_BASE_URL}icons/water.png`} 
               alt="water" 
-              style={{ width: 24, height: 24, marginRight: 8, objectFit: 'contain' }} 
+              style={{ width: 32, height: 32, marginRight: 8, objectFit: 'contain' }} 
             />
             今日飲水
           </h2>
@@ -2194,7 +2194,7 @@ useEffect(() => {
               <img 
                 src={`${APP_BASE_URL}icons/exercise.png`} 
                 alt="exercise" 
-                style={{ width: 24, height: 24, marginRight: 8, objectFit: 'contain' }} 
+                style={{ width: 32, height: 32, marginRight: 8, objectFit: 'contain' }} 
               />
               今日運動
             </h2>
@@ -2250,7 +2250,7 @@ useEffect(() => {
               <img 
                 src={`${APP_BASE_URL}icons/body.png`} 
                 alt="body" 
-                style={{ width: 24, height: 24, marginRight: 8, objectFit: 'contain' }} 
+                style={{ width: 32, height: 32, marginRight: 8, objectFit: 'contain' }} 
               />
               今日身體紀錄
             </h2>
