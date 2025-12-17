@@ -2598,28 +2598,31 @@ useEffect(() => {
     const [foodInputMode, setFoodInputMode] = useState<'search' | 'palm'>('search');
     
     const recentMealsForQuickAdd = useMemo(() => {
-  if (!meals.length) return [] as MealEntry[];
+    if (!meals.length) return [] as MealEntry[];
 
-  const base = dayjs(selectedDate || todayLocal);
-  const cutoff = base.subtract(14, 'day');
-  const map = new Map<string, MealEntry>();
+    const base = dayjs(selectedDate || todayLocal);
+    const cutoff = base.subtract(14, 'day');
+    const map = new Map<string, MealEntry>();
 
-  for (const m of meals) {
+    // 🟢 修改：先淺拷貝並反轉陣列，讓最新的紀錄排在前面
+    const reversedMeals = [...meals].reverse();
+
+    for (const m of reversedMeals) {
       const d = dayjs(m.date);
+      // 過濾掉太久以前的，保持介面乾淨
       if (d.isBefore(cutoff)) continue;
 
       const key = `${m.label}|${m.amountText || ''}|${m.kcal}`;
       
-      // ✅ 修正：直接 set，不要檢查 has。
-      // 這樣當迴圈跑到最後（最新的紀錄）時，會把 Map 裡的資料更新為今天的日期。
-      map.set(key, m); 
+      // 因為我們已經是由新到舊跑迴圈，如果 Map 還沒這個 key，代表這是最新的
+      if (!map.has(key)) {
+        map.set(key, m);
+      }
     }
 
-  // 按日期排序,最新的在前面
-  return Array.from(map.values())
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, 20);
-}, [meals, selectedDate, todayLocal]);
+    // Map 的 values 會依照插入順序排出，所以這裡直接取前 20 筆即可
+    return Array.from(map.values()).slice(0, 20);
+  }, [meals, selectedDate, todayLocal]);
     // 🆕 常用組合相關狀態
     const [selectedMealIds, setSelectedMealIds] = useState<string[]>([]);
     const [comboNameInput, setComboNameInput] = useState('');
@@ -4465,118 +4468,33 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
 
                         
 
-                          <label>
-  份量 (份)
-  <input
-    type="number"
-    min={0}
-    step={0.1}
-    value={fallbackServings}
-    onChange={(e) => setFallbackServings(e.target.value)}
-    placeholder="例如:1 或 1.5"
-  />
+                         {/* 🟢 修改：原本是 <label> 夾 input，現在改用與「其他類」相同的彈窗觸發按鈕 */}
+                          <div style={{ 
+                            background: '#fff', 
+                            padding: '16px', 
+                            borderRadius: 12, 
+                            border: '1px solid #e9ecef', 
+                            marginBottom: 12,
+                            marginTop: 12 
+                          }}>
+                            <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151', fontSize: 'var(--font-xs)' }}>
+                              份量 (份)
+                            </label>
+                            
+                            {/* 🟢 修改：套用 Class */}
+                            <div 
+                              className="portion-input-trigger"
+                              onClick={() => {
+                                setShowServingsModal(true);
+                                setFallbackServings('');
+                              }}
+                            >
+                              {fallbackServings || '1'} 
+                              <span className="portion-unit-text">份</span>
+                            </div>
+                          </div>
 
-  {/* UX-07：份量輸入 DEC / FRAC 切換 */}
-  <div
-    style={{
-      marginTop: 4,
-      display: 'flex',
-      alignItems: 'center',
-      gap: 8,
-      fontSize: 15,
-    }}
-  >
-    {/* DEC / FRAC 小開關 */}
-    <div
-      style={{
-        display: 'inline-flex',
-        borderRadius: 999,
-        border: '1px solid var(--line, #ccc)',
-        overflow: 'hidden',
-      }}
-    >
-      <button
-        type="button"
-        onClick={() => setServingsInputMode('dec')}
-        style={{
-          padding: '2px 10px',
-          border: 'none',
-          background:
-            servingsInputMode === 'dec' ? '#1e88e5' : 'transparent',
-          color: servingsInputMode === 'dec' ? '#fff' : 'inherit',
-          fontSize: 15,
-        }}
-      >
-        DEC
-      </button>
-      <button
-        type="button"
-        onClick={() => setServingsInputMode('frac')}
-        style={{
-          padding: '2px 10px',
-          border: 'none',
-          borderLeft: '1px solid var(--line, #ccc)',
-          background:
-            servingsInputMode === 'frac' ? '#1e88e5' : 'transparent',
-          color: servingsInputMode === 'frac' ? '#fff' : 'inherit',
-          fontSize: 15,
-        }}
-      >
-        FRAC
-      </button>
-    </div>
-
-    <span className="sub">
-      {servingsInputMode === 'dec'
-        ? '直接輸入 1.5、2.25 等小數'
-        : '從常用分數中選擇，會自動換算成小數'}
-    </span>
-  </div>
-
-  {/* 只有在 FRAC 模式時，才顯示分數快捷鍵 */}
-  {servingsInputMode === 'frac' && (
-    <div
-      style={{
-        marginTop: 4,
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: 4,
-        fontSize: 15,
-      }}
-    >
-      {[
-        '1/8',
-        '1/4',
-        '1/3',
-        '3/8',
-        '1/2',
-        '5/8',
-        '2/3',
-        '3/4',
-        '7/8',
-      ].map((f) => (
-        <button
-          key={f}
-          type="button"
-          className="small"
-          style={{ padding: '2px 6px' }}
-          onClick={() => {
-            const [n, d] = f.split('/').map(Number);
-            if (!d) return;
-            const value = (n / d)
-              .toFixed(3)
-              .replace(/0+$/, '')
-              .replace(/\.$/, '');
-            setFallbackServings(value);
-          }}
-        >
-          {f}
-        </button>
-      ))}
-    </div>
-  )}
-</label>
-
+                          {/* 移除舊有的 input 與 DEC/FRAC 切換按鈕，因為 Modal 裡已經有了 */}
                         </>
                       )}
 
@@ -4599,30 +4517,15 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
   
   {/* 觸發按鈕 (唯讀) */}
   <div 
-    onClick={() => {
-      setShowServingsModal(true);
-      setFallbackServings(''); // 🟢 開啟時清空，方便直接輸入
-    }}
-    style={{
-      height: 44,
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center', // 數值置中
-      background: '#f9fafc',
-      border: '1px solid #e5e7eb',
-      borderRadius: 10,
-      fontSize: 18,
-      fontWeight: 600,
-      color: '#1f2937',
-      cursor: 'pointer',
-      boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
-    }}
-  >
-    {/* 顯示邏輯：如果沒值預設顯示 1，如果有值則顯示 */}
-    {fallbackServings || '1'} 
-    <span style={{ fontSize: 15, color: '#9ca3af', marginLeft: 4, fontWeight: 400 }}>份</span>
-  </div>
-
+                              className="portion-input-trigger"
+                              onClick={() => {
+                                setShowServingsModal(true);
+                                setFallbackServings('');
+                              }}
+                            >
+                              {fallbackServings || '1'} 
+                              <span className="portion-unit-text">份</span>
+                            </div>
   {/* === 份量輸入彈窗 (Servings Modal) === */}
   {showServingsModal && (
     <div 
@@ -5184,42 +5087,42 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
                           {/* B. 營養素輸入 (保持原本的 Grid 佈局) */}
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
                             {/* Protein */}
-                            <div style={{ background: '#fff', padding: '8px', borderRadius: 8, border: '1px solid #bbf7d0', textAlign: 'center' }}>
-                              <div style={{ fontSize: 11, color: '#16a34a', fontWeight: 700, marginBottom: 4 }}>蛋白質 P</div>
+                            <div className="macro-input-card protein">
+                              <div className="macro-input-label protein">蛋白質 P</div>
                               <input
                                 type="number"
+                                className="macro-input-field" /* 🟢 套用 Class */
                                 value={fallbackProtPerServ}
                                 onChange={(e) => setFallbackProtPerServ(e.target.value)}
                                 placeholder="0"
-                                style={{ width: '100%', textAlign: 'center', border: 'none', borderBottom: '2px solid #bbf7d0', borderRadius: 0, padding: '4px 0', fontSize: 18, fontWeight: 600, color: '#333' }}
                               />
-                              <div style={{ fontSize: 10, color: '#999', marginTop: 2 }}>g / 份</div>
+                              <div className="macro-unit-text">g / 份</div>
                             </div>
 
                             {/* Carb */}
-                            <div style={{ background: '#fff', padding: '8px', borderRadius: 8, border: '1px solid #fed7aa', textAlign: 'center' }}>
-                              <div style={{ fontSize: 11, color: '#ea580c', fontWeight: 700, marginBottom: 4 }}>碳水 C</div>
+                            <div className="macro-input-card carb">
+                              <div className="macro-input-label carb">碳水 C</div>
                               <input
                                 type="number"
+                                className="macro-input-field" /* 🟢 套用 Class */
                                 value={fallbackCarbPerServ}
                                 onChange={(e) => setFallbackCarbPerServ(e.target.value)}
                                 placeholder="0"
-                                style={{ width: '100%', textAlign: 'center', border: 'none', borderBottom: '2px solid #fed7aa', borderRadius: 0, padding: '4px 0', fontSize: 18, fontWeight: 600, color: '#333' }}
                               />
-                              <div style={{ fontSize: 10, color: '#999', marginTop: 2 }}>g / 份</div>
+                              <div className="macro-unit-text">g / 份</div>
                             </div>
 
                             {/* Fat */}
-                            <div style={{ background: '#fff', padding: '8px', borderRadius: 8, border: '1px solid #fecaca', textAlign: 'center' }}>
-                              <div style={{ fontSize: 11, color: '#dc2626', fontWeight: 700, marginBottom: 4 }}>脂肪 F</div>
+                            <div className="macro-input-card fat">
+                              <div className="macro-input-label fat">脂肪 F</div>
                               <input
                                 type="number"
+                                className="macro-input-field" /* 🟢 套用 Class */
                                 value={fallbackFatPerServ}
                                 onChange={(e) => setFallbackFatPerServ(e.target.value)}
                                 placeholder="0"
-                                style={{ width: '100%', textAlign: 'center', border: 'none', borderBottom: '2px solid #fecaca', borderRadius: 0, padding: '4px 0', fontSize: 18, fontWeight: 600, color: '#333' }}
                               />
-                              <div style={{ fontSize: 10, color: '#999', marginTop: 2 }}>g / 份</div>
+                              <div className="macro-unit-text">g / 份</div>
                             </div>
                           </div>
                           
@@ -5262,7 +5165,191 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
                         系統估算總熱量約 {autoFoodInfo.kcal} kcal
                       </div>
                     )}
+{/* === 份量輸入彈窗 (Servings Modal) === */}
+  {showServingsModal && (
+    <div 
+      className="modal-backdrop"
+      style={{ 
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 100,
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'center' 
+      }}
+      onClick={() => setShowServingsModal(false)}
+    >
+      <div 
+        style={{ 
+          width: '100%', maxWidth: 420, background: '#f0f2f5', 
+          borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20,
+          boxShadow: '0 -4px 20px rgba(0,0,0,0.1)',
+          display: 'flex', flexDirection: 'column', gap: 16
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* 1. 頂部控制列：標題 + Tab 切換 */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontWeight: 600, color: '#666', fontSize: 15 }}>輸入份量</span>
+          
+          {/* iOS 風格分段控制器 (Segmented Control) */}
+          <div style={{ 
+            display: 'flex', background: '#e5e7eb', padding: 3, borderRadius: 8,
+          }}>
+            <button
+              onClick={() => setServingsTab('dec')}
+              style={{
+                padding: '4px 16px', borderRadius: 6, border: 'none', fontSize: 13, fontWeight: 600,
+                background: servingsTab === 'dec' ? '#fff' : 'transparent',
+                color: servingsTab === 'dec' ? '#333' : '#666',
+                boxShadow: servingsTab === 'dec' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
+                transition: 'all 0.2s', cursor: 'pointer'
+              }}
+            >
+              小數
+            </button>
+            <button
+              onClick={() => setServingsTab('frac')}
+              style={{
+                padding: '4px 16px', borderRadius: 6, border: 'none', fontSize: 13, fontWeight: 600,
+                background: servingsTab === 'frac' ? '#fff' : 'transparent',
+                color: servingsTab === 'frac' ? '#333' : '#666',
+                boxShadow: servingsTab === 'frac' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
+                transition: 'all 0.2s', cursor: 'pointer'
+              }}
+            >
+              分數
+            </button>
+          </div>
+        </div>
 
+        {/* 2. 即時數值顯示區 (Display) */}
+        <div style={{ 
+          background: '#fff', borderRadius: 12, padding: '12px', 
+          textAlign: 'center', fontSize: 28, fontWeight: 700, color: '#333',
+          boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #e5e7eb'
+        }}>
+          {fallbackServings || '0'}
+        </div>
+
+        {/* 3. 內容區：根據 Tab 切換顯示 NumPad 或 Picker */}
+        
+        {/* === Tab A: 數字鍵盤 (NumPad) === */}
+        {servingsTab === 'dec' && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, '.', 0].map((num) => (
+              <button
+                key={num}
+                type="button"
+                onClick={() => {
+                  if (num === '.') {
+                    if (!fallbackServings.includes('.')) setFallbackServings(prev => prev + '.');
+                  } else {
+                    // 如果目前是 0 或空，直接取代；否則串接
+                    setFallbackServings(prev => (prev === '0' || prev === '' ? String(num) : prev + num));
+                  }
+                }}
+                style={{ 
+                  padding: '12px 0', borderRadius: 12, border: 'none', background: '#fff', 
+                  fontSize: 22, fontWeight: 600, color: '#333', boxShadow: '0 2px 0 #e5e7eb',
+                  cursor: 'pointer'
+                }}
+              >
+                {num}
+              </button>
+            ))}
+            {/* Backspace */}
+            <button
+              type="button"
+              onClick={() => setFallbackServings(prev => prev.slice(0, -1) || '0')}
+              style={{ 
+                padding: '12px 0', borderRadius: 12, border: 'none', background: '#e5e7eb', 
+                fontSize: 20, color: '#333', boxShadow: '0 2px 0 #d1d5db', cursor: 'pointer'
+              }}
+            >
+              ⌫
+            </button>
+          </div>
+        )}
+
+        {/* === Tab B: 分數滾輪 (Fraction Picker) === */}
+        {servingsTab === 'frac' && (
+          <div style={{ position: 'relative', height: 200, overflow: 'hidden', background: '#fff', borderRadius: 12 }}>
+            
+            {/* 綠色選取框 (Highlight Bar) */}
+            <div style={{
+              position: 'absolute', top: 75, left: 0, right: 0, height: 50,
+              background: 'rgba(151, 208, 186, 0.2)', borderTop: '1px solid #97d0ba', borderBottom: '1px solid #97d0ba',
+              pointerEvents: 'none', zIndex: 1
+            }}></div>
+
+            {/* 滾動列表 */}
+            <div 
+              ref={servingsPickerRef}
+              style={{ 
+                height: '100%', overflowY: 'auto', scrollSnapType: 'y mandatory',
+                position: 'relative', zIndex: 2, scrollbarWidth: 'none'
+              }}
+              onScroll={(e) => {
+                // 簡單的防抖動或直接計算
+                const scrollTop = e.currentTarget.scrollTop;
+                const index = Math.round(scrollTop / 50);
+                const target = fractionList[index];
+                // 滑動時即時更新數值
+                if (target) {
+                   // 這裡要注意：如果不希望滑動時一直改變上面的 Display 數值導致跳動，
+                   // 可以只在 scroll 結束時更新，但為了簡單即時回饋，這裡直接更新。
+                   setFallbackServings(target.value); 
+                }
+              }}
+            >
+              <div style={{ height: 75 }}></div> {/* Top Spacer */}
+              
+              {fractionList.map((item) => (
+                <div
+                  key={item.label}
+                  onClick={() => {
+                     setFallbackServings(item.value);
+                     // 點擊後滾動到該位置
+                     const index = fractionList.indexOf(item);
+                     if (servingsPickerRef.current) {
+                       servingsPickerRef.current.scrollTo({ top: index * 50, behavior: 'smooth' });
+                     }
+                  }}
+                  style={{
+                    height: 50, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 20, fontWeight: 600, scrollSnapAlign: 'center', cursor: 'pointer',
+                    color: String(fallbackServings) === item.value ? '#059669' : '#9ca3b8',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {item.label}
+                  {/* 如果數值相同，顯示數值對照 (例: 1/2 = 0.5) */}
+                  {String(fallbackServings) === item.value && (
+                    <span style={{ fontSize: 15, color: '#5c9c84', marginLeft: 8, fontWeight: 400 }}>
+                       ({item.value})
+                    </span>
+                  )}
+                </div>
+              ))}
+              
+              <div style={{ height: 75 }}></div> {/* Bottom Spacer */}
+            </div>
+          </div>
+        )}
+
+        {/* 完成按鈕 */}
+        <button
+          type="button"
+          onClick={() => setShowServingsModal(false)}
+          style={{ 
+            width: '100%', padding: '14px 0', borderRadius: 12, border: 'none', 
+            background: '#5c9c84', color: '#fff', fontSize: 18, fontWeight: 700, cursor: 'pointer',
+            marginTop: 4
+          }}
+        >
+          完成
+        </button>
+
+      </div>
+    </div>
+  )}
                     {/* 🆕 補回這裡遺失的「加入記錄」按鈕 */}
                     <button 
                       className="primary" 

@@ -1130,3 +1130,114 @@ body {
   border-bottom-color: #5c9c84;
   font-weight: 700;
 }
+
+/* ==== Records Page: 大字體輸入區塊優化 (使用既有字級變數) ==== */
+
+/* 1. 份量輸入觸發框 */
+.portion-input-trigger {
+  height: 54px; /* 稍微加高一點以容納大字體 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f9fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  
+  /* 🟢 改用變數：最大字級 (26px) */
+  font-size: var(--font-xl);
+  font-weight: 600;
+  color: #1f2937;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+  transition: all 0.2s;
+}
+
+.portion-input-trigger:active {
+  background: #f0f2f5;
+  transform: scale(0.98);
+}
+
+.portion-unit-text {
+  /* 🟢 改用變數：次要說明 (16px) */
+  font-size: var(--font-sm);
+  color: #9ca3af;
+  margin-left: 6px;
+  font-weight: 400;
+  transform: translateY(2px); /* 微調對齊 */
+}
+
+/* 2. P/C/F 營養素輸入卡片 */
+.macro-input-card {
+  background: #fff;
+  padding: 8px;
+  border-radius: 8px;
+  text-align: center;
+}
+.macro-input-card.protein { border: 1px solid #bbf7d0; }
+.macro-input-card.carb    { border: 1px solid #fed7aa; }
+.macro-input-card.fat     { border: 1px solid #fecaca; }
+
+.macro-input-label {
+  /* 🟢 改用變數：最小備註 (14px) */
+  font-size: var(--font-xs); 
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.macro-input-label.protein { color: #16a34a; }
+.macro-input-label.carb    { color: #ea580c; }
+.macro-input-label.fat     { color: #dc2626; }
+
+.macro-input-field {
+  width: 100%;
+  text-align: center;
+  border: none;
+  border-radius: 0;
+  padding: 4px 0;
+  background: transparent;
+  
+  /* 🟢 改用變數：最大字級 (26px) */
+  font-size: var(--font-xl); 
+  font-weight: 700;
+  color: #333;
+}
+
+.macro-input-field:focus {
+  outline: none;
+}
+
+/* 底部線條 */
+.macro-input-card.protein .macro-input-field { border-bottom: 2px solid #bbf7d0; }
+.macro-input-card.carb    .macro-input-field { border-bottom: 2px solid #fed7aa; }
+.macro-input-card.fat     .macro-input-field { border-bottom: 2px solid #fecaca; }
+
+.macro-unit-text {
+  /* 🟢 改用變數：最小備註 (14px) */
+  font-size: var(--font-xs);
+  color: #999;
+  margin-top: 2px;
+}
+
+/* 3. 加入記錄大按鈕 */
+.btn-submit-large {
+  width: 100%;
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 0;
+  
+  /* 🟢 改用變數：卡片標題級 (22px) */
+  font-size: var(--font-lg); 
+  font-weight: 700;
+}
+
+.btn-submit-badge {
+  background: rgba(255,255,255,0.25);
+  padding: 2px 8px;
+  border-radius: 99px;
+  
+  /* 🟢 改用變數：次要說明 (16px) */
+  font-size: var(--font-sm);
+  font-weight: 600;
+}
