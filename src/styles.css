@@ -1154,7 +1154,7 @@ body {
 .tab-btn-large {
   flex: 0 0 auto;  /* 保持：不自動伸展 */
   width: 160px;  /* 新增：固定寬度（可調整大小）*/
-  padding: 12px 0;  /* 改回：上下 padding */
+  padding: 2px 0;  /* 改回：上下 padding */
   font-size: var(--font-lg);
   background: transparent;
   border: none;
