@@ -285,15 +285,10 @@ export const VisualPortionPicker: React.FC<VisualPortionPickerProps> = ({
 
   return (
     <div style={{ padding: '4px 0 20px 0' }}>
-      <h3 style={{ marginBottom: 16, color: '#1f2937' }}>
-        🖐️ 手掌法快速輸入 - {mealType}
-      </h3>
-
+      
       {/* 食物名稱 */}
       <div style={{ marginBottom: 20 }}>
-        <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#1f2937' }}>
-          食物名稱
-        </label>
+      
         <input
           type="text"
           value={foodName}
@@ -355,7 +350,7 @@ export const VisualPortionPicker: React.FC<VisualPortionPickerProps> = ({
                       <div style={{ 
                         fontWeight: 600, 
                         color: '#1f2937',
-                        fontSize: 15,
+                        fontSize: 18,
                         display: 'flex',
                         alignItems: 'center',
                         gap: 6,
@@ -396,11 +391,11 @@ export const VisualPortionPicker: React.FC<VisualPortionPickerProps> = ({
                       position: 'relative',
                     }}>
                       <div style={{ 
-                        fontSize: 9, 
+                        fontSize: 10, 
                         color: '#9ca3af', 
                         fontWeight: 500,
                         position: 'absolute',
-                        top: -12,
+                        top: -18,
                         left: '50%',
                         transform: 'translateX(-50%)',
                         whiteSpace: 'nowrap',
@@ -418,7 +413,7 @@ export const VisualPortionPicker: React.FC<VisualPortionPickerProps> = ({
                           width: 42,
                           height: 28,
                           textAlign: 'center',
-                          fontSize: 16,
+                          fontSize: 18,
                           fontWeight: 700,
                           color: isActive ? '#97d0ba' : '#9ca3af',
                           border: 'none',
@@ -457,11 +452,31 @@ export const VisualPortionPicker: React.FC<VisualPortionPickerProps> = ({
 
                 {/* 第二列：說明文字 + 營養成分（精簡顯示） */}
 <div className="portion-desc">
-  <span className="portion-desc-main">{portion.desc}</span>
+  <span 
+                    className="portion-desc-main" 
+                    style={{ 
+                      fontSize: 15,      // 在此調整字體大小 (例如 12, 13, 14)
+                      color: '#6b7280',  // 建議搭配灰色，閱讀較舒適
+                      display: 'block',  // 確保文字能正確換行或佔據空間
+                      marginBottom: 4    // 與下方標籤保留一點距離
+                    }}
+                  >
+                    {portion.desc}
+                  </span>
   {count > 0 && (
-    <span className="portion-desc-tag">
-      {Math.round(portion.kcal * count)} kcal · P {Math.round(portion.protein * count * 10) / 10}g · C {Math.round(portion.carbs * count * 10) / 10}g · F {Math.round(portion.fat * count * 10) / 10}g
-    </span>
+    <span 
+                      className="portion-desc-tag"
+                      // After: 在這裡加入 style 設定
+                      style={{
+                        fontSize: 15,      // <-- 在此調整數字的大小
+                        fontWeight: 600,   // <-- 加粗一點比較明顯 (500~700)
+                        color: '#059669',  // <-- 這是綠色字體顏色 (Emerald Green)
+                        marginTop: 2,      // 與上方說明的微小間距
+                        display: 'inline-block' 
+                      }}
+                    >
+                      {Math.round(portion.kcal * count)} kcal · P {Math.round(portion.protein * count * 10) / 10}g · C {Math.round(portion.carbs * count * 10) / 10}g · F {Math.round(portion.fat * count * 10) / 10}g
+                    </span>
   )}
 </div>
 
@@ -483,7 +498,7 @@ export const VisualPortionPicker: React.FC<VisualPortionPickerProps> = ({
         }}
       >
         <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 15, textAlign: 'center' }}>
-          📊 營養摘要
+          營養摘要
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
           <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 8, padding: 10, textAlign: 'center' }}>
