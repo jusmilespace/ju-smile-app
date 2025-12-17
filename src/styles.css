@@ -9,11 +9,11 @@
   --text-sub: #6b7785;
   --border-soft: #dde7e2;
   /* 🆕 字級系統：給有點老花的人也能看得清楚 -> 整體加大一階 */
-  --font-xs: 13px;  /* 最小備註 (12->13) */
-  --font-sm: 15px;  /* 次要說明、日期 (14->15) */
-  --font-md: 17px;  /* 一般文字 (符合 iOS 標準)、列表、按鈕 (16->17) */
-  --font-lg: 20px;  /* 卡片標題、重要數字 (18->20) */
-  --font-xl: 24px;  /* 頁面主標題 (20->24) */
+  --font-xs: 14px;  /* 最小備註 */
+  --font-sm: 16px;  /* 次要說明、日期 */
+  --font-md: 18px;  /* 一般文字、列表、按鈕 */
+  --font-lg: 22px;  /* 卡片標題、重要數字、類別按鈕 ← 你的基準 */
+  --font-xl: 26px;  /* 頁面主標題 */
 }
 
 *,
@@ -353,6 +353,17 @@ button.primary {
   background: var(--mint);
   color: #fff;
   border-color: var(--mint);
+}
+
+/* Records Page - 類別按鈕 */
+.food-category-btn {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: bold;
+  font-size: var(--font-lg);  /* 使用 22px */
 }
 
 /* ---- Forms ---- */
@@ -1080,13 +1091,6 @@ body {
   padding: 12px 16px; 
 }
 
-/* 2. 頁籤按鈕 (只加大，不改色) */
-.tab-btn-large {
-  flex: 1;
-  /* 關鍵修改：加大字體 */
-  font-size: 18px;
-  padding: 10px 0;
-}
 
 /* 3. 區塊標題 (Icon 排版輔助) */
 .icon-header {
@@ -1118,7 +1122,7 @@ body {
 /* 2. 頁籤按鈕 (飲食/運動) - 確保夠大 */
 .tab-btn-large {
   flex: 1;
-  font-size: 22px;        /* 加大字體 */
+  font-size: var(--font-lg);  /* ← 改用 CSS 變數 */
   padding: 12px 0;
   background: transparent;
   border: none;

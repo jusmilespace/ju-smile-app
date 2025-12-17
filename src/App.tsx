@@ -589,7 +589,7 @@ const InstallGuideWidget: React.FC = () => {
             padding: '8px 12px',
             background: '#333',
             color: '#fff',
-            fontSize: 13,
+            fontSize: 'var(--font-xs)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -606,7 +606,7 @@ const InstallGuideWidget: React.FC = () => {
                 borderRadius: 999,
                 border: 'none',
                 padding: '4px 8px',
-                fontSize: 15,
+                fontSize: 'var(--font-sm)',
                 cursor: 'pointer',
               }}
             >
@@ -832,7 +832,7 @@ const AboutPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             Type Table / Unit Map / Food DB / Exercise MET，
             請在設定頁更新網址後按一次「同步精準資料」，讓 App 重新載入最新版內容。
           </p>
-          <p style={{ fontSize: 13, color: '#666', marginBottom: 0 }}>
+          <p style={{ fontSize: 'var(--font-xs)', color: '#666', marginBottom: 0 }}>
             一般使用者如果沒有自己改 CSV，可以忽略「同步精準資料」，照平常使用即可。
           </p>
         </div>
@@ -844,7 +844,7 @@ const AboutPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           <p style={{ marginBottom: 4 }}>
             目前版本：<b>Ju Smile App v{APP_VERSION}</b>
           </p>
-          <ul style={{ paddingLeft: 20, marginBottom: 0, fontSize: 13 }}>
+          <ul style={{ paddingLeft: 20, marginBottom: 0, fontSize: 'var(--font-xs)' }}>
             <li>v0.1.0：初始版本，提供體重 / 飲食 / 運動紀錄與 JSON 匯出 / 匯入功能。</li>
             {/* 未來可以在這裡往下加 v0.1.1, v0.2.0 ... */}
           </ul>
@@ -1794,7 +1794,7 @@ useEffect(() => {
       
       {/* 中間日期文字區塊：設為 relative 以便放置 absolute 的 input */}
       <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-  <div style={{ fontSize: 13, color: '#666', fontWeight: 500 }}>
+  <div style={{ fontSize: 'var(--font-xs)', color: '#666', fontWeight: 500 }}>
     {todayMonthLabel}
     <span style={{ marginLeft: 4 }}>▼</span>
   </div>
@@ -1838,7 +1838,7 @@ useEffect(() => {
           }}
           style={{
             padding: '4px 12px',
-            fontSize: 15,
+            fontSize: 'var(--font-sm)',
             fontWeight: 500,
             color: todayLocal === dayjs().format('YYYY-MM-DD') ? '#fff' : '#97d0ba',
             background: todayLocal === dayjs().format('YYYY-MM-DD') ? '#97d0ba' : 'transparent',
@@ -1870,7 +1870,7 @@ useEffect(() => {
       border: 'none',
       background: 'transparent',
       color: '#ccc',
-      fontSize: 18,
+      fontSize: 'var(--font-md)',
       cursor: 'pointer',
     }}
   >
@@ -1922,10 +1922,10 @@ useEffect(() => {
                   minWidth: 0 // Flex child 縮放修正
                 }}
               >
-                <span style={{ fontSize: 10, fontWeight: 500, opacity: isSelected ? 1 : 0.7 }}>
+                <span style={{ fontSize: 'var(--font-xs)', fontWeight: 500, opacity: isSelected ? 1 : 0.7 }}>
                   {date.format('ddd')}
                 </span>
-                <span style={{ fontSize: 16, fontWeight: isSelected ? 700 : (isToday ? 600 : 500) }}>
+                <span style={{ fontSize: 'var(--font-sm)', fontWeight: isSelected ? 700 : (isToday ? 600 : 500) }}>
                   {date.format('D')}
                 </span>
               </button>
@@ -1943,7 +1943,7 @@ useEffect(() => {
     setWeekKey((k) => k + 1);
     
   }}
-        style={{ padding: '0 4px', border: 'none', background: 'transparent', color: '#ccc', fontSize: 18, cursor: 'pointer' }}
+        style={{ padding: '0 4px', border: 'none', background: 'transparent', color: '#ccc', fontSize: 'var(--font-md)', cursor: 'pointer' }}
       >
         ›
       </button>
@@ -2050,7 +2050,8 @@ useEffect(() => {
                 <span className="section-progress-current" style={{ color: '#5eb6e6' }}>
                   {todaySummary.waterMl}
                 </span> 
-                <span style={{ fontSize: 15, marginLeft: 2 }}>ml</span>
+                <span style={{ fontSize: 'var(--font-sm)', marginLeft: 2 }}>ml</span>
+
               </div>
               <div className="section-progress-target">
                 目標 {settings.waterGoalMl || 2000} ml
@@ -2083,7 +2084,7 @@ useEffect(() => {
                   background: '#f0f9fc', 
                   // 文字：使用飲水主題色
                   color: '#5eb6e6', 
-                  fontSize: '13px',
+                  fontSize: 'var(--font-xs)',
                   fontWeight: 600,
                   cursor: 'pointer',
                   transition: 'all 0.2s'
@@ -2111,7 +2112,7 @@ useEffect(() => {
                 flex: 1, 
                 border: 'none', 
                 background: 'transparent', 
-                fontSize: '14px', 
+                fontSize: 'var(--font-xs)',
                 outline: 'none',
                 color: '#333'
               }}
@@ -2127,7 +2128,7 @@ useEffect(() => {
                 border: 'none',
                 borderRadius: '99px',
                 padding: '8px 24px',
-                fontSize: '13px',
+                fontSize: 'var(--font-xs)',
                 fontWeight: 600,
                 cursor: 'pointer',
                 flexShrink: 0,
@@ -2210,7 +2211,7 @@ useEffect(() => {
                 <span className="section-progress-current" style={{ color: '#f59e0b' }}>
                   {todayExerciseMinutes}
                 </span> 
-                <span style={{ fontSize: 15, marginLeft: 2 }}>分鐘</span>
+                <span style={{ fontSize: 'var(--font-sm)', marginLeft: 2 }}>分鐘</span>
               </div>
               <div className="section-progress-target">
                 目標 {settings.exerciseMinutesGoal || 30} 分鐘
@@ -2264,7 +2265,7 @@ useEffect(() => {
           <div className="form-section" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             {/* 1. 體重 */}
             <div style={{ background: '#f9fafb', padding: '12px', borderRadius: '12px', border: '1px solid #e9ecef' }}>
-              <label style={{ fontSize: 15, color: '#666', marginBottom: 4, display: 'block' }}>體重 (kg)</label>
+              <label style={{ fontSize: 'var(--font-sm)', color: '#666', marginBottom: 4, display: 'block' }}>體重 (kg)</label>
               <input 
                 type="number" 
                 value={wInput} 
@@ -3437,7 +3438,7 @@ useEffect(() => {
                         }}
                         onError={(e) => (e.currentTarget.style.display = 'none')}
                       />
-                      <span style={{ fontSize: 13, fontWeight: isSelected ? 700 : 500 }}>
+                      <span style={{ fontSize: 'var(--font-xs)', fontWeight: isSelected ? 700 : 500 }}>
                         {t}
                       </span>
                     </button>
