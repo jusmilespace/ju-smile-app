@@ -5576,9 +5576,9 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
         {/* 運動 */}
 {recordTab === 'exercise' && (
   <div className="card">
-    <details open>
-      <summary>什麼是 MET?</summary>
-      <p>
+    <details>
+      <summary style={{ cursor: 'pointer', fontWeight: 600 }}>什麼是 MET?</summary>
+              <p className="text-sm text-gray-600 mt-2">
         MET(代謝當量)用來表示活動強度,1 MET 約等於安靜坐著時的消耗。
         <br />
         消耗熱量 ≈ MET × 體重(kg) × 時間(小時)
@@ -5608,7 +5608,7 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
       color: recordMode === 'quick' ? 'var(--mint-dark, #5c9c84)' : '#888',
       boxShadow: recordMode === 'quick' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
       fontWeight: recordMode === 'quick' ? 600 : 400,
-      fontSize: 14,
+      fontSize: 18,
       cursor: 'pointer',
       transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
     }}
@@ -5620,14 +5620,14 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
     onClick={() => setRecordMode('detail')}
     style={{
       flex: 1,
-      padding: '8px 0',
+      padding: '4px 0',
       border: 'none',
       borderRadius: 999,
       background: recordMode === 'detail' ? '#fff' : 'transparent',
       color: recordMode === 'detail' ? 'var(--mint-dark, #5c9c84)' : '#888',
       boxShadow: recordMode === 'detail' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
       fontWeight: recordMode === 'detail' ? 600 : 400,
-      fontSize: 14,
+      fontSize: 18,
       cursor: 'pointer',
       transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
     }}
