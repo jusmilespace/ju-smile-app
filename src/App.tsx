@@ -2200,7 +2200,7 @@ useEffect(() => {
               />
               今日運動
             </h2>
-            <button className="secondary" onClick={onAddExercise}>
+            <button onClick={onAddExercise}>
               新增運動
             </button>
           </div>
@@ -2257,7 +2257,7 @@ useEffect(() => {
               今日身體紀錄
             </h2>
             {/* 把儲存按鈕移到標題旁，省去下方空間，也更順手 */}
-            <button className="secondary" onClick={saveBody}>
+            <button onClick={saveBody}>
               儲存
             </button>
           </div>
@@ -3896,7 +3896,7 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
     minWidth: 0,
   }}
 >
-  ⭐&nbsp;常用組合&nbsp;({combos.length})
+  ⭐&nbsp;常用組合
 </button>
                 </div>
 
@@ -6435,7 +6435,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
               </div>
               <div className="btn-row">
                 <button
-                  className="secondary small"
+                  className="small"
                   onClick={() => {
                     setEditingCombo(c);
                     setEditingComboName(c.name);
@@ -6445,7 +6445,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
                   編輯
                 </button>
                 <button
-                  className="secondary small"
+                  className="small"
                   onClick={() => deleteCombo(c.id)}
                 >
                   刪除
@@ -6572,7 +6572,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
                   >
                     <b style={{ fontSize: 15 }}>{item.label}</b>
                     <button
-                      className="secondary small"
+                      className="small"
                       onClick={() =>
                         setEditingComboItems((prev) =>
                           prev.filter((_, i) => i !== index)

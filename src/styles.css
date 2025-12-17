@@ -188,41 +188,80 @@ select {
   flex: 1;
 }
 
-/* ---- Buttons ---- */
+/* ---- Buttons (完整整合版) ---- */
 
+/* 1. 預設按鈕 (Standard): 空心綠色 */
+/* 用於：切換頁籤、開啟選單 (一般操作) */
 button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 999px;
   border: 1px solid var(--mint);
-  padding: 6px 10px;
+  padding: 8px 16px;       /* 標準大小 */
   background: #ffffff;
   color: var(--mint-dark);
-  font-size: 13px;
+  font-size: 15px;
+  font-weight: 500;
   cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1.4;
 }
 
 button:hover {
-  background: #ecf7f2;
+  background: #f0fdf9;
+  transform: translateY(-1px);
 }
 
 button:active {
   transform: translateY(1px);
 }
 
+/* 2. 主要按鈕 (Primary): 實心綠色 */
+/* 用於：加入紀錄、儲存 (最希望使用者點擊) */
 button.primary {
   background: var(--mint);
   color: #fff;
   border-color: var(--mint);
+  font-weight: 600;
+  box-shadow: 0 2px 5px rgba(151, 208, 186, 0.4);
 }
 
-/* 新增：次要按鈕樣式 */
+button.primary:hover {
+  background: var(--mint-dark);
+  border-color: var(--mint-dark);
+}
+
+/* 3. 次要按鈕 (Secondary): 空心灰色 (新定義) */
+/* 用於：取消、返回、備份功能 (減少視覺噪音) */
 button.secondary {
-  font-size: 15px;  /* 或 var(--font-sm) = 16px */
+  border-color: var(--border-soft); /* 淺灰邊框 */
+  color: var(--text-sub);           /* 深灰文字 */
+  background: #fff;
 }
 
-/* 新增：小按鈕樣式 */
+button.secondary:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  color: var(--text-main);
+}
+
+/* 4. 緊湊按鈕 (Small): 縮小版 */
+/* 用於：清單中的「編輯/刪除」 */
+/* 這裡只定義尺寸，所以可以套用到 Default, Primary, 或 Secondary */
 button.small {
-  font-size: 14px;  /* 或 var(--font-xs) = 14px */
-  padding: 4px 8px;  /* 稍微縮小 padding */
+  font-size: 13px;
+  padding: 4px 10px;
+  min-width: auto; /* 移除可能的最小寬度限制 */
+}
+
+/* ⭐ 整合區：Primary + Small */
+/* 當按鈕寫成 className="primary small" 時的微調 */
+/* 實心小按鈕通常需要稍微寬一點點，視覺上才不會覺得太擁擠 */
+button.primary.small {
+  padding: 4px 14px; 
+  font-size: 13px;
+  box-shadow: none; /* 小按鈕通常不需要太強烈的陰影 */
 }
 
 /* ---- Summary row ---- */
