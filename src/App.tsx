@@ -3474,8 +3474,8 @@ useEffect(() => {
       background: foodInputMode === 'search' ? '#fff' : 'transparent',
       color: foodInputMode === 'search' ? 'var(--mint-dark, #5c9c84)' : '#6b7280',
       boxShadow: foodInputMode === 'search' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
-      fontWeight: foodInputMode === 'search' ? 800 : 700,
-      fontSize: 15,
+fontWeight: foodInputMode === 'search' ? 800 : 700,
+      fontSize: 'var(--font-sm)',
       cursor: 'pointer',
       transition: 'all 0.18s ease',
       display: 'flex',
@@ -3502,7 +3502,7 @@ useEffect(() => {
       color: foodInputMode === 'palm' ? 'var(--mint-dark, #5c9c84)' : '#6b7280',
       boxShadow: foodInputMode === 'palm' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
       fontWeight: foodInputMode === 'palm' ? 800 : 700,
-      fontSize: 15,
+      fontSize: 'var(--font-sm)',
       cursor: 'pointer',
       transition: 'all 0.18s ease',
       display: 'flex',
@@ -3854,7 +3854,7 @@ useEffect(() => {
     color: quickAddTab === 'history' ? 'var(--mint-dark, #5c9c84)' : '#6b7280',
     boxShadow: quickAddTab === 'history' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
     fontWeight: quickAddTab === 'history' ? 800 : 700,
-    fontSize: 15,
+    fontSize: 'var(--font-sm)',
     cursor: 'pointer',
     transition: 'all 0.18s ease',
     display: 'flex',
@@ -3882,7 +3882,7 @@ useEffect(() => {
     color: quickAddTab === 'combo' ? 'var(--mint-dark, #5c9c84)' : '#6b7280',
     boxShadow: quickAddTab === 'combo' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
     fontWeight: quickAddTab === 'combo' ? 800 : 700,
-    fontSize: 15,
+    fontSize: 'var(--font-sm)',
     cursor: 'pointer',
     transition: 'all 0.18s ease',
     display: 'flex',
@@ -3915,20 +3915,20 @@ useEffect(() => {
             className="quick-item-card"
           >
             <div style={{ marginBottom: 8 }}>
-              <div style={{ fontWeight: 600, color: '#333', fontSize: 14 }}>{m.label}</div>
-              <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>
+              <div style={{ fontWeight: 600, color: '#333', fontSize: 'var(--font-sm)' }}>{m.label}</div>
+              <div style={{ fontSize: 'var(--font-xs)', color: '#999', marginTop: 2 }}>
                 {m.date} · {m.mealType}
               </div>
             </div>
             
             {/* 完整營養素資訊 */}
-            <div style={{ fontSize: 13, color: '#666', marginBottom: 4 }}>
+            <div style={{ fontSize: 'var(--font-xs)', color: '#666', marginBottom: 4 }}>
               {m.amountText || ''}
             </div>
-            <div style={{ fontSize: 13, color: '#333', fontWeight: 500 }}>
+                        <div style={{ fontSize: 'var(--font-xs)', color: '#333', fontWeight: 500 }}>
               {m.kcal} kcal
             </div>
-            <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+<div style={{ fontSize: 'var(--font-xs)', color: '#666', marginTop: 4 }}>
               P: {round1(m.protein || 0)}g · C: {round1(m.carbs || 0)}g · F: {round1(m.fats || 0)}g
             </div>
 
@@ -3978,26 +3978,26 @@ useEffect(() => {
               className="quick-item-card"
             >
               <div style={{ marginBottom: 8 }}>
-                <div style={{ fontWeight: 600, color: '#333', fontSize: 14 }}>{combo.name}</div>
+                <div style={{ fontWeight: 600, color: '#333', fontSize: 'var(--font-sm)' }}>{combo.name}</div>
                 
               </div>
               
-              <div style={{ fontSize: 13, color: '#333', fontWeight: 500, marginBottom: 4 }}>
+              <div style={{ fontSize: 'var(--font-xs)', color: '#333', fontWeight: 500, marginBottom: 4 }}>
                 約 {totalKcal} kcal
               </div>
-              <div style={{ fontSize: 12, color: '#666', marginBottom: 8 }}>
+                            <div style={{ fontSize: 'var(--font-xs)', color: '#666', marginBottom: 8 }}>
                 P: {round1(totalProtein)}g · C: {round1(totalCarbs)}g · F: {round1(totalFats)}g
               </div>
               
               {/* 組合內容預覽 (折疊式) */}
               <details style={{ width: '100%' }}>
-                <summary style={{ fontSize: '11px', color: '#999', cursor: 'pointer', listStyle: 'none' }}>
+                <summary style={{ fontSize: 'var(--font-xs)', color: '#999', cursor: 'pointer', listStyle: 'none' }}>
                   查看內容 ▾
                 </summary>
                 <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {combo.items.map((item, idx) => (
-                    <div key={idx} style={{ 
-                      fontSize: 11, 
+                                        <div key={idx} style={{ 
+                      fontSize: 'var(--font-xs)', 
                       background: '#f3f4f6', 
                       padding: '4px 6px', 
                       borderRadius: 4,

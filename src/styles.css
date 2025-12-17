@@ -35,7 +35,7 @@ body {
 
 body {
   -webkit-font-smoothing: antialiased;
-  font-size: var(--font-md); /* 全域改成 16px */
+  font-size: var(--font-md); /* 全域 18px */
 }
 
 
@@ -512,27 +512,6 @@ details summary {
   font-size: 13px;
 }
 
-/* RecordsPage 子標籤佈局優化 */
-.subtabs {
-    display: flex;
-    gap: 8px; /* 保持按钮间的間距 */
-    padding: 0 16px; /* 確保左右邊距與卡片一致 */
-    margin-bottom: 12px; /* 增加標籤和內容之間的間距 */
-}
-
-.subtabs button {
-    flex: 1; /* 讓每個按鈕佔據等寬空間 */
-    /* 假設您希望它們看起來像普通的按鈕，但可能需要調整一些樣式 */
-    /* 確保按鈕有足夠的點擊區域 */
-    padding: 8px 16px; 
-}
-
-/* 如果 subtabs button 的樣式需要與您 App 的其他 button 區分，您可能需要額外調整 */
-
-/* 範例: subtabs 的 active 狀態 */
-.subtabs button.active {
-    /* 保持您已有的 active 樣式 */
-}
 /* ---- Fixed Combo Bar ---- */
 .fixed-combo-bar {
   position: fixed;
@@ -1112,7 +1091,7 @@ body {
 
 /* 1. 表單區塊標題 (如：餐別) - 置中且加大 */
 .form-section-title {
-  font-size: 22px;        /* 加大，與首頁標題一致 */
+  font-size: var(--font-lg);  /* 22px */
   font-weight: 700;       /* 加粗 */
   text-align: center;     /* 🟢 關鍵：置中對齊 */
   color: #333;
@@ -1122,7 +1101,7 @@ body {
 /* 2. 頁籤按鈕 (飲食/運動) - 確保夠大 */
 .tab-btn-large {
   flex: 1;
-  font-size: var(--font-lg);  /* ← 改用 CSS 變數 */
+  font-size: var(--font-lg);  /* 22px */
   padding: 12px 0;
   background: transparent;
   border: none;
