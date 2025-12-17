@@ -214,6 +214,17 @@ button.primary {
   border-color: var(--mint);
 }
 
+/* 新增：次要按鈕樣式 */
+button.secondary {
+  font-size: 15px;  /* 或 var(--font-sm) = 16px */
+}
+
+/* 新增：小按鈕樣式 */
+button.small {
+  font-size: 14px;  /* 或 var(--font-xs) = 14px */
+  padding: 4px 8px;  /* 稍微縮小 padding */
+}
+
 /* ---- Summary row ---- */
 
 .summary-row {
@@ -610,7 +621,7 @@ input, select, textarea {
 }
 
 .hero-title {
-  font-size: 13px;
+  font-size: var(--font-sm);
   color: rgba(255, 255, 255, 0.95);
   font-weight: 500;
   margin-bottom: 4px;
@@ -626,7 +637,7 @@ input, select, textarea {
 }
 
 .hero-unit {
-  font-size: 14px;
+  font-size: var(--font-sm);
   font-weight: 600;
   color: rgba(255, 255, 255, 0.9);
   margin-left: 2px;
@@ -634,7 +645,7 @@ input, select, textarea {
 }
 
 .hero-subtitle {
-  font-size: 12px;
+  font-size: var(--font-xs);
   color: #fff;
   margin-bottom: 0;
   background: rgba(255, 255, 255, 0.2);
@@ -660,19 +671,19 @@ input, select, textarea {
 }
 
 .macro-label {
-  font-size: 13px;
+  font-size: var(--font-sm);
   color: #888; /* 深灰字 */
   margin-bottom: 4px;
 }
 
 .macro-val {
-  font-size: 14px;
+  font-size: var(--font-sm);
   font-weight: 700;
   color: #333; /* 深黑字 */
 }
 
 .macro-limit {
-  font-size: 12px;
+  font-size: var(--font-xs);
   color: #bbb;
   font-weight: 400;
   margin-left: 2px;
@@ -699,7 +710,7 @@ input, select, textarea {
 }
 
 .section-progress-target {
-  font-size: 13px;
+  font-size: 16px;
   color: #999;
 }
 
@@ -1050,7 +1061,7 @@ body {
 .macro-legend {
   margin-top: 16px;        /* 跟進度條拉開距離 */
   padding: 0 16px 6px;    /* 左右各留 16px，底部多一點空氣 */
-  font-size: 11px;
+  font-size: 13px;
   color: #9ca3af;          /* 比上面的營養文字更淺 */
   text-align: center;
   font-weight: 400;

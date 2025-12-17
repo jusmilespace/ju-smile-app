@@ -2084,7 +2084,7 @@ useEffect(() => {
                   background: '#f0f9fc', 
                   // 文字：使用飲水主題色
                   color: '#5eb6e6', 
-                  fontSize: 'var(--font-xs)',
+                  fontSize: 'var(--font-sm)',
                   fontWeight: 600,
                   cursor: 'pointer',
                   transition: 'all 0.2s'
@@ -2257,7 +2257,7 @@ useEffect(() => {
               今日身體紀錄
             </h2>
             {/* 把儲存按鈕移到標題旁，省去下方空間，也更順手 */}
-            <button className="secondary small" onClick={saveBody}>
+            <button className="secondary" onClick={saveBody}>
               儲存
             </button>
           </div>
@@ -3224,10 +3224,10 @@ useEffect(() => {
           justifyContent: 'center',
         }}
       >
-        <div style={{ fontSize: 13, color: '#666', fontWeight: 500 }}>
-          {recordsMonthLabel}
-          <span style={{ marginLeft: 4 }}>▼</span>
-        </div>
+        <div style={{ fontSize: 'var(--font-xs)', color: '#666', fontWeight: 500 }}>
+  {recordsMonthLabel}
+  <span style={{ marginLeft: 4 }}>▼</span>
+</div>
 
         <input
                   type="date"
@@ -3337,22 +3337,22 @@ useEffect(() => {
                 }}
               >
                 <span
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 500,
-                    opacity: isSelected ? 1 : 0.7,
-                  }}
-                >
-                  {date.format('ddd')}
-                </span>
+  style={{
+    fontSize: 'var(--font-xs)',
+    fontWeight: 500,
+    opacity: isSelected ? 1 : 0.7,
+  }}
+>
+  {date.format('ddd')}
+</span>
                 <span
-                  style={{
-                    fontSize: 16,
-                    fontWeight: isSelected ? 700 : isToday ? 600 : 500,
-                  }}
-                >
-                  {date.format('D')}
-                </span>
+  style={{
+    fontSize: 'var(--font-sm)',
+    fontWeight: isSelected ? 700 : isToday ? 600 : 500,
+  }}
+>
+  {date.format('D')}
+</span>
               </button>
             );
           })}
