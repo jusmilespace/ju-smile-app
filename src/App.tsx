@@ -3438,7 +3438,7 @@ useEffect(() => {
                         }}
                         onError={(e) => (e.currentTarget.style.display = 'none')}
                       />
-                      <span style={{ fontSize: 'var(--font-xs)', fontWeight: isSelected ? 700 : 500 }}>
+                      <span style={{ fontSize: 'var(--font-md)', fontWeight: isSelected ? 700 : 500 }}>
                         {t}
                       </span>
                     </button>
@@ -3475,7 +3475,7 @@ useEffect(() => {
       color: foodInputMode === 'search' ? 'var(--mint-dark, #5c9c84)' : '#6b7280',
       boxShadow: foodInputMode === 'search' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
 fontWeight: foodInputMode === 'search' ? 800 : 700,
-      fontSize: 'var(--font-sm)',
+      fontSize: 'var(--font-lg)',
       cursor: 'pointer',
       transition: 'all 0.18s ease',
       display: 'flex',
@@ -3502,7 +3502,7 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
       color: foodInputMode === 'palm' ? 'var(--mint-dark, #5c9c84)' : '#6b7280',
       boxShadow: foodInputMode === 'palm' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
       fontWeight: foodInputMode === 'palm' ? 800 : 700,
-      fontSize: 'var(--font-sm)',
+      fontSize: 'var(--font-lg)',
       cursor: 'pointer',
       transition: 'all 0.18s ease',
       display: 'flex',
@@ -3854,7 +3854,7 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
     color: quickAddTab === 'history' ? 'var(--mint-dark, #5c9c84)' : '#6b7280',
     boxShadow: quickAddTab === 'history' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
     fontWeight: quickAddTab === 'history' ? 800 : 700,
-    fontSize: 'var(--font-sm)',
+    fontSize: 'var(--font-lg)',
     cursor: 'pointer',
     transition: 'all 0.18s ease',
     display: 'flex',
@@ -3882,7 +3882,7 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
     color: quickAddTab === 'combo' ? 'var(--mint-dark, #5c9c84)' : '#6b7280',
     boxShadow: quickAddTab === 'combo' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
     fontWeight: quickAddTab === 'combo' ? 800 : 700,
-    fontSize: 'var(--font-sm)',
+    fontSize: 'var(--font-lg)',
     cursor: 'pointer',
     transition: 'all 0.18s ease',
     display: 'flex',

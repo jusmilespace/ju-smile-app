@@ -338,7 +338,9 @@ button.primary {
 
 .subtabs {
   display: flex;
+  justify-content: space-between;  /* 改這裡：讓按鈕分散兩邊 */
   gap: 8px;
+  padding: 0 8px;  /* 新增：左右各留 8px 間距 */
   margin-bottom: 8px;
 }
 
@@ -1100,14 +1102,16 @@ body {
 
 /* 2. 頁籤按鈕 (飲食/運動) - 確保夠大 */
 .tab-btn-large {
-  flex: 1;
-  font-size: var(--font-lg);  /* 22px */
-  padding: 12px 0;
+  flex: 0 0 auto;  /* 保持：不自動伸展 */
+  width: 160px;  /* 新增：固定寬度（可調整大小）*/
+  padding: 12px 0;  /* 改回：上下 padding */
+  font-size: var(--font-lg);
   background: transparent;
   border: none;
   border-bottom: 3px solid transparent;
   color: #999;
   cursor: pointer;
+  text-align: center;  /* 新增：文字置中 */
 }
 
 .tab-btn-large.active {
