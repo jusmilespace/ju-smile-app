@@ -5448,7 +5448,7 @@ const [srcMet, setSrcMet] = useState<string>(
              <img 
                src={iconSrc} 
                alt={title} 
-               style={{ width: 24, height: 24, marginRight: 8, objectFit: 'contain' }} 
+               style={{ width: 30, height: 30, marginRight: 8, objectFit: 'contain' }} 
                onError={(e) => (e.currentTarget.style.display = 'none')} // 若圖片讀取失敗則隱藏
              />
              {title}
@@ -5957,7 +5957,7 @@ useEffect(() => {
             <img 
               src={`${APP_BASE_URL}icons/water.png`} 
               alt="water" 
-              style={{ width: 32, height: 32, marginRight: 8, objectFit: 'contain' }} 
+              style={{ width: 36, height: 36, marginRight: 6, objectFit: 'contain' }} 
             />
             今日飲水
           </h2>
@@ -6115,7 +6115,7 @@ useEffect(() => {
               <img 
                 src={`${APP_BASE_URL}icons/exercise.png`} 
                 alt="exercise" 
-                style={{ width: 32, height: 32, marginRight: 8, objectFit: 'contain' }} 
+                style={{ width: 36, height: 36, marginRight: 8, objectFit: 'contain' }} 
               />
               今日運動
             </h2>
@@ -6171,7 +6171,7 @@ useEffect(() => {
               <img 
                 src={`${APP_BASE_URL}icons/body.png`} 
                 alt="body" 
-                style={{ width: 32, height: 32, marginRight: 8, objectFit: 'contain' }} 
+                style={{ width: 36, height: 36, marginRight: 8, objectFit: 'contain' }} 
               />
               今日身體紀錄
             </h2>
