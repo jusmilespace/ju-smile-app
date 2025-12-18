@@ -1280,3 +1280,64 @@ body {
   font-size: var(--font-sm);
   font-weight: 600;
 }
+
+/* === 紀錄頁：飲食明細列表樣式 === */
+
+/* 餐別標題 (例如：早餐) */
+.record-group-title {
+  font-size: 16px;  /* 可以在這裡調整標題大小 */
+  font-weight: 700;
+  color: #4b5563;
+}
+
+/* 餐別熱量小計 (例如：400 kcal) */
+.record-group-subtotal {
+  font-size: 13px;  /* 可以在這裡調整小計大小 */
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+/* 食物名稱 */
+.record-item-name {
+  font-size: 15px;  /* 可以在這裡調整食物名稱大小 */
+  font-weight: 600;
+  color: #374151;
+}
+
+/* 食物詳細資訊 (份量、熱量) */
+.record-item-detail {
+  font-size: 13px;  /* 可以在這裡調整詳細資訊大小 */
+  color: #6b7280;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+/* 編輯/刪除按鈕通用樣式 */
+.record-item-btn {
+  font-size: 13px; /* 手機上字稍微大一點點更好按 */
+  padding: 6px 10px;
+  border: none;
+  border-radius: 8px; /* 圓角稍微大一點，更像 App 風格 */
+  cursor: pointer;
+  font-weight: 600; /* 加粗一點增加可讀性 */
+  transition: opacity 0.2s;
+}
+
+.record-item-btn:active {
+  opacity: 0.7; /* 按下時的效果 */
+}
+
+/* 🟢 編輯：淺薄荷綠底 + 深薄荷綠字 */
+.btn-edit {
+  background: #f0fdf9; 
+  color: #5c9c84; /* 使用比 #97d0ba 更深一點的綠，確保閱讀清晰 */
+}
+
+/* 🔴 刪除：淺紅底 + 深紅字 (維持不變，作為防呆警示) */
+.btn-delete {
+  background: #fef2f2; 
+  color: #ef4444;
+}

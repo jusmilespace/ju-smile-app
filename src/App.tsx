@@ -4345,173 +4345,119 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
               />
             )}
 
-            <div className="list-section">
-              <div className="card-header" style={{ alignItems: 'flex-start' }}>
-                <h3>{selectedDate} 飲食明細</h3>
-          
+           <div className="list-section">
+  <div className="card-header" style={{ borderBottom: 'none', paddingBottom: 0 }}>
+    <h3>{selectedDate} 飲食明細</h3>
+  </div>
+
+  {dayMeals.length === 0 && (
+    <div className="hint" style={{ marginTop: 8 }}>尚未記錄飲食</div>
+  )}
+
+  {/* ⚠️ 注意：這裡開頭必須有 { 左大括號 */}
+  {(['早餐', '午餐', '晚餐', '點心'] as const).map((type) => {
+    const typeMeals = dayMeals.filter((m) => m.mealType === type);
+    if (typeMeals.length === 0) return null;
+
+    const typeSubtotal = typeMeals.reduce((s, m) => s + m.kcal, 0);
+
+    return (
+      <div key={type} style={{ marginBottom: 16 }}>
+        {/* 標題列 */}
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '6px 4px',
+          marginBottom: 4,
+          borderBottom: '2px solid #f0f4f2'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 4, height: 14, background: '#97d0ba', borderRadius: 2 }}></div>
+            <span className="record-group-title">{type}</span>
+          </div>
+          <span className="record-group-subtotal">
+            {typeSubtotal} kcal
+          </span>
+        </div>
+
+        {/* 列表內容 */}
+        {/* ⚠️ 注意：這裡開頭也必須有 { 左大括號 */}
+        {typeMeals.map((m) => {
+          const isSelected = selectedMealIds.includes(m.id);
+          return (
+            <div
+              key={m.id}
+              className="list-item clickable"
+              onClick={() => toggleMealSelection(m.id)}
+              style={{
+                borderLeft: isSelected ? '4px solid var(--mint-dark)' : '1px solid transparent',
+                background: isSelected ? '#f7fbf8' : '#fff',
+                paddingLeft: isSelected ? '12px' : '0px',
+                paddingRight: 0,
+                alignItems: 'center',
+                marginBottom: 0,
+                borderBottom: '1px solid #f3f4f6'
+              }}
+            >
+              <div style={{ marginRight: 12, fontSize: 18, opacity: isSelected ? 1 : 0.3, cursor: 'pointer' }}>
+                {isSelected ? '☑️' : '◻️'}
               </div>
 
-              {dayMeals.length === 0 && (
-                <div className="hint">尚未記錄飲食</div>
-              )}
-              {dayMeals.map((m) => {
-                const isSelected = selectedMealIds.includes(m.id);
-                return (
-                  // 修正：整個 list-item 容器被改為可以點擊選取
-                  <div
-                    key={m.id}
-                    className="list-item clickable" // 加上 clickable 樣式
-                    onClick={() => toggleMealSelection(m.id)} // 點擊項目即選取/取消選取
-                    style={{
-                      borderLeft: isSelected
-                        ? '4px solid var(--mint-dark)'
-                        : '1px solid #f0f4f2',
-                      background: isSelected ? '#f7fbf8' : '#fff',
-                      paddingLeft: isSelected ? '12px' : '16px',
-                      // 增加 flex 佈局確保選取圖標和內容對齊
-                      alignItems: 'center',
-                    }}
-                  >
-                    {/* 🆕 新增：勾選標記 */}
-                    <div style={{ marginRight: '8px', fontSize: '18px' }}>
-                      {isSelected ? '☑️' : '◻️'} 
-                    </div>
-
-                    <div style={{ flex: 1 }}> 
-                      <div>
-                        {m.label}
-                      </div>
-                      <div
-  className="sub"
-  style={{
-    display: 'flex',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    gap: 4,
-  }}
->
-  <span>{m.mealType}</span>
-
-  {m.amountText && (
-    <>
-      <span>·</span>
-      {/* --- 修改開始：優先顯示圖片 --- */}
-<span>
-  {m.counts ? (
-    // 如果有 counts 資料，顯示圖片
-    <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
-      {Object.entries(m.counts).map(([key, count]) => {
-        if (count <= 0 || !ICON_MAP[key]) return null;
-        return (
-          <span key={key} style={{ 
-            display: 'inline-flex', alignItems: 'center', 
-            background: '#f3f4f6', padding: '0 4px', 
-            borderRadius: 4, border: '1px solid #e5e7eb' 
-          }}>
-            <img 
-              src={ICON_MAP[key]} 
-              alt={key} 
-              style={{ width: 14, height: 14, objectFit: 'contain', marginRight: 2 }} 
-            />
-            <span style={{ fontSize: 10, fontWeight: 700, color: '#4b5563' }}>
-              ×{count}
-            </span>
-          </span>
-        );
-      })}
-    </span>
-  ) : (
-    // 如果沒有 counts (舊資料)，顯示原本的文字
-    renderPalmAmountText(m.amountText, m.counts)
-  )}
-</span>
-{/* --- 修改結束 --- */}
-    </>
-  )}
-
-  <span>·</span>
-  <span>{m.kcal} kcal</span>
-</div>
-
-                    </div>
-                    <div 
-                      className="btn-row"
-                      onClick={(e) => e.stopPropagation()} // 阻止按鈕點擊觸發父級的 toggleSelection
-                    >
-                      <button 
-                        className="small" 
-                        onClick={() => startEditMeal(m)}
-                      >
-                        編輯
-                      </button>
-                      <button
-                        className="small"
-                        onClick={() =>
-                          setMeals((prev) =>
-                            prev.filter((x) => x.id !== m.id)
-                          )
-                        }
-                      >
-                        刪除
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* 🆕 儲存常用組合彈窗 */}
-            {showSaveComboModal && (
-              <div
-                className="modal-backdrop"
-                style={{
-                  position: 'fixed',
-                  inset: 0,
-                  background: 'rgba(0,0,0,0.35)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  zIndex: 20,
-                }}
-              >
-                <div
-                  className="modal"
-                  style={{
-                    background: '#fff',
-                    borderRadius: 12,
-                    padding: 16,
-                    maxWidth: 320,
-                    width: '90%',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                  }}
-                >
-                  <h3 style={{ marginTop: 0 }}>
-                    儲存常用組合 ({selectedMealIds.length} 項)
-                  </h3>
-                  <div className="form-section">
-                    <label>
-                      組合名稱
-                      <input
-                        value={comboNameInput}
-                        onChange={(e) => setComboNameInput(e.target.value)}
-                        placeholder="例如：午餐便當組合"
-                      />
-                    </label>
-                  </div>
-                  <div className="btn-row">
-                    <button className="primary" onClick={handleSaveCombo}>
-                      儲存組合
-                    </button>
-                    <button onClick={() => setShowSaveComboModal(false)}>
-                      取消
-                    </button>
-                  </div>
+              <div style={{ flex: 1, padding: '8px 0' }}>
+                <div className="record-item-name">
+                  {m.label}
+                </div>
+                <div className="record-item-detail">
+                  {m.amountText && (
+                    <>
+                      <span>
+                         {m.counts ? (
+                            <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
+                              {Object.entries(m.counts).map(([key, count]) => {
+                                if (count <= 0 || !ICON_MAP[key]) return null;
+                                return (
+                                  <span key={key} style={{ display: 'inline-flex', alignItems: 'center', background: '#f3f4f6', padding: '0 4px', borderRadius: 4 }}>
+                                    <img src={ICON_MAP[key]} alt={key} style={{ width: 12, height: 12, objectFit: 'contain', marginRight: 2 }} />
+                                    <span style={{ fontSize: 10, fontWeight: 700 }}>×{count}</span>
+                                  </span>
+                                );
+                              })}
+                            </span>
+                          ) : (
+                            renderPalmAmountText(m.amountText, m.counts)
+                          )}
+                      </span>
+                      <span>·</span>
+                    </>
+                  )}
+                  <span>{m.kcal} kcal</span>
                 </div>
               </div>
-            )}
-          </div>
-        )}
 
+              <div className="btn-row" onClick={(e) => e.stopPropagation()} style={{ gap: 8 }}>
+                <button
+                  className="record-item-btn btn-edit"
+                  onClick={() => startEditMeal(m)}
+                >
+                  編輯
+                </button>
+                <button
+                  className="record-item-btn btn-delete"
+                  onClick={() => setMeals((prev) => prev.filter((x) => x.id !== m.id))}
+                >
+                  刪除
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  })}
+</div>
+</div>
+)}
         {/* 運動 */}
 {recordTab === 'exercise' && (
   <div className="card">
@@ -4937,37 +4883,45 @@ setQuickExercise(null);
 
     {/* 運動明細列表 */}
     <div className="list-section">
-      <h3>{selectedDate} 運動明細</h3>
-      {dayExercises.length === 0 && (
-        <div className="hint">尚未記錄運動</div>
-      )}
-      {dayExercises.map((e) => (
-        <div key={e.id} className="list-item">
-          <div>
-            <div>{e.name}</div>
-            <div className="sub">
-              {e.minutes != null ? `${e.minutes} 分鐘 · ` : ''}
-              {e.kcal} kcal
-            </div>
-          </div>
-          <div className="btn-row">
-            <button onClick={() => startEditExercise(e)}>
-              編輯
-            </button>
-            <button
-              onClick={() =>
-                setExercises((prev) =>
-                  prev.filter((x) => x.id !== e.id)
-                )
-              }
-            >
-              刪除
-            </button>
-          </div>
+  <h3>{selectedDate} 運動明細</h3>
+  {dayExercises.length === 0 && (
+    <div className="hint">尚未記錄運動</div>
+  )}
+  {dayExercises.map((e) => (
+    <div key={e.id} className="list-item">
+      <div>
+        <div style={{ fontWeight: 600, color: '#374151', fontSize: 15 }}>
+          {e.name}
         </div>
-      ))}
+        <div className="sub" style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
+          {e.minutes != null ? `${e.minutes} 分鐘 · ` : ''}
+          {e.kcal} kcal
+        </div>
+      </div>
+      
+      {/* 👇 修改這裡：套用跟飲食列表一樣的按鈕樣式 */}
+      <div className="btn-row" style={{ gap: 8 }}>
+        <button 
+          className="record-item-btn btn-edit"
+          onClick={() => startEditExercise(e)}
+        >
+          編輯
+        </button>
+        <button
+          className="record-item-btn btn-delete"
+          onClick={() =>
+            setExercises((prev) =>
+              prev.filter((x) => x.id !== e.id)
+            )
+          }
+        >
+          刪除
+        </button>
+      </div>
     </div>
-  </div>
+  ))}
+</div>
+</div>
 )}
 
 {/* 🆕 浮動按鈕：儲存常用組合 */}
