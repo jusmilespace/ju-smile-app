@@ -1187,6 +1187,10 @@ const COMMON_EXERCISES = [
     // 🆕 分數滾輪的 Ref (用於自動捲動)
     const servingsPickerRef = useRef<HTMLDivElement>(null);
 
+    // 👇 [新增] 給快速搜尋用的分數滾輪 Ref
+    const unitQtyPickerRef = useRef<HTMLDivElement>(null); 
+    const gramPickerRef = useRef<HTMLDivElement>(null);
+
     // 定義分數選項 (顯示標籤 vs 實際數值)
     const fractionList = [
       { label: '1/8', value: '0.125' },
@@ -1271,6 +1275,9 @@ const [editingMealId, setEditingMealId] = useState<string | null>(null);
 // 🆕 自訂鍵盤 / 單位選擇器 開關
 const [showQtyPad, setShowQtyPad] = useState(false);
 const [showUnitPicker, setShowUnitPicker] = useState(false);
+
+// 👇 [新增] 用於控制 P/C/F 鍵盤的狀態
+    const [editingMacro, setEditingMacro] = useState<'p' | 'c' | 'f' | null>(null);
 
 // 單位列表 (固定順序，方便計算索引)
 const unitList = [
@@ -2467,13 +2474,42 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
                             <button onClick={() => setUnitQuantity(p => p.slice(0, -1) || '0')} style={{ padding: '12px 0', borderRadius: 12, border: 'none', background: '#e5e7eb', fontSize: 20, color: '#333', boxShadow: '0 2px 0 #d1d5db' }}>⌫</button>
                           </div>
                         ) : (
+                          // 👇 [修改] 分數滾輪區塊：加入 ref, onScroll 與顯示優化
                           <div style={{ position: 'relative', height: 200, overflow: 'hidden', background: '#fff', borderRadius: 12 }}>
                             <div style={{ position: 'absolute', top: 75, left: 0, right: 0, height: 50, background: 'rgba(151, 208, 186, 0.2)', borderTop: '1px solid #97d0ba', borderBottom: '1px solid #97d0ba', pointerEvents: 'none', zIndex: 1 }}></div>
-                            <div style={{ height: '100%', overflowY: 'auto', scrollSnapType: 'y mandatory', position: 'relative', zIndex: 2, scrollbarWidth: 'none' }}>
+                            <div 
+                              ref={unitQtyPickerRef} // 1. 綁定 ref
+                              onScroll={(e) => {     // 2. 加入滑動監聽
+                                const scrollTop = e.currentTarget.scrollTop;
+                                const index = Math.round(scrollTop / 50);
+                                const target = fractionList[index];
+                                if (target) {
+                                  setUnitQuantity(target.value);
+                                }
+                              }}
+                              style={{ height: '100%', overflowY: 'auto', scrollSnapType: 'y mandatory', position: 'relative', zIndex: 2, scrollbarWidth: 'none' }}
+                            >
                               <div style={{ height: 75 }}></div>
                               {fractionList.map((item) => (
-                                <div key={item.label} onClick={() => setUnitQuantity(item.value)} style={{ height: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 600, scrollSnapAlign: 'center', color: String(unitQuantity) === item.value ? '#059669' : '#9ca3b8' }}>
+                                <div 
+                                  key={item.label} 
+                                  onClick={() => {
+                                    setUnitQuantity(item.value);
+                                    // 3. 點擊自動捲動置中
+                                    const index = fractionList.indexOf(item);
+                                    if (unitQtyPickerRef.current) {
+                                      unitQtyPickerRef.current.scrollTo({ top: index * 50, behavior: 'smooth' });
+                                    }
+                                  }}
+                                  style={{ height: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 600, scrollSnapAlign: 'center', color: String(unitQuantity) === item.value ? '#059669' : '#9ca3b8', transition: 'all 0.2s', cursor: 'pointer' }}
+                                >
                                   {item.label}
+                                  {/* 4. 顯示對應小數 */}
+                                  {String(unitQuantity) === item.value && (
+                                    <span style={{ fontSize: 15, color: '#5c9c84', marginLeft: 8, fontWeight: 400 }}>
+                                      ({item.value})
+                                    </span>
+                                  )}
                                 </div>
                               ))}
                               <div style={{ height: 75 }}></div>
@@ -2576,13 +2612,42 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
                             <button onClick={() => setFoodAmountG(p => p.slice(0, -1) || '0')} style={{ padding: '12px 0', borderRadius: 12, border: 'none', background: '#e5e7eb', fontSize: 20, color: '#333', boxShadow: '0 2px 0 #d1d5db' }}>⌫</button>
                           </div>
                         ) : (
+                          // 👇 [修改] 分數滾輪區塊：加入 ref, onScroll 與顯示優化
                           <div style={{ position: 'relative', height: 200, overflow: 'hidden', background: '#fff', borderRadius: 12 }}>
                             <div style={{ position: 'absolute', top: 75, left: 0, right: 0, height: 50, background: 'rgba(151, 208, 186, 0.2)', borderTop: '1px solid #97d0ba', borderBottom: '1px solid #97d0ba', pointerEvents: 'none', zIndex: 1 }}></div>
-                            <div style={{ height: '100%', overflowY: 'auto', scrollSnapType: 'y mandatory', position: 'relative', zIndex: 2, scrollbarWidth: 'none' }}>
+                            <div 
+                              ref={gramPickerRef}    // 1. 綁定 ref
+                              onScroll={(e) => {     // 2. 加入滑動監聽
+                                const scrollTop = e.currentTarget.scrollTop;
+                                const index = Math.round(scrollTop / 50);
+                                const target = fractionList[index];
+                                if (target) {
+                                  setFoodAmountG(target.value);
+                                }
+                              }}
+                              style={{ height: '100%', overflowY: 'auto', scrollSnapType: 'y mandatory', position: 'relative', zIndex: 2, scrollbarWidth: 'none' }}
+                            >
                               <div style={{ height: 75 }}></div>
                               {fractionList.map((item) => (
-                                <div key={item.label} onClick={() => setFoodAmountG(item.value)} style={{ height: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 600, scrollSnapAlign: 'center', color: String(foodAmountG) === item.value ? '#059669' : '#9ca3b8' }}>
+                                <div 
+                                  key={item.label} 
+                                  onClick={() => {
+                                    setFoodAmountG(item.value);
+                                    // 3. 點擊自動捲動置中
+                                    const index = fractionList.indexOf(item);
+                                    if (gramPickerRef.current) {
+                                      gramPickerRef.current.scrollTo({ top: index * 50, behavior: 'smooth' });
+                                    }
+                                  }}
+                                  style={{ height: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 600, scrollSnapAlign: 'center', color: String(foodAmountG) === item.value ? '#059669' : '#9ca3b8', transition: 'all 0.2s', cursor: 'pointer' }}
+                                >
                                   {item.label}
+                                  {/* 4. 顯示對應小數 */}
+                                  {String(foodAmountG) === item.value && (
+                                    <span style={{ fontSize: 15, color: '#5c9c84', marginLeft: 8, fontWeight: 400 }}>
+                                      ({item.value})
+                                    </span>
+                                  )}
                                 </div>
                               ))}
                               <div style={{ height: 75 }}></div>
@@ -3518,13 +3583,13 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
 
                         {/* 2. 定義「一份」的內容 */}
                         <div style={{ background: '#f8fafc', padding: '16px', borderRadius: 12, border: '1px solid #e2e8f0' }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: '#64748b', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: '#64748b', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
                             <span>⚙️ 設定「1 份」的營養素</span>
                           </div>
 
                           {/* A. 參考單位 (優化：點擊彈出鍵盤與滾輪) */}
       <div style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 13, color: '#666', marginBottom: 6 }}>
+        <div style={{ fontSize: 14, color: '#666', marginBottom: 6 }}>
           定義 1 份 = 多少?
         </div>
         
@@ -3843,35 +3908,34 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
 
                    {unitList.map((u) => (
                      <div
-                       key={u}
-                       // 點擊項目也可以直接捲動到該項 (Optional UX)
-                       onClick={() => {
-                         const index = unitList.indexOf(u);
-                         if (unitPickerRef.current) {
-                           unitPickerRef.current.scrollTo({
-                             top: index * 50,
-                             behavior: 'smooth'
-                           });
-                         }
-                       }}
-                       style={{
-                         height: 50, // 固定高度
-                         display: 'flex',
-                         alignItems: 'center',
-                         justifyContent: 'center',
-                         fontSize: 18,
-                         fontWeight: fallbackUnitLabel === u ? 700 : 400,
-                         // 選中時變深色，未選中時變淡灰
-                         color: fallbackUnitLabel === u ? '#1f2937' : '#9ca3af',
-                         // 選中時稍微放大
-                         transform: fallbackUnitLabel === u ? 'scale(1.1)' : 'scale(1)',
-                         transition: 'transform 0.2s, color 0.2s',
-                         scrollSnapAlign: 'center', // 每次滑動結束都停在項目中間
-                         cursor: 'pointer'
-                       }}
-                     >
-                       {u}
-                     </div>
+  key={u}
+  onClick={() => {
+    const index = unitList.indexOf(u);
+    if (unitPickerRef.current) {
+      unitPickerRef.current.scrollTo({
+        top: index * 50,
+        behavior: 'smooth'
+      });
+    }
+  }}
+  style={{
+    height: 50,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 18,
+    // ✅ 修正 1：固定字體粗細，消除寬度變化造成的左右晃動
+    fontWeight: 600, 
+    // ✅ 修正 2：僅透過顏色區分選中狀態
+    color: fallbackUnitLabel === u ? '#1f2937' : '#9ca3af',
+    // ✅ 修正 3：移除 transform 縮放與 transition 動畫，讓滑動更跟手、更穩
+    opacity: fallbackUnitLabel === u ? 1 : 0.5, 
+    scrollSnapAlign: 'center',
+    cursor: 'pointer'
+  }}
+>
+  {u}
+</div>
                    ))}
 
                    {/* 下方留白 (讓最後一個項目能捲到中間) */}
@@ -3887,47 +3951,119 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
         )}
 
       </div>
-                          {/* B. 營養素輸入 (保持原本的 Grid 佈局) */}
+                         {/* B. 營養素輸入 (改為點擊彈出鍵盤) */}
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
                             {/* Protein */}
-                            <div className="macro-input-card protein">
+                            <div 
+                              className="macro-input-card protein"
+                              onClick={() => {
+                                setEditingMacro('p');
+                                setFallbackProtPerServ(''); // 開啟時清空，方便直接輸入
+                              }}
+                              style={{ cursor: 'pointer' }}
+                            >
                               <div className="macro-input-label protein">蛋白質 P</div>
-                              <input
-                                type="number"
-                                className="macro-input-field" /* 🟢 套用 Class */
-                                value={fallbackProtPerServ}
-                                onChange={(e) => setFallbackProtPerServ(e.target.value)}
-                                placeholder="0"
-                              />
+                              <div className="macro-input-field">
+                                {fallbackProtPerServ || '0'}
+                              </div>
                               <div className="macro-unit-text">g / 份</div>
                             </div>
 
                             {/* Carb */}
-                            <div className="macro-input-card carb">
+                            <div 
+                              className="macro-input-card carb"
+                              onClick={() => {
+                                setEditingMacro('c');
+                                setFallbackCarbPerServ('');
+                              }}
+                              style={{ cursor: 'pointer' }}
+                            >
                               <div className="macro-input-label carb">碳水 C</div>
-                              <input
-                                type="number"
-                                className="macro-input-field" /* 🟢 套用 Class */
-                                value={fallbackCarbPerServ}
-                                onChange={(e) => setFallbackCarbPerServ(e.target.value)}
-                                placeholder="0"
-                              />
+                              <div className="macro-input-field">
+                                {fallbackCarbPerServ || '0'}
+                              </div>
                               <div className="macro-unit-text">g / 份</div>
                             </div>
 
                             {/* Fat */}
-                            <div className="macro-input-card fat">
+                            <div 
+                              className="macro-input-card fat"
+                              onClick={() => {
+                                setEditingMacro('f');
+                                setFallbackFatPerServ('');
+                              }}
+                              style={{ cursor: 'pointer' }}
+                            >
                               <div className="macro-input-label fat">脂肪 F</div>
-                              <input
-                                type="number"
-                                className="macro-input-field" /* 🟢 套用 Class */
-                                value={fallbackFatPerServ}
-                                onChange={(e) => setFallbackFatPerServ(e.target.value)}
-                                placeholder="0"
-                              />
+                              <div className="macro-input-field">
+                                {fallbackFatPerServ || '0'}
+                              </div>
                               <div className="macro-unit-text">g / 份</div>
                             </div>
                           </div>
+
+                          {/* 👇 [新增] P/C/F 專用的數字鍵盤 Modal */}
+                          {editingMacro && (
+                            <div 
+                              className="modal-backdrop"
+                              style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 100, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+                              onClick={() => setEditingMacro(null)}
+                            >
+                              <div 
+                                style={{ width: '100%', maxWidth: 420, background: '#f0f2f5', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, boxShadow: '0 -4px 20px rgba(0,0,0,0.1)' }}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, alignItems: 'center' }}>
+                                  <span style={{ fontSize: 16, fontWeight: 600, color: '#666' }}>
+                                    輸入{editingMacro === 'p' ? '蛋白質' : editingMacro === 'c' ? '碳水' : '脂肪'}
+                                  </span>
+                                  <span style={{ fontSize: 24, fontWeight: 700, color: '#333' }}>
+                                    {editingMacro === 'p' ? (fallbackProtPerServ || '0') : editingMacro === 'c' ? (fallbackCarbPerServ || '0') : (fallbackFatPerServ || '0')}
+                                  </span>
+                                </div>
+                                
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, '.', 0].map((num) => (
+                                    <button
+                                      key={num}
+                                      type="button"
+                                      onClick={() => {
+                                        const setter = editingMacro === 'p' ? setFallbackProtPerServ : editingMacro === 'c' ? setFallbackCarbPerServ : setFallbackFatPerServ;
+                                        setter(prev => {
+                                          if (num === '.') {
+                                            return prev.includes('.') ? prev : prev + '.';
+                                          }
+                                          return (prev === '0' || prev === '') ? String(num) : prev + num;
+                                        });
+                                      }}
+                                      style={{ padding: '16px 0', borderRadius: 12, border: 'none', background: '#fff', fontSize: 24, fontWeight: 600, color: '#333', boxShadow: '0 2px 0 #e5e7eb', cursor: 'pointer' }}
+                                    >
+                                      {num}
+                                    </button>
+                                  ))}
+                                  
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const setter = editingMacro === 'p' ? setFallbackProtPerServ : editingMacro === 'c' ? setFallbackCarbPerServ : setFallbackFatPerServ;
+                                      setter(prev => prev.slice(0, -1));
+                                    }}
+                                    style={{ padding: '16px 0', borderRadius: 12, border: 'none', background: '#e5e7eb', fontSize: 20, color: '#333', boxShadow: '0 2px 0 #d1d5db', cursor: 'pointer' }}
+                                  >
+                                    ⌫
+                                  </button>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingMacro(null)}
+                                  style={{ width: '100%', marginTop: 12, padding: '14px 0', borderRadius: 12, border: 'none', background: '#5c9c84', color: '#fff', fontSize: 18, fontWeight: 700, cursor: 'pointer' }}
+                                >
+                                  完成
+                                </button>
+                              </div>
+                            </div>
+                          )}
                           
                           <div style={{ textAlign: 'center', marginTop: 12, fontSize: 15, color: '#666' }}>
                             系統將依 <b>P×4 + C×4 + F×9</b> 自動計算熱量
