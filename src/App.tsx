@@ -1456,7 +1456,27 @@ useEffect(() => {
     
     // 1. 運動記錄模式
     const recordMode = exForm.mode;
-    const setRecordMode = (mode: 'quick' | 'detail') => onUpdateExForm({ mode });
+    const setRecordMode = (mode: 'quick' | 'detail') => {
+      if (mode === 'detail') {
+        // 切換到精確模式：清空名稱與 MET，不預帶快速模式的資料
+        // 但保留體重與時間 (exWeight, exMinutes)，因為這兩者通常不變
+        onUpdateExForm({ 
+          mode, 
+          name: '', 
+          customMet: '', 
+          metRow: null, 
+          quickExercise: null 
+        });
+      } else {
+        // 切換回快速模式：也清空，讓使用者重新點選卡片
+        onUpdateExForm({ 
+          mode, 
+          name: '', 
+          customMet: '',
+          metRow: null
+        });
+      }
+    };
 
     // 2. 快速記錄選中的運動 (Wrapper)
     const quickExercise = exForm.quickExercise;
@@ -1491,33 +1511,44 @@ useEffect(() => {
     // 🆕 數字鍵盤控制開關 (放在這裡)
     const [showWeightPad, setShowWeightPad] = useState(false);
     const [showTimePad, setShowTimePad] = useState(false);
+    const [showMetPad, setShowMetPad] = useState(false);
 
 
-    // 🆕 4. 體重自動帶入邏輯 (修復版：解決刪不掉的問題)
+    // 🆕 4. 體重自動帶入邏輯 (智慧同步版)
     useEffect(() => {
-      // 只有在「運動頁籤」且「體重欄位完全為空」時才自動帶入
+      // 只有在「運動頁籤」時才執行
       if (recordTab !== 'exercise') return;
-      if (exWeight !== '') return; // 如果已經有值（包含使用者正在打字），就不要雞婆覆蓋
 
+      // 1. 取得今日體重
       const day = days.find((d) => d.date === selectedDate);
-      
-      // A. 優先使用當日體重
-      if (day && day.weight != null && day.weight > 0) {
-        setExWeight(String(day.weight));
+      const todayW = (day && day.weight != null && day.weight > 0) ? String(day.weight) : null;
+
+      // 2. 取得最近一次「非今日」的舊體重 (Fallback)
+      // 用來判斷目前欄位裡的值，是不是之前自動帶入的舊資料
+      const pastDays = days
+        .filter((d) => d.weight != null && d.weight > 0 && d.date !== selectedDate)
+        .sort((a, b) => dayjs(b.date).diff(dayjs(a.date)));
+      const pastW = pastDays.length > 0 ? String(pastDays[0].weight) : null;
+
+      // === 決策邏輯 ===
+
+      // A. 如果欄位是空的 -> 有今日用今日，沒今日用舊的
+      if (exWeight === '') {
+        if (todayW) setExWeight(todayW);
+        else if (pastW) setExWeight(pastW);
         return;
       }
-      
-      // B. 當日沒有體重時，找最後一次輸入的體重
-      const daysWithWeight = days
-        .filter((d) => d.weight != null && d.weight > 0)
-        .sort((a, b) => dayjs(b.date).diff(dayjs(a.date)));
-      
-      if (daysWithWeight.length > 0) {
-        setExWeight(String(daysWithWeight[0].weight));
-      }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedDate, days, recordTab]); // ⚠️ 重要：拿掉 exWeight 依賴，解決無限回填問題
 
+      // B. 如果欄位有值，但跟今日體重不同 -> 檢查是否為「舊體重殘留」
+      // 如果目前的值等於舊體重 (代表它可能是之前自動帶入的) -> 幫使用者更新為今日體重
+      if (todayW && exWeight !== todayW) {
+         if (exWeight === pastW) {
+           setExWeight(todayW);
+         }
+      }
+      
+      // ⚠️ 重要：依賴陣列中移除了 exWeight，這樣您手動刪除/修改時才不會一直跳回來
+    }, [selectedDate, days, recordTab]);
 
     // 🆕 5. 編輯運動邏輯 (包含智慧模式切換)
     function startEditExercise(e: ExerciseEntry) {
@@ -2077,7 +2108,7 @@ useEffect(() => {
     
     console.log('========== addExercise 結束 ==========');
   };
-  
+
     return (
       <div className="page page-records"
         style={{ paddingBottom: '90px' }}
@@ -4550,55 +4581,24 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
       </p>
     </details>
 
-    {/* 🆕 記錄模式切換 */}
-    <div style={{ 
-  display: 'flex', 
-  background: '#f0f2f5', 
-  borderRadius: 999, 
-  padding: 4, 
-  marginBottom: 16, 
-  marginTop: 12 
-}}>
-  <button
-    type="button"
-    onClick={() => setRecordMode('quick')}
-    style={{
-      flex: 1,
-      padding: '8px 0',
-      border: 'none',
-      borderRadius: 999,
-      background: recordMode === 'quick' ? '#fff' : 'transparent',
-      color: recordMode === 'quick' ? 'var(--mint-dark, #5c9c84)' : '#888',
-      boxShadow: recordMode === 'quick' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
-      fontWeight: recordMode === 'quick' ? 600 : 400,
-      fontSize: 'var(--font-md)',
-      cursor: 'pointer',
-      transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
-    }}
-  >
-    ⚡ 快速記錄
-  </button>
-  <button
-    type="button"
-    onClick={() => setRecordMode('detail')}
-    style={{
-      flex: 1,
-      padding: '4px 0',
-      border: 'none',
-      borderRadius: 999,
-      background: recordMode === 'detail' ? '#fff' : 'transparent',
-      color: recordMode === 'detail' ? 'var(--mint-dark, #5c9c84)' : '#888',
-      boxShadow: recordMode === 'detail' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
-      fontWeight: recordMode === 'detail' ? 600 : 400,
-      fontSize: 'var(--font-md)',
-      cursor: 'pointer',
-      transition: 'all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1)',
-    }}
-  >
-    🔍 精確記錄
-  </button>
-</div>
-
+   {/* 🆕 記錄模式切換 (使用 CSS class) */}
+    <div className="mode-switch">
+      <button
+        type="button"
+        className={`mode-btn ${recordMode === 'quick' ? 'active' : ''}`}
+        onClick={() => setRecordMode('quick')}
+      >
+        ⚡ 快速記錄
+      </button>
+      
+      <button
+        type="button"
+        className={`mode-btn ${recordMode === 'detail' ? 'active' : ''}`}
+        onClick={() => setRecordMode('detail')}
+      >
+        🔍 精確記錄
+      </button>
+    </div>
 {/* ========== 快速記錄模式 ========== */}
 <div 
   className="form-section"
@@ -4707,201 +4707,130 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
     </button>
     
   )}
-  <NumberPadModal
-  visible={showWeightPad}
-  onClose={() => setShowWeightPad(false)}
-  title="輸入體重 (kg)"
-  value={exWeight}
-  allowDecimal={true} // 體重允許小數點
-  onChange={(val) => setExWeight(val)}
-/>
-
-<NumberPadModal
-  visible={showTimePad}
-  onClose={() => setShowTimePad(false)}
-  title="運動時間 (分鐘)"
-  value={exMinutes}
-  allowDecimal={false} // 時間通常為整數
-  onChange={(val) => setExMinutes(val)}
-/>
+ 
 </div>
 
-   {/* ========== 精確記錄模式（原本的功能） ========== */}
-<div 
-  className="form-section"
-  style={{ display: recordMode === 'detail' ? 'block' : 'none' }}
->
-  <label>
-    運動名稱
-    <input
-      id="exercise-name-input"
-  value={exName}
-  onChange={(e) => {
-    setExName(e.target.value);
-    setSelectedMetRow(null);
-    // 🆕 只在精確記錄模式才清空 quickExercise
-    if (recordMode === 'detail') {
-   
-setQuickExercise(null);
-    }
-  }}
-            placeholder="輸入關鍵字,例如:快走、重訓…"
-            name="exerciseSearchQuery"
-            autoComplete="off"
-            autoCorrect="off"
-            spellCheck="false"
-          />
-        </label>
+{/* ========== 精確記錄模式 (優化版) ========== */}
+  <div 
+    className="form-section"
+    style={{ display: recordMode === 'detail' ? 'block' : 'none' }}
+  >
+    {/* 1. 搜尋運動名稱 (保留文字輸入，但變漂亮了) */}
+    <div className="input-group">
+      <label>運動名稱 / 關鍵字</label>
+      <input
+        type="text"
+        className="styled-text-input"
+        value={exName}
+        onChange={(e) => {
+          setExName(e.target.value);
+          setSelectedMetRow(null);
+          // 切換到搜尋時，清除快速選項避免衝突
+          if(recordMode === 'detail') setQuickExercise(null); 
+        }}
+        placeholder="例如: 慢跑、騎自行車..."
+        autoComplete="off"
+      />
+    </div>
 
-        {/* 有輸入名稱時才顯示搜尋結果；選到一筆後收起來 */}
-        {exName.trim() && !selectedMetRow && (
-          <div className="search-results">
-            {exerciseMatches.length === 0 ? (
-              <>
-                <div className="hint">
-                  找不到相符的運動,可以在下方輸入自訂 MET。
-                </div>
-
-                <details className="met-ref">
-                  <summary>展開常見活動 MET 參考</summary>
-
-                  <div className="result-title">
-                    🟢 低強度活動 (約 2–3 MET)
-                  </div>
-                  <ul className="met-list">
-                    <li>散步 / 日常走路：約 2–3 MET</li>
-                    <li>輕度家事：約 2.5 MET</li>
-                  </ul>
-
-                  <div className="result-title">
-                    🟡 中強度活動 (約 3–6 MET)
-                  </div>
-                  <ul className="met-list">
-                    <li>快走：約 4.3 MET</li>
-                    <li>有氧運動 (輕～中等)：約 4.5～5 MET</li>
-                    <li>騎自行車 (一般速度)：約 5.5～6 MET</li>
-                  </ul>
-
-                  <div className="result-title">
-                    🔴 高強度活動 (6 以上)
-                  </div>
-                  <ul className="met-list">
-                    <li>重訓 (中等強度)：約 6 MET</li>
-                    <li>爬山：約 6.5 MET</li>
-                    <li>持續游泳：約 7 MET 以上</li>
-                  </ul>
-                </details>
-              </>
-            ) : (
-              <>
-                <div className="result-title">
-                  從資料表找到的活動
-                </div>
-                {exerciseMatches.map((row, i) => {
-                  const intensity = getIntensityInfo(Number(row.MET || 0));
-                  
-                  return (
-                    <div
-                      key={i}
-                      className="list-item clickable"
-                      onClick={() => {
-                        setSelectedMetRow(row);
-                        setCustomMet(String(row.MET ?? ''));
-                        setExName(row.活動 || '');
-                      }}
-                      style={{
-                        borderLeft: `4px solid ${intensity.color}`,
-                        background: selectedMetRow === row ? `${intensity.color}10` : '#fff',
-                      }}
-                    >
-                      <div style={{ flex: 1 }}>
-                        <div>{row.活動}</div>
-                        <div className="sub" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span>強度:{row.intensity}</span>
-                          <span 
-                            style={{ 
-                              padding: '2px 8px', 
-                              borderRadius: 999, 
-                              background: intensity.color,
-                              color: '#fff',
-                              fontSize: 10,
-                              fontWeight: 700,
-                            }}
-                          >
-                            {intensity.label}
-                          </span>
-                          <span>MET:{row.MET}</span>
-                        </div>
-                      </div>
-                      <span className="tag">
-                        {selectedMetRow === row ? '已選' : '選擇'}
-                      </span>
-                    </div>
-                  );
-                })}
-              </>
-            )}
+    {/* 1.1 搜尋結果列表 (有結果時顯示) */}
+    {exName.trim() && !selectedMetRow && (
+      <div className="search-results-container">
+        {exerciseMatches.length === 0 ? (
+          <div style={{ padding: 16, textAlign: 'center', color: '#888', fontSize: 14 }}>
+            找不到相符運動，請直接輸入下方數值。
           </div>
-        )}
-
-        <label>
-          MET
-          <input
-            type="number"
-            value={customMet}
-            onChange={(e) => {
-              setCustomMet(e.target.value);
-              if (e.target.value) {
-                setSelectedMetRow(null);
-              }
-            }}
-            placeholder="例如:4.3"
-          />
-        </label>
-
-        <label>
-          體重 (kg)
-          <input
-            type="number"
-            value={exWeight}
-            onChange={(e) => setExWeight(e.target.value)}
-            placeholder="例如:70"
-          />
-        </label>
-
-        <label>
-          時間 (分鐘)
-          <input
-            type="number"
-            value={exMinutes}
-            onChange={(e) => setExMinutes(e.target.value)}
-            placeholder="例如:30"
-          />
-        </label>
-
-        <div className="hint">
-          目前估算消耗:約 {autoExerciseKcal || 0} kcal
-        </div>
-
-        <button className="primary" onClick={addExercise}>
-          {editingExerciseId ? '更新運動記錄' : '加入運動記錄'}
-        </button>
-        {editingExerciseId && (
-          <button
-            onClick={() => {
-              setEditingExerciseId(null);
-              setExName('');
-              setExMinutes('');
-              setCustomMet('');
-              setSelectedMetRow(null);
-
-setQuickExercise(null);
-            }}
-          >
-            取消編輯
-          </button>
+        ) : (
+          exerciseMatches.map((row, i) => (
+            <div
+              key={i}
+              className={`search-result-item ${selectedMetRow === row ? 'active' : ''}`}
+              onClick={() => {
+                setSelectedMetRow(row);
+                setCustomMet(String(row.MET));
+                setExName(row.活動);
+              }}
+            >
+              <div style={{flex: 1}}>
+                <div style={{fontWeight: 600, color: '#333'}}>{row.活動}</div>
+                <div style={{fontSize: 12, color: '#666'}}>
+                  MET: {row.MET} <span style={{opacity:0.3}}>|</span> 強度: {row.intensity}
+                </div>
+              </div>
+              {selectedMetRow === row && <span style={{color: '#5c9c84', fontWeight:'bold'}}>✔</span>}
+            </div>
+          ))
         )}
       </div>
+    )}
+
+    {/* 2. MET 輸入 (改成點擊跳出數字鍵盤) */}
+    <div className="input-group" onClick={() => setShowMetPad(true)}>
+      <label>MET (代謝當量)</label>
+      <div className={`fake-input ${!customMet ? 'placeholder' : ''}`}>
+        {customMet || '例如: 4.3'}
+      </div>
+    </div>
+
+    {/* 3. 體重輸入 (共用樣式) */}
+    <div className="input-group" onClick={() => setShowWeightPad(true)}>
+      <label>體重 (kg)</label>
+      <div className={`fake-input ${!exWeight ? 'placeholder' : ''}`}>
+        {exWeight || '60'}
+      </div>
+    </div>
+
+    {/* 4. 時間輸入 (共用樣式) */}
+    <div className="input-group" onClick={() => setShowTimePad(true)}>
+      <label>運動時間 (分鐘)</label>
+      <div className={`fake-input ${!exMinutes ? 'placeholder' : ''}`}>
+        {exMinutes || '30'}
+      </div>
+    </div>
+
+    {/* 預估消耗 & 按鈕 */}
+    <div className="hint" style={{ 
+      padding: '12px', 
+      background: '#f8fafc', 
+      borderRadius: 12,
+      border: '1px solid #e2e8f0',
+      marginTop: 16,
+      textAlign: 'center',
+      color: '#64748b'
+    }}>
+      預估消耗: <strong style={{ color: '#5c9c84', fontSize: 22, marginLeft: 4 }}>
+        {autoExerciseKcal || 0}
+      </strong> kcal
+    </div>
+
+    <button 
+      type="button"
+      className="primary" 
+      style={{ marginTop: 20, width: '100%', padding: '14px', fontSize: 18 }}
+      onClick={(e) => {
+        e.preventDefault();
+        addExercise();
+      }}
+    >
+      {editingExerciseId ? '更新運動記錄' : '加入記錄'}
+    </button>
+    
+    {editingExerciseId && (
+      <button
+        style={{ width: '100%', marginTop: 12, background: 'transparent', color: '#666', border: 'none', padding: 10 }}
+        onClick={() => {
+          setEditingExerciseId(null);
+          setExName('');
+          setExMinutes('');
+          setCustomMet('');
+          setSelectedMetRow(null);
+          setQuickExercise(null);
+        }}
+      >
+        取消編輯
+      </button>
+    )}
+  </div>
     
 
     {/* 運動明細列表 */}
@@ -4944,6 +4873,36 @@ setQuickExercise(null);
     </div>
   ))}
 </div>
+ <NumberPadModal
+  visible={showWeightPad}
+  onClose={() => setShowWeightPad(false)}
+  title="輸入體重 (kg)"
+  value={exWeight}
+  allowDecimal={true} // 體重允許小數點
+  onChange={(val) => setExWeight(val)}
+/>
+
+<NumberPadModal
+  visible={showTimePad}
+  onClose={() => setShowTimePad(false)}
+  title="運動時間 (分鐘)"
+  value={exMinutes}
+  allowDecimal={false} // 時間通常為整數
+  onChange={(val) => setExMinutes(val)}
+/>
+
+{/* 🆕 新增：MET 輸入鍵盤 */}
+      <NumberPadModal
+        visible={showMetPad}
+        onClose={() => setShowMetPad(false)}
+        title="輸入 MET (代謝當量)"
+        value={customMet}
+        allowDecimal={true} // MET 通常有小數點
+        onChange={(val) => {
+          setCustomMet(val);
+          if (val) setSelectedMetRow(null); // 手動輸入時取消列表選取
+        }}
+      />
 </div>
 )}
 
