@@ -1401,18 +1401,22 @@ const unitPickerRef = useRef<HTMLDivElement>(null);
 
 // 3. 當彈窗打開時，自動捲動至目前選擇的單位
 useEffect(() => {
-  if (showUnitPicker && unitPickerRef.current) {
-    const targetLabel = fallbackUnitLabel || '份';
-    const index = unitList.indexOf(targetLabel);
-    if (index >= 0) {
-      unitPickerRef.current.scrollTo({
-        top: index * 48, // 每個選項高度約 48px
-        behavior: 'smooth',
-      });
+    if (showUnitPicker && unitPickerRef.current) {
+      const targetLabel = fallbackUnitLabel || '份';
+      const index = unitList.indexOf(targetLabel);
+      if (index >= 0) {
+        // 使用 setTimeout 確保在畫面渲染後執行
+        setTimeout(() => {
+          unitPickerRef.current?.scrollTo({
+            top: index * 50, // 修正為 50 (對應 CSS 高度)
+            behavior: 'auto', // 開啟時直接跳轉，不需要滑動動畫
+          });
+        }, 0);
+      }
     }
-  }
-}, [showUnitPicker, fallbackUnitLabel, unitList]);
-
+    // 只在開啟 (showUnitPicker) 時執行一次，滑動變更數值時不觸發
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showUnitPicker]);
     
     // 🆕 飲食輸入模式（快速搜尋 vs 手掌法）
     const [foodInputMode, setFoodInputMode] = useState<'search' | 'palm'>('search');
