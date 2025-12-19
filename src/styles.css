@@ -1341,3 +1341,232 @@ body {
   background: #fef2f2; 
   color: #ef4444;
 }
+
+/* =========================================
+   修正版 V3 (最終版)：首頁身體紀錄儀表板
+   ========================================= */
+
+/* 1. 頂部：體重焦點卡片 */
+.weight-focus-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px 0;
+  
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  
+  min-height: 160px;
+  border: 1px solid var(--border-soft);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+  margin-bottom: 16px;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.weight-focus-card:active {
+  transform: scale(0.99);
+  border-color: var(--mint);
+}
+
+.weight-focus-card .label {
+  font-size: var(--font-sm);
+  color: var(--text-sub);
+  font-weight: 600;
+  margin: 0;
+}
+
+/* 體重數字外層容器 */
+.weight-input-wrapper {
+  display: flex;             /* 使用 Flexbox */
+  justify-content: center;   /* 讓內容置中 */
+  align-items: baseline;     /* 🟢 關鍵：這是讓大小字體「底部基準線對齊」的唯一正解 */
+  width: 100%;
+  margin: 8px 0;
+}
+
+.weight-val-huge {
+  font-size: 42px;
+  font-weight: 700;
+  color: var(--mint-dark);   /* 綠色 */
+  line-height: 1;
+  /* 這裡不需額外設定，讓它自然撐開 */
+}
+
+.weight-unit-label {
+  font-size: 16px;
+  color: var(--text-sub);
+  font-weight: 400;
+
+  /* 🟢 魔術技巧：讓它在 Flex 排版中「不佔空間」 */
+  width: 0;            /* 設定寬度為 0，這樣 Flex 置中計算時只會算到數字的寬度 */
+  white-space: nowrap; /* 防止文字換行 */
+  
+  position: relative;  /* 開啟相對定位 */
+  left: 8px;           /* 視覺上往右推 8px，製造間距 */
+  
+  /* 這裡不需要 position: absolute，因為要保留 baseline 對齊特性 */
+}
+
+/* BMI 標籤 (維持不變) */
+.bmi-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 16px;
+  background: #edf2f7;
+  border-radius: 99px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #4b5563;
+  margin-top: 4px;
+}
+
+/* 2. 底部：數據網格 (保持不變) */
+.body-metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.metric-box {
+  background: #f9fafb;
+  padding: 12px 8px;
+  border-radius: 12px;
+  border: 1px solid var(--border-soft);
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 80px;
+}
+
+.metric-box:active {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+}
+
+.metric-box label {
+  font-size: 12px;
+  color: var(--text-sub);
+  margin-bottom: 4px;
+  display: block;
+}
+
+.metric-box .val {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-main);
+} 
+
+/* === 新增：運動強度選擇 (Intensity Grid) === */
+.intensity-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.intensity-card {
+  background: #fff;
+  border: 2px solid #f0f0f0;
+  border-radius: 16px;
+  padding: 16px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+  position: relative;
+  min-height: 110px;
+}
+
+.intensity-card.active {
+  border-color: var(--mint, #97d0ba);
+  background-color: #f0fdf9;
+  box-shadow: 0 8px 20px rgba(151, 208, 186, 0.25);
+  transform: translateY(-2px);
+}
+
+.intensity-icon {
+  font-size: 28px;
+  margin-bottom: 6px;
+}
+
+.intensity-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-main, #1f2937);
+  margin-bottom: 2px;
+}
+
+.intensity-met {
+  font-size: 11px;
+  color: #999;
+  margin-bottom: 8px;
+}
+
+/* 卡片內的虛擬輸入框 */
+.intensity-time-display {
+  background: #fff;
+  border: 1px solid #97d0ba;
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1f2937;
+  min-width: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  animation: popIn 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+@keyframes popIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* === 優化：精確記錄輸入列 === */
+.precision-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 16px;
+  border-top: 1px dashed #e9ecef;
+}
+
+.input-capsule {
+  background: #f9fafb;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 8px 4px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.input-capsule:active {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+}
+
+.input-capsule label {
+  display: block;
+  font-size: 11px;
+  color: #888;
+  margin-bottom: 2px;
+}
+
+.input-capsule .val {
+  font-size: 16px;
+  font-weight: 700;
+  color: #333;
+}

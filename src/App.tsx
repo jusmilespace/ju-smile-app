@@ -70,6 +70,117 @@ const ToastStyles: React.FC = () => {
 
 
 // ======== 型別定義 ========
+// 🆕 通用數字鍵盤 (NumberPadModal)
+type NumberPadModalProps = {
+  visible: boolean;
+  onClose: () => void;
+  title: string;
+  value: string;
+  onChange: (val: string) => void; // 這裡接收字串，方便處理小數點
+  unit?: string;
+  allowDecimal?: boolean;
+  onConfirm?: () => void;
+};
+const NumberPadModal: React.FC<NumberPadModalProps> = ({
+  visible,
+  onClose,
+  title,
+  value,
+  onChange,
+  unit = '',
+  allowDecimal = true,
+  onConfirm,
+}) => {
+  if (!visible) return null;
+
+  const handleNumClick = (num: number | string) => {
+    if (num === '.') {
+      if (allowDecimal && !value.includes('.')) {
+        onChange(value + '.');
+      }
+    } else {
+      onChange((value === '0' || value === '') ? String(num) : value + num);
+    }
+  };
+
+  const handleBackspace = () => {
+    onChange(value.slice(0, -1));
+  };
+
+  return (
+    <div
+      className="modal-backdrop"
+      style={{
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.0)', zIndex: 200, // 背景改為全透明
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        pointerEvents: 'none' /* 🟢 關鍵修改：讓點擊穿透背景，這樣你可以直接點擊其他欄位來切換 */
+      }}
+      // 移除 onClick={onClose}，避免誤觸關閉
+    >
+      <div
+        style={{
+          width: '100%', maxWidth: 420, background: '#f0f2f5',
+          borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: '24px 20px',
+          boxShadow: '0 -4px 20px rgba(0,0,0,0.15)',
+          animation: 'slideIn 0.2s ease-out',
+          pointerEvents: 'auto' /* 🟢 恢復內容區塊的點擊感應 */
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20, alignItems: 'center' }}>
+          {/* 🟢 移除 X，只留標題 */}
+          <span style={{ fontSize: 16, fontWeight: 600, color: '#666' }}>{title}</span>
+
+          <div style={{ fontSize: 28, fontWeight: 700, color: '#1f2937' }}>
+            {value || '0'} <span style={{fontSize:16, fontWeight:500, color:'#888'}}>{unit}</span>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, '.', 0].map((num) => (
+            <button
+              key={num}
+              onClick={() => handleNumClick(num)}
+              disabled={num === '.' && !allowDecimal}
+              style={{
+                padding: '16px 0', borderRadius: 16, border: 'none',
+                background: '#fff', fontSize: 24, fontWeight: 600, color: '#333',
+                boxShadow: '0 2px 0 #e5e7eb', cursor: 'pointer',
+                opacity: (num === '.' && !allowDecimal) ? 0.3 : 1
+              }}
+            >
+              {num}
+            </button>
+          ))}
+          <button
+            onClick={handleBackspace}
+            style={{
+              padding: '16px 0', borderRadius: 16, border: 'none',
+              background: '#e5e7eb', fontSize: 22, color: '#333',
+              boxShadow: '0 2px 0 #d1d5db', cursor: 'pointer'
+            }}
+          >
+            ⌫
+          </button>
+        </div>
+
+        <button
+          onClick={() => {
+            if (onConfirm) onConfirm(); // 先存檔
+            onClose();      // 再關閉
+          }}
+          style={{
+            width: '100%', marginTop: 16, padding: '16px 0', borderRadius: 16, border: 'none',
+            background: 'var(--mint-dark, #5c9c84)', color: '#fff', fontSize: 18, fontWeight: 700,
+            cursor: 'pointer', boxShadow: '0 4px 12px rgba(92, 156, 132, 0.3)'
+          }}
+        >
+          完成
+        </button>
+      </div>
+    </div>
+  );
+};
 
 type TypeRow = {
   Type: string;
@@ -1281,8 +1392,8 @@ const [showUnitPicker, setShowUnitPicker] = useState(false);
 
 // 單位列表 (固定順序，方便計算索引)
 const unitList = [
-  '個', '杯', '碗', '盤', '片', '瓶', '包', '湯匙', '茶匙',
-  '根', '粒', '張', 'g', '米杯', '瓣',
+  '個', '杯', '碗', '盤', '片', '瓶', '包', 'g', 'ml','湯匙', '茶匙',
+  '根', '粒', '張', '米杯', '瓣',
 ];
 
 // 用來捲動「單位滾輪」的位置
@@ -5568,6 +5679,13 @@ const [srcMet, setSrcMet] = useState<string>(
     onAddExercise: () => void;
   };
 
+  // 🟢 全域暫存變數 (防止 TodayPage Remount 時狀態遺失)
+let g_editingBodyField: 'weight' | 'bf' | 'sm' | 'vf' | null = null;
+let g_wInput = '';
+let g_bfInput = '';
+let g_smInput = '';
+let g_vfInput = '';
+
   const TodayPage: React.FC<TodayPageProps> = ({ onAddExercise }) => {
     const { showToast } = React.useContext(ToastContext);
     const todaySummary = getDay(todayLocal);
@@ -5610,12 +5728,24 @@ const todayDateInputRef = useRef<HTMLInputElement | null>(null);
         input.click();
       }
     };
+// 🟢 改用全域變數作為初始值 (解決輸入跳掉問題)
+  const [editingBodyField, _setEBF] = useState(g_editingBodyField);
+  const [wInput, _setWInput] = useState(g_wInput);
+  const [bfInput, _setBfInput] = useState(g_bfInput);
+  const [smInput, _setSmInput] = useState(g_smInput);
+  const [vfInput, _setVfInput] = useState(g_vfInput);
 
-    const [wInput, setWInput] = useState<string>('');
-    const [bfInput, setBfInput] = useState<string>('');
-    const [vfInput, setVfInput] = useState<string>('');
-    const [smInput, setSmInput] = useState<string>(''); // 🆕 骨骼肌率輸入
-const [waterInput, setWaterInput] = useState<string>('');
+  // 🟡 補回：身高維持原本的寫法 (因為它不用防止輸入消失)
+  const [userHeight, setUserHeight] = useState<number>(0);
+
+  // 🟢 同步更新全域變數的 Setter (這樣即使元件重繪，值也會被記住)
+  const setEditingBodyField = (v: any) => { g_editingBodyField = v; _setEBF(v); };
+  const setWInput = (v: string) => { g_wInput = v; _setWInput(v); };
+  const setBfInput = (v: string) => { g_bfInput = v; _setBfInput(v); };
+  const setSmInput = (v: string) => { g_smInput = v; _setSmInput(v); };
+  const setVfInput = (v: string) => { g_vfInput = v; _setVfInput(v); };
+
+    const [waterInput, setWaterInput] = useState<string>('');
 const todayWeekSwipeRef = useRef<HTMLDivElement | null>(null);
 
 useEffect(() => {
@@ -5672,15 +5802,46 @@ useEffect(() => {
 }, []);
 
 
-    // 🗑️ 已移除 showBodyModal 與 bodyMetricsExpanded 相關狀態
+    // 1. 移除自動同步數值的邏輯，只保留讀取身高的功能 (只執行一次)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('JU_PLAN_FORM');
+      if (raw) {
+        const obj = JSON.parse(raw);
+        if (obj.height) setUserHeight(Number(obj.height));
+      }
+    } catch {}
+  }, []);
 
-    // 初始化輸入框數值
-    useEffect(() => {
-      setWInput(todaySummary.weight != null ? String(todaySummary.weight) : '');
-      setBfInput(todaySummary.bodyFat != null ? String(todaySummary.bodyFat) : '');
-      setVfInput(todaySummary.visceralFat != null ? String(todaySummary.visceralFat) : '');
-      setSmInput(todaySummary.skeletalMuscle != null ? String(todaySummary.skeletalMuscle) : '');
-    }, [todaySummary.weight, todaySummary.bodyFat, todaySummary.visceralFat, todaySummary.skeletalMuscle]);
+  // 2. 新增：專門用來打開輸入框的函式
+  const openBodyInput = (field: 'weight' | 'bf' | 'sm' | 'vf') => {
+    // 自動存檔：如果正在編輯其他欄位，直接存檔 (無通知)
+    if (editingBodyField && editingBodyField !== field) {
+      saveBody(); // 👈 直接呼叫，不用傳參數
+    }
+
+    // 讀取該欄位目前的值 (若全域變數有值則優先使用，否則讀取 DB)
+    // 這樣切換回來時，之前打一半的字還在
+    let savedInput = '';
+    if (field === 'weight') savedInput = g_wInput;
+    if (field === 'bf') savedInput = g_bfInput;
+    if (field === 'sm') savedInput = g_smInput;
+    if (field === 'vf') savedInput = g_vfInput;
+
+    if (!savedInput) {
+      if (field === 'weight') savedInput = todaySummary.weight != null ? String(todaySummary.weight) : '';
+      if (field === 'bf') savedInput = todaySummary.bodyFat != null ? String(todaySummary.bodyFat) : '';
+      if (field === 'sm') savedInput = todaySummary.skeletalMuscle != null ? String(todaySummary.skeletalMuscle) : '';
+      if (field === 'vf') savedInput = todaySummary.visceralFat != null ? String(todaySummary.visceralFat) : '';
+    }
+
+    if (field === 'weight') setWInput(savedInput);
+    if (field === 'bf') setBfInput(savedInput);
+    if (field === 'sm') setSmInput(savedInput);
+    if (field === 'vf') setVfInput(savedInput);
+
+    setEditingBodyField(field);
+  };
 
     const todayMeals = meals.filter((m) => m.date === todayLocal);
     const todayExercises = exercises.filter((e) => e.date === todayLocal);
@@ -5771,14 +5932,24 @@ useEffect(() => {
     // 計算剩餘可攝取熱量
     const remainingKcal = currentTargetKcal + todayBurn - todayIntake;
 
+    // 1. 修改 saveBody：不再需要 silent 參數，因為永遠都不顯示成功通知
     function saveBody() {
-      updateDay(todayLocal, {
-        weight: wInput ? Number(wInput) : undefined,
-        bodyFat: bfInput ? Number(bfInput) : undefined,
-        skeletalMuscle: smInput ? Number(smInput) : undefined,
-        visceralFat: vfInput ? Number(vfInput) : undefined,
-      });
-      showToast('success','已儲存今日身體紀錄');
+      const patch: Partial<DaySummary> = {};
+
+      if (editingBodyField === 'weight') {
+        patch.weight = wInput ? Number(wInput) : undefined;
+      } else if (editingBodyField === 'bf') {
+        patch.bodyFat = bfInput ? Number(bfInput) : undefined;
+      } else if (editingBodyField === 'sm') {
+        patch.skeletalMuscle = smInput ? Number(smInput) : undefined;
+      } else if (editingBodyField === 'vf') {
+        patch.visceralFat = vfInput ? Number(vfInput) : undefined;
+      }
+
+      if (editingBodyField) {
+         updateDay(todayLocal, patch);
+         // 🟢 移除 showToast('success', ...)，只讓畫面數字更新作為回饋
+      }
     }
 
     function addWaterManual() {
@@ -6255,72 +6426,100 @@ useEffect(() => {
         </section>
 
         <section className="card">
-          <div className="card-header">
-            <h2 style={{ display: 'flex', alignItems: 'center' }}>
-              {/* 🆕 身體紀錄 Icon */}
-              <img 
-                src={`${APP_BASE_URL}icons/body.png`} 
-                alt="body" 
-                style={{ width: 36, height: 36, marginRight: 8, objectFit: 'contain' }} 
-              />
-              今日身體紀錄
-            </h2>
-            {/* 把儲存按鈕移到標題旁，省去下方空間，也更順手 */}
-            <button onClick={saveBody}>
-              儲存
-            </button>
-          </div>
-          
-          <div className="form-section" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            {/* 1. 體重 */}
-            <div style={{ background: '#f9fafb', padding: '12px', borderRadius: '12px', border: '1px solid #e9ecef' }}>
-              <label style={{ fontSize: 'var(--font-sm)', color: '#666', marginBottom: 4, display: 'block' }}>體重 (kg)</label>
-              <input 
-                type="number" 
-                value={wInput} 
-                onChange={(e) => setWInput(e.target.value)} 
-                placeholder="0.0" 
-                style={{ width: '100%', fontSize: 18, fontWeight: 'bold', padding: '4px 0', background: 'transparent', border: 'none', borderBottom: '1px solid #ddd', borderRadius: 0 }}
-              />
-            </div>
+  <div className="card-header">
+    <h2 style={{ display: 'flex', alignItems: 'center' }}>
+      <img src={`${APP_BASE_URL}icons/body.png`} alt="body" style={{ width: 36, height: 36, marginRight: 8, objectFit: 'contain' }} />
+      今日身體紀錄
+    </h2>
+    
+  </div>
+  
+  <div className="form-section">
+  
+  {/* 1. 頂部：體重焦點卡片 (Dashboard) */}
+{/* 修改說明：移除 wInput，只顯示 todaySummary.weight，確保顯示的是「已儲存」的穩定數據 */}
+<div
+  className="weight-focus-card"
+  onClick={() => openBodyInput('weight')}
+>
+  <h3 className="label">目前體重</h3>
+  
+  <div className="weight-input-wrapper">
+    {/* 🔴 關鍵修改：這裡只讀取 todaySummary.weight */}
+    <span className="weight-val-huge">
+      {todaySummary.weight != null ? todaySummary.weight : '-'}
+    </span>
+    <span className="weight-unit-label">kg</span>
+  </div>
 
-            {/* 2. 體脂率 */}
-            <div style={{ background: '#f9fafb', padding: '12px', borderRadius: '12px', border: '1px solid #e9ecef' }}>
-              <label style={{ fontSize: 15, color: '#666', marginBottom: 4, display: 'block' }}>體脂率 (%)</label>
-              <input 
-                type="number" 
-                value={bfInput} 
-                onChange={(e) => setBfInput(e.target.value)} 
-                placeholder="0.0" 
-                style={{ width: '100%', fontSize: 18, fontWeight: 'bold', padding: '4px 0', background: 'transparent', border: 'none', borderBottom: '1px solid #ddd', borderRadius: 0 }}
-              />
-            </div>
+  <div className="bmi-tag">
+    BMI {todaySummary.weight && userHeight
+      ? (todaySummary.weight / ((userHeight / 100) ** 2)).toFixed(1)
+      : '-'}
+  </div>
+</div>
 
-            {/* 3. 骨骼肌率 */}
-            <div style={{ background: '#f9fafb', padding: '12px', borderRadius: '12px', border: '1px solid #e9ecef' }}>
-              <label style={{ fontSize: 15, color: '#666', marginBottom: 4, display: 'block' }}>骨骼肌率 (%)</label>
-              <input 
-                type="number" 
-                value={smInput} 
-                onChange={(e) => setSmInput(e.target.value)} 
-                placeholder="0.0" 
-                style={{ width: '100%', fontSize: 18, fontWeight: 'bold', padding: '4px 0', background: 'transparent', border: 'none', borderBottom: '1px solid #ddd', borderRadius: 0 }}
-              />
-            </div>
+{/* 2. 身體數據網格 (體脂/骨骼肌/內臟脂肪) */}
+<div className="body-metrics-grid">
+  <div className="metric-box" onClick={() => openBodyInput('bf')}>
+    <label>體脂 %</label>
+    {/* 🔴 關鍵修改：移除 bfInput，只讀取 todaySummary.bodyFat */}
+    <div className="val">
+      {todaySummary.bodyFat != null ? todaySummary.bodyFat : '-'}
+    </div>
+  </div>
+  
+  <div className="metric-box" onClick={() => openBodyInput('sm')}>
+    <label>骨骼肌 %</label>
+    {/* 🔴 關鍵修改：只讀取 todaySummary.skeletalMuscle */}
+    <div className="val">
+      {todaySummary.skeletalMuscle != null ? todaySummary.skeletalMuscle : '-'}
+    </div>
+  </div>
+  
+  <div className="metric-box" onClick={() => openBodyInput('vf')}>
+    <label>內臟脂肪</label>
+    {/* 🔴 關鍵修改：只讀取 todaySummary.visceralFat */}
+    <div className="val">
+      {todaySummary.visceralFat != null ? todaySummary.visceralFat : '-'}
+    </div>
+  </div>
+</div>
 
-            {/* 4. 內臟脂肪 */}
-            <div style={{ background: '#f9fafb', padding: '12px', borderRadius: '12px', border: '1px solid #e9ecef' }}>
-              <label style={{ fontSize: 15, color: '#666', marginBottom: 4, display: 'block' }}>內臟脂肪</label>
-              <input 
-                type="number" 
-                value={vfInput} 
-                onChange={(e) => setVfInput(e.target.value)} 
-                placeholder="0" 
-                style={{ width: '100%', fontSize: 18, fontWeight: 'bold', padding: '4px 0', background: 'transparent', border: 'none', borderBottom: '1px solid #ddd', borderRadius: 0 }}
-              />
-            </div>
-          </div>
-        </section>
+</div>
+
+  {/* 3. 掛載共用的數字鍵盤 (NumberPadModal) */}
+  <NumberPadModal
+    visible={!!editingBodyField} // 只要有選中欄位就顯示
+    onClose={() => setEditingBodyField(null)}
+    title={
+      editingBodyField === 'weight' ? '輸入今日體重' :
+      editingBodyField === 'bf' ? '輸入體脂率' :
+      editingBodyField === 'sm' ? '輸入骨骼肌率' : '輸入內臟脂肪'
+    }
+    unit={
+      editingBodyField === 'weight' ? 'kg' :
+      editingBodyField === 'vf' ? '' : '%'
+    }
+    // 根據目前的欄位決定顯示哪個數值
+    value={
+      editingBodyField === 'weight' ? wInput :
+      editingBodyField === 'bf' ? bfInput :
+      editingBodyField === 'sm' ? smInput :
+      editingBodyField === 'vf' ? vfInput : ''
+    }
+    // 根據目前的欄位決定要更新哪個 state
+    onChange={(val) => {
+      if (editingBodyField === 'weight') setWInput(val);
+      if (editingBodyField === 'bf') setBfInput(val);
+      if (editingBodyField === 'sm') setSmInput(val);
+      if (editingBodyField === 'vf') setVfInput(val);
+    }}
+    // 內臟脂肪通常是整數，其他可以有小數
+    allowDecimal={editingBodyField !== 'vf'}
+    onConfirm={saveBody}
+  />
+</section>
       </div>
     );
   };
