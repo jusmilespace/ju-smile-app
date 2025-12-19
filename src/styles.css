@@ -1462,111 +1462,132 @@ body {
   color: var(--text-main);
 } 
 
-/* === 新增：運動強度選擇 (Intensity Grid) === */
+/* 🆕 強度卡片容器 */
 .intensity-grid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 10px;
-  margin-bottom: 16px;
+  gap: 12px;
+  margin-bottom: 24px;
 }
 
 .intensity-card {
-  background: #fff;
-  border: 2px solid #f0f0f0;
-  border-radius: 16px;
-  padding: 16px 4px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  text-align: center;
+  padding: 16px 4px;
+  border: 2px solid var(--border-soft);
+  border-radius: 12px;
+  background: #fff;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+  min-height: 100px;
   position: relative;
-  min-height: 110px;
 }
 
-.intensity-card.active {
-  border-color: var(--mint, #97d0ba);
-  background-color: #f0fdf9;
-  box-shadow: 0 8px 20px rgba(151, 208, 186, 0.25);
+/* --- 顏色主題定義 --- */
+
+/* 低強度 (綠) */
+.intensity-card.low { color: #10b981; } 
+.intensity-card.low.active {
+  border-color: #10b981;
+  background-color: #ecfdf5;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
   transform: translateY(-2px);
 }
 
+/* 中強度 (橘) */
+.intensity-card.medium { color: #f59e0b; }
+.intensity-card.medium.active {
+  border-color: #f59e0b;
+  background-color: #fffbeb;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+  transform: translateY(-2px);
+}
+
+/* 高強度 (紅) */
+.intensity-card.high { color: #ef4444; }
+.intensity-card.high.active {
+  border-color: #ef4444;
+  background-color: #fef2f2;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+  transform: translateY(-2px);
+}
+
+/* --- 內容微調 --- */
 .intensity-icon {
-  font-size: 28px;
-  margin-bottom: 6px;
-}
-
-.intensity-label {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text-main, #1f2937);
-  margin-bottom: 2px;
-}
-
-.intensity-met {
-  font-size: 11px;
-  color: #999;
+  font-size: 32px;
   margin-bottom: 8px;
+  filter: grayscale(0.2);
 }
-
-/* 卡片內的虛擬輸入框 */
-.intensity-time-display {
-  background: #fff;
-  border: 1px solid #97d0ba;
-  border-radius: 8px;
-  padding: 4px 8px;
+.intensity-card.active .intensity-icon {
+  filter: grayscale(0);
+  transform: scale(1.1);
+}
+.intensity-label {
   font-size: 16px;
   font-weight: 700;
-  color: #1f2937;
-  min-width: 60px;
+  line-height: 1.2;
+}
+.intensity-met {
+  font-size: 12px;
+  opacity: 0.8;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+/* 🆕 數字輸入框優化 */
+.input-group {
+  background: #fff;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+}
+.input-group label {
+  font-size: 14px;
+  color: var(--text-sub);
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+.styled-num-input {
+  width: 100%;
+  border: none;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-main);
+  outline: none;
+  background: transparent;
+  padding: 4px 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+.styled-num-input::placeholder {
+  color: #ccc;
+  font-weight: 400;
+}
+
+/* 模擬輸入框的樣式 (讓它看起來像 input 但其實是按鈕) */
+.fake-input {
+  width: 100%;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-main);
+  padding: 4px 0;
+  border-bottom: 1px solid transparent; /* 預留位置 */
+  cursor: pointer;
+  min-height: 30px; /* 確保有高度好點擊 */
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 2px;
-  animation: popIn 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28);
 }
 
-@keyframes popIn {
-  from { transform: scale(0.8); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+.fake-input.placeholder {
+  color: #ccc;
+  font-weight: 400;
 }
 
-/* === 優化：精確記錄輸入列 === */
-.precision-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 10px;
-  margin-top: 12px;
-  padding-top: 16px;
-  border-top: 1px dashed #e9ecef;
-}
-
-.input-capsule {
-  background: #f9fafb;
-  border: 1px solid #e9ecef;
-  border-radius: 12px;
-  padding: 8px 4px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.input-capsule:active {
-  background: #eef2ff;
-  border-color: #c7d2fe;
-}
-
-.input-capsule label {
-  display: block;
-  font-size: 11px;
-  color: #888;
-  margin-bottom: 2px;
-}
-
-.input-capsule .val {
-  font-size: 16px;
-  font-weight: 700;
-  color: #333;
+/* 點擊時的視覺回饋 */
+.input-group:active .fake-input {
+  opacity: 0.7;
 }

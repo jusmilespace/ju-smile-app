@@ -1452,25 +1452,20 @@ useEffect(() => {
     const [comboNameInput, setComboNameInput] = useState('');
     const [showSaveComboModal, setShowSaveComboModal] = useState(false);
 
-// ======== 運動相關 state ========
-// 🆕 1. 運動記錄模式
+// ======== 運動相關 state (連接到 exForm) ========
+    
+    // 1. 運動記錄模式
     const recordMode = exForm.mode;
     const setRecordMode = (mode: 'quick' | 'detail') => onUpdateExForm({ mode });
-    
-    // 🆕 2. 快速記錄選中的運動
+
+    // 2. 快速記錄選中的運動 (Wrapper)
     const quickExercise = exForm.quickExercise;
-    // 為了相容原本的呼叫方式，這裡做一個簡單的 wrapper
+    // 簡化版 wrapper，直接更新表單
     const setQuickExercise = (value: any) => {
-       // 處理原本程式碼中可能的 function update 寫法 (雖然這裡不太需要，但為了保險)
-       if (typeof value === 'function') {
-         // 簡化處理：直接傳入新值，因為我們現在是透過 parent state 管理
-         console.warn('setQuickExercise via function is not fully supported in refactor, try distinct value');
-       } else {
-         onUpdateExForm({ quickExercise: value });
-       }
+      onUpdateExForm({ quickExercise: value });
     };
 
-    // 🆕 3. 運動表單欄位
+    // 3. 運動表單欄位映射
     const exName = exForm.name;
     const setExName = (val: string) => onUpdateExForm({ name: val });
 
@@ -1484,84 +1479,70 @@ useEffect(() => {
     const setCustomMet = (val: string) => onUpdateExForm({ customMet: val });
 
     const selectedMetRow = exForm.metRow;
-    const setSelectedMetRow = (val: ExerciseMetRow | null) => onUpdateExForm({ metRow: val });
-    
+    const setSelectedMetRow = (val: any) => onUpdateExForm({ metRow: val });
+
     const editingExerciseId = exForm.editId;
     const setEditingExerciseId = (val: string | null) => onUpdateExForm({ editId: val });
-  
-  // 🆕 運動記錄模式（快速 vs 精確）
-  // const [recordMode, setRecordMode] = useState<'quick' | 'detail'>('quick');
-  
-  // 🆕 快速記錄選中的運動
-//   const [quickExercise, setQuickExerciseOriginal] = useState<{
-//   name: string;
-//   met: number;
-// } | null>(null);
 
-// const setQuickExercise = useCallback((value: typeof quickExercise | ((prev: typeof quickExercise) => typeof quickExercise)) => {
-//   console.log('🟣 setQuickExercise 被調用，新值:', value);
-//   console.trace();
-  
-//   if (typeof value === 'function') {
-//     setQuickExerciseOriginal(value);
-//   } else {
-//     setQuickExerciseOriginal(value);
-//   }
-// }, []);
-
-// // 監聽 quickExercise 的變化
-// useEffect(() => {
-//   console.log('🟠 quickExercise 變成:', quickExercise);
-//   console.trace();
-// }, [quickExercise]);
-
-
-
-    // 運動表單
-    // const [exName, setExName] = useState('');
-    // const [exMinutes, setExMinutes] = useState('');
-    // const [exWeight, setExWeight] = useState('');
-    // const [customMet, setCustomMet] = useState('');
-    // const [selectedMetRow, setSelectedMetRow] =
-    //   useState<ExerciseMetRow | null>(null);
-
+    // 資料過濾 (維持不變，放在這裡方便讀取)
     const dayMeals = meals.filter((m) => m.date === selectedDate);
     const dayExercises = exercises.filter((e) => e.date === selectedDate);
-    // const [editingExerciseId, setEditingExerciseId] =
-    //   useState<string | null>(null);
+    
+    // 🆕 數字鍵盤控制開關 (放在這裡)
+    const [showWeightPad, setShowWeightPad] = useState(false);
+    const [showTimePad, setShowTimePad] = useState(false);
 
 
-    // 運動體重預帶當日體重，若無則預帶最後一次體重
-useEffect(() => {
-  if (exWeight) return;
-  const day = days.find((d) => d.date === selectedDate);
-  
-  // 優先使用當日體重
-  if (day && day.weight != null) {
-    setExWeight(String(day.weight));
-    return;
-  }
-  
-  // 🆕 當日沒有體重時，找最後一次輸入的體重
-  // 將 days 按日期排序（由近到遠），找到第一個有體重的紀錄
-  const daysWithWeight = days
-    .filter((d) => d.weight != null)
-    .sort((a, b) => dayjs(b.date).diff(dayjs(a.date)));
-  
-  if (daysWithWeight.length > 0) {
-    setExWeight(String(daysWithWeight[0].weight));
-  }
-}, [selectedDate, days]);
+    // 🆕 4. 體重自動帶入邏輯 (修復版：解決刪不掉的問題)
+    useEffect(() => {
+      // 只有在「運動頁籤」且「體重欄位完全為空」時才自動帶入
+      if (recordTab !== 'exercise') return;
+      if (exWeight !== '') return; // 如果已經有值（包含使用者正在打字），就不要雞婆覆蓋
 
+      const day = days.find((d) => d.date === selectedDate);
+      
+      // A. 優先使用當日體重
+      if (day && day.weight != null && day.weight > 0) {
+        setExWeight(String(day.weight));
+        return;
+      }
+      
+      // B. 當日沒有體重時，找最後一次輸入的體重
+      const daysWithWeight = days
+        .filter((d) => d.weight != null && d.weight > 0)
+        .sort((a, b) => dayjs(b.date).diff(dayjs(a.date)));
+      
+      if (daysWithWeight.length > 0) {
+        setExWeight(String(daysWithWeight[0].weight));
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedDate, days, recordTab]); // ⚠️ 重要：拿掉 exWeight 依賴，解決無限回填問題
+
+
+    // 🆕 5. 編輯運動邏輯 (包含智慧模式切換)
     function startEditExercise(e: ExerciseEntry) {
       setSelectedDate(e.date);
       setExName(e.name);
-      setExMinutes(
-        e.minutes != null ? String(e.minutes) : ''
-      );
-      // 體重保留目前欄位，不強制帶入
+      setExMinutes(e.minutes != null ? String(e.minutes) : '');
+      
+      // 設定 MET (這會讓快速模式的卡片自動亮起)
+      const metStr = e.met ? String(e.met) : '';
+      setCustomMet(metStr);
+      
       setEditingExerciseId(e.id);
-      setRecordTab('exercise');
+      setRecordTab('exercise'); // 切換到運動頁籤
+
+      // 🌟 智慧判斷：檢查 MET 是否屬於預設的三種強度
+      // 如果是 (2.5 / 4.0 / 7.0) -> 切換到快速模式
+      // 如果不是 -> 切換到精確模式
+      const isQuickOption = ['2.5', '4', '4.0', '7', '7.0'].includes(metStr);
+      
+      if (isQuickOption) {
+        setRecordMode('quick');
+      } else {
+        setRecordMode('detail');
+      }
+      
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -2031,90 +2012,72 @@ useEffect(() => {
       return Math.round(usedMet * w * hours);
     }, [usedMet, exWeight, exMinutes]);
 
- function addExercise() {
-  console.log('========== addExercise 開始 ==========');
-  console.log('recordMode:', recordMode);
-  console.log('quickExercise:', quickExercise);
-  console.log('exWeight:', exWeight);
-  console.log('exMinutes:', exMinutes);
-  
-  // 🆕 快速記錄模式的專屬驗證
-  if (recordMode === 'quick') {
-    if (!quickExercise) {
-      console.log('🔴 return 1: 沒有選擇運動');
-      showToast('error', '請先選擇運動類型');
-      return;
-    }
+ // 🟢 最終修正版：addExercise
+  const addExercise = () => {
+    console.log('========== addExercise 開始 ==========');
     
-    if (!exWeight.trim()) {
-      console.log('🔴 return 2: 沒有輸入體重');
-      showToast('error', '請先輸入體重');
+    // 1. 驗證：名稱與 MET 是否存在
+    // 不檢查 quickExercise，只檢查是否有填入內容
+    if (!exName || !customMet) {
+      showToast('error', '請選擇運動強度');
       return;
     }
-    
-    if (!exMinutes.trim()) {
-      console.log('🔴 return 3: 沒有輸入時間，準備 return');
-      console.log('return 前 quickExercise:', quickExercise);
-      showToast('error', '請先輸入運動時間');
-      console.log('showToast 後 quickExercise:', quickExercise);
-      return;
-    }
-    
-    console.log('✅ 快速記錄驗證通過');
-  } else {
-    // 精確記錄模式的驗證
-    if (!exName.trim()) {
-      console.log('🔴 return 4: 沒有輸入運動名稱');
-      showToast('error', '請先輸入運動名稱');
-      return;
-    }
-    if (!usedMet) {
-      console.log('🔴 return 5: 沒有 MET');
-      showToast('error', '請先選擇一項運動或輸入自訂 MET。');
-      return;
-    }
-    if (!autoExerciseKcal) {
-      console.log('🔴 return 6: 沒有計算熱量');
-      showToast('error', '請先填寫體重與時間(分鐘),才能計算熱量。');
-      return;
-    }
-    
-    console.log('✅ 精確記錄驗證通過');
-  }
 
-  console.log('🟢 開始新增運動記錄');
+    // 2. 驗證：時間與體重
+    if (!exMinutes || !exWeight) {
+      showToast('error', '請輸入時間與體重');
+      return;
+    }
 
-  const base: ExerciseEntry = {
-    id: editingExerciseId || uuid(),
-    date: selectedDate,
-    name: exName.trim(),
-    kcal: autoExerciseKcal,
-    minutes: Number(exMinutes || '0') || undefined,
+    const w = parseFloat(exWeight);
+    const m = parseFloat(exMinutes);
+    const met = parseFloat(customMet);
+
+    // 數字檢查
+    if (isNaN(w) || w <= 0 || isNaN(m) || m <= 0) {
+      showToast('error', '請輸入有效的數字');
+      return;
+    }
+
+    // 3. 計算熱量 (公式：MET * 體重kg * 時間hr)
+    const calculatedKcal = Math.round(met * w * (m / 60));
+
+    // 4. 建立新紀錄物件
+    const newEntry: ExerciseEntry = {
+      id: editingExerciseId || crypto.randomUUID(), 
+      date: selectedDate,
+      name: exName,
+      minutes: m,
+      met: met,    // 儲存 MET，這樣編輯時才能判斷是哪種強度
+      kcal: calculatedKcal,
+      weight: w,   // 儲存體重
+    };
+
+    // 5. 更新資料庫
+    if (editingExerciseId) {
+      setExercises((prev) =>
+        prev.map((e) => (e.id === editingExerciseId ? newEntry : e))
+      );
+      showToast('success', `已更新運動：${exName}`);
+      setEditingExerciseId(null);
+    } else {
+      setExercises((prev) => [...prev, newEntry]);
+      showToast('success', `已新增運動：${exName}`);
+    }
+
+    // 6. 重置表單 (保留體重)
+    onUpdateExForm({
+      name: '',
+      minutes: '',
+      customMet: '',
+      metRow: null,
+      quickExercise: null, // 清空快速選項
+      editId: null
+    });
+    
+    console.log('========== addExercise 結束 ==========');
   };
-
-  if (editingExerciseId) {
-    setExercises((prev) =>
-      prev.map((e) => (e.id === editingExerciseId ? base : e))
-    );
-    setEditingExerciseId(null);
-  } else {
-    setExercises((prev) => [...prev, base]);
-  }
-
-  console.log('🟢 運動記錄新增完成');
-
-  // 重置欄位（保留體重方便連續記錄）
-  onUpdateExForm({
-    minutes: '',
-    name: '',
-    customMet: '',
-    metRow: null,
-    // 如果是快速模式，也重置選中的運動
-    quickExercise: recordMode === 'quick' ? null : exForm.quickExercise
-  });
   
-  console.log('========== addExercise 結束 ==========');
-}
     return (
       <div className="page page-records"
         style={{ paddingBottom: '90px' }}
@@ -4636,187 +4599,132 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
   </button>
 </div>
 
-   {/* ========== 快速記錄模式 ========== */}
+{/* ========== 快速記錄模式 ========== */}
 <div 
   className="form-section"
   style={{ display: recordMode === 'quick' ? 'block' : 'none' }}
 >
-  <label style={{ marginBottom: 12, fontSize: 15, fontWeight: 600 }}>
-    選擇運動類型
+  <label style={{ marginBottom: 12, fontSize: 16, fontWeight: 700, display: 'block', color:'#333' }}>
+    選擇運動強度
   </label>
     
-    {/* 🆕 常見運動快速選擇（帶 MET 視覺化） */}
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
-      {COMMON_EXERCISES.map((ex) => {
-  const intensity = getIntensityInfo(ex.met);
-  const isSelected = quickExercise?.name === ex.name;
-  
-  // 🆕 只在點擊按鈕後的渲染才 log（用來 debug）
-  if (ex.name === '騎自行車') {
-    console.log('騎自行車卡片渲染:');
-    console.log('  quickExercise:', quickExercise);
-    console.log('  quickExercise?.name:', quickExercise?.name);
-    console.log('  ex.name:', ex.name);
-    console.log('  isSelected:', isSelected);
-  }
-  
-  return (
-          <div
-            key={ex.name}
-            onClick={() => {
-             
-  setQuickExercise(ex);
-  setExName(ex.name);
-  setCustomMet(String(ex.met));
-  setSelectedMetRow(null);
-  
-              
-              // 🆕 選擇後自動捲動到輸入區域
+  {/* 🆕 三欄式強度卡片 */}
+  <div className="intensity-grid">
+    {INTENSITY_OPTIONS.map((opt) => {
+      // 判斷是否被選中
+      const isActive = customMet === String(opt.met);
+
+      return (
+        <div
+          key={opt.id}
+          className={`intensity-card ${opt.className} ${isActive ? 'active' : ''}`}
+          onClick={() => {
+            // 1. 設定數值 (共用 state)
+            setExName(opt.val);
+            setCustomMet(String(opt.met));
+            
+            // 2. 清理精確模式的狀態，確保不衝突
+            setSelectedMetRow(null); 
+            setQuickExercise(null); // 若不使用此 wrapper，可省略，但為了保險起見
+
+            // 3. 自動聚焦體驗 (若體重未填)
+            if (!exWeight) {
               setTimeout(() => {
-                const weightInput = document.querySelector('#exercise-weight-input') as HTMLInputElement;
-                if (weightInput) {
-                  weightInput.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'center' 
-                  });
-                  // 如果體重還沒填，自動聚焦到體重輸入框
-                  if (!exWeight) {
-                    weightInput.focus();
-                  }
-                }
-              }, 150); // 延遲 150ms 讓動畫更順暢
-            }}
-            style={{
-              padding: '14px 16px',
-              border: `2px solid ${isSelected ? intensity.color : '#e5e7eb'}`,
-              borderRadius: 10,
-              cursor: 'pointer',
-              background: isSelected ? `${intensity.color}10` : '#fff',
-              transition: 'all 0.2s',
-              boxShadow: isSelected ? `0 2px 8px ${intensity.color}40` : '0 1px 3px rgba(0,0,0,0.1)',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ 
-                  fontWeight: isSelected ? 700 : 600, 
-                  fontSize: 16, 
-                  marginBottom: 6,
-                  color: isSelected ? intensity.color : '#333',
-                }}>
-                  {ex.name}
-                </div>
-                <div style={{ fontSize: 13, color: '#666', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span 
-                    style={{ 
-                      padding: '3px 10px', 
-                      borderRadius: 999, 
-                      background: intensity.color,
-                      color: '#fff',
-                      fontSize: 11,
-                      fontWeight: 700,
-                      letterSpacing: '0.5px',
-                    }}
-                  >
-                    {intensity.label}
-                  </span>
-                  <span style={{ fontWeight: 500 }}>{ex.met} MET</span>
-                </div>
-              </div>
-              
-              {/* MET 視覺化進度條 */}
-              <div style={{ width: 70, marginLeft: 16 }}>
-                <div style={{ 
-                  height: 8, 
-                  background: '#e5e7eb', 
-                  borderRadius: 4,
-                  overflow: 'hidden',
-                }}>
-                  <div style={{ 
-                    height: '100%', 
-                    width: `${Math.min(100, (ex.met / 10) * 100)}%`,
-                    background: intensity.color,
-                    transition: 'width 0.3s ease',
-                    borderRadius: 4,
-                  }} />
-                </div>
-                <div style={{ 
-                  fontSize: 10, 
-                  color: '#999', 
-                  textAlign: 'right', 
-                  marginTop: 2 
-                }}>
-                  {Math.round((ex.met / 10) * 100)}%
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-
-    <label>
-      體重 (kg)
-      <input
-        id="exercise-weight-input"  
-        type="number"
-        value={exWeight}
-        onChange={(e) => setExWeight(e.target.value)}
-        placeholder="例如:70"
-      />
-    </label>
-
-    <label>
-      運動時間 (分鐘)
-      <input
-        type="number"
-        value={exMinutes}
-        onChange={(e) => setExMinutes(e.target.value)}
-        placeholder="例如:30"
-      />
-    </label>
-
-    <div className="hint" style={{ 
-      padding: '12px 16px', 
-      background: '#f0f9ff', 
-      borderRadius: 8,
-      border: '1px solid #bae6fd',
-      marginTop: 12,
-    }}>
-      <span style={{ fontWeight: 600, color: '#0369a1' }}>預估消耗:</span>
-      <span style={{ fontSize: 18, fontWeight: 700, color: '#0369a1', marginLeft: 8 }}>
-        約 {autoExerciseKcal || 0} kcal
-      </span>
-    </div>
-
-    <button 
-  type="button"
-  className="primary" 
-  onClick={(e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    addExercise();
-  }}
->
-  {editingExerciseId ? '更新運動記錄' : '加入運動記錄'}
-</button>
-    
-    {editingExerciseId && (
-      <button
-        onClick={() => {
-          setEditingExerciseId(null);
-          setExName('');
-          setExMinutes('');
-          setCustomMet('');
-          setSelectedMetRow(null);
-         
-setQuickExercise(null);
-        }}
-      >
-        取消編輯
-      </button>
-    )}
+                const wInput = document.querySelector('#exercise-weight-input') as HTMLInputElement;
+                if(wInput) wInput.focus();
+              }, 100);
+            }
+          }}
+        >
+          <div className="intensity-icon">{opt.icon}</div>
+          <div className="intensity-label">{opt.label}</div>
+          <div className="intensity-met">MET {opt.met}</div>
+        </div>
+      );
+    })}
   </div>
+
+  {/* 🆕 優化後的輸入區 (改用數字鍵盤) */}
+  <div style={{ marginTop: 8 }}>
+    
+    {/* 1. 體重輸入 */}
+    <div className="input-group" onClick={() => setShowWeightPad(true)}>
+      <label>體重 (kg)</label>
+      <div className={`fake-input ${!exWeight ? 'placeholder' : ''}`}>
+        {exWeight || '例如: 60'}
+      </div>
+    </div>
+
+    {/* 2. 時間輸入 */}
+    <div className="input-group" onClick={() => setShowTimePad(true)}>
+      <label>運動時間 (分鐘)</label>
+      <div className={`fake-input ${!exMinutes ? 'placeholder' : ''}`}>
+        {exMinutes || '30'}
+      </div>
+    </div>
+  </div>
+
+  {/* 預估消耗 & 按鈕 */}
+  <div className="hint" style={{ 
+    padding: '12px', 
+    background: '#f8fafc', 
+    borderRadius: 12,
+    border: '1px solid #e2e8f0',
+    marginTop: 16,
+    textAlign: 'center',
+    color: '#64748b'
+  }}>
+    預估消耗: <strong style={{ color: 'var(--mint-dark)', fontSize: 22, marginLeft: 4 }}>
+      {autoExerciseKcal || 0}
+    </strong> kcal
+  </div>
+
+  <button 
+    type="button"
+    className="primary" 
+    style={{ marginTop: 20, width: '100%', padding: '14px', fontSize: 18 }}
+    onClick={(e) => {
+      e.preventDefault();
+      addExercise();
+    }}
+  >
+    {editingExerciseId ? '更新運動記錄' : '加入運動記錄'}
+  </button>
+  
+  {editingExerciseId && (
+    <button
+      style={{ width: '100%', marginTop: 12, background: 'transparent', color: '#666', border: 'none', padding: 10 }}
+      onClick={() => {
+        setEditingExerciseId(null);
+        setExName('');
+        setExMinutes('');
+        setCustomMet('');
+        setSelectedMetRow(null);
+        setQuickExercise(null);
+      }}
+    >
+      取消編輯
+    </button>
+    
+  )}
+  <NumberPadModal
+  visible={showWeightPad}
+  onClose={() => setShowWeightPad(false)}
+  title="輸入體重 (kg)"
+  value={exWeight}
+  allowDecimal={true} // 體重允許小數點
+  onChange={(val) => setExWeight(val)}
+/>
+
+<NumberPadModal
+  visible={showTimePad}
+  onClose={() => setShowTimePad(false)}
+  title="運動時間 (分鐘)"
+  value={exMinutes}
+  allowDecimal={false} // 時間通常為整數
+  onChange={(val) => setExMinutes(val)}
+/>
+</div>
 
    {/* ========== 精確記錄模式（原本的功能） ========== */}
 <div 
@@ -5089,7 +4997,12 @@ setQuickExercise(null);
     );
   };
 
-
+// 定義三種強度 (低 2.5 / 中 4.0 / 高 7.0) 與對應樣式
+const INTENSITY_OPTIONS = [
+  { id: 'low', label: '低強度', val: '低強度運動', icon: '🧘', met: 2.5, className: 'low' },
+  { id: 'medium', label: '中強度', val: '中強度運動', icon: '🏃', met: 4.0, className: 'medium' },
+  { id: 'high', label: '高強度', val: '高強度運動', icon: '🔥', met: 7.0, className: 'high' },
+];
 
 
   const App: React.FC = () => {
