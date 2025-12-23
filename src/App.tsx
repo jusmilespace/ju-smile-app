@@ -4887,7 +4887,7 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
   onClose={() => setShowTimePad(false)}
   title="運動時間 (分鐘)"
   value={exMinutes}
-  allowDecimal={false} // 時間通常為整數
+  allowDecimal={true} // 
   onChange={(val) => setExMinutes(val)}
 />
 
@@ -6391,7 +6391,7 @@ useEffect(() => {
       if (editingBodyField === 'sm') setSmInput(val);
       if (editingBodyField === 'vf') setVfInput(val);
     }}
-    // 內臟脂肪通常是整數，其他可以有小數
+    // 內臟脂肪通可以有小數
     allowDecimal={true}
     onConfirm={saveBody}
   />
@@ -7432,103 +7432,199 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
 
   // ======== TrendsPage (趨勢分析頁面) ========
   const TrendsPage: React.FC = () => {
-    const [period, setPeriod] = useState<'week' | 'longTerm' | 'yearly'>('week');
+    const [period, setPeriod] = useState<'7d' | '30d' | '90d' | '180d' | '365d'>('7d');
     const [metric, setMetric] = useState<'bodyComposition' | 'weight' | 'bodyFat' | 'skeletalMuscle' | 'calories' | 'protein'>('bodyComposition');
 
-    // 🆕 檢查是否有足夠的長期數據（90 天以上）
-    const hasLongTermData = useMemo(() => {
-      const oldestDate = days.reduce((oldest, day) => {
-        return !oldest || day.date < oldest ? day.date : oldest;
-      }, '');
-      
-      if (!oldestDate) return false;
-      
-      const daysSinceFirst = dayjs().diff(dayjs(oldestDate), 'day');
-      return daysSinceFirst >= 90;
-    }, [days]);
+
 
     // 準備圖表數據
-    const chartData = useMemo(() => {
-      const data: any[] = [];
-      const today = dayjs();
+    // 準備圖表數據
+const chartData = useMemo(() => {
+  const data: any[] = [];
+  const today = dayjs();
 
-      if (period === 'week') {
-        // 週報：固定顯示最近 7 天（連續）
-        for (let i = 6; i >= 0; i--) {
-          const currentDate = today.subtract(i, 'day');
-          const dateStr = currentDate.format('YYYY-MM-DD');
-          const day = days.find(d => d.date === dateStr);
-          const dayMeals = meals.filter(m => m.date === dateStr);
-          const dayExercises = exercises.filter(e => e.date === dateStr);
+  if (period === '7d') {
+  // 7天：顯示最近 7 天內有記錄的日期
+  for (let i = 6; i >= 0; i--) {
+    const currentDate = today.subtract(i, 'day');
+    const dateStr = currentDate.format('YYYY-MM-DD');
+    const day = days.find(d => d.date === dateStr);
+    
+    // 🔧 如果當天沒有體重數據，跳過
+    if (!day || (day.weight == null && day.bodyFat == null && day.skeletalMuscle == null)) {
+      continue;
+    }
+    
+    const dayMeals = meals.filter(m => m.date === dateStr);
+    const dayExercises = exercises.filter(e => e.date === dateStr);
 
-          const totalKcal = dayMeals.reduce((sum, m) => sum + (m.kcal || 0), 0);
-          const burnedKcal = dayExercises.reduce((sum, e) => sum + (e.kcal || 0), 0);
-          const netKcal = totalKcal - burnedKcal;
-          const totalProtein = dayMeals.reduce((sum, m) => sum + (m.protein || 0), 0);
+    const totalKcal = dayMeals.reduce((sum, m) => sum + (m.kcal || 0), 0);
+    const burnedKcal = dayExercises.reduce((sum, e) => sum + (e.kcal || 0), 0);
+    const netKcal = totalKcal - burnedKcal;
+    const totalProtein = dayMeals.reduce((sum, m) => sum + (m.protein || 0), 0);
 
-          data.push({
-            date: currentDate.format('MM/DD'),
-            fullDate: dateStr,
-            weight: day?.weight ?? null,
-            bodyFat: day?.bodyFat ?? null,
-            skeletalMuscle: day?.skeletalMuscle ?? null,
-            calories: totalKcal > 0 ? netKcal : null,
-            protein: totalProtein > 0 ? totalProtein : null,
-          });
-        }
-      } else if (period === 'longTerm') {
-        // 90天趨勢：固定顯示 13 個點，每個點間隔 7 天
-        for (let i = 12; i >= 0; i--) {
-          const targetDate = today.subtract(i * 7, 'day');
-          const dateStr = targetDate.format('YYYY-MM-DD');
-          const day = days.find(d => d.date === dateStr);
-          const dayMeals = meals.filter(m => m.date === dateStr);
-          const dayExercises = exercises.filter(e => e.date === dateStr);
+    data.push({
+      date: currentDate.format('MM/DD'),
+      fullDate: dateStr,
+      weight: day.weight ?? null,
+      bodyFat: day.bodyFat ?? null,
+      skeletalMuscle: day.skeletalMuscle ?? null,
+      calories: totalKcal > 0 ? netKcal : null,
+      protein: totalProtein > 0 ? totalProtein : null,
+    });
+  }
+  } else if (period === '30d') {
+  // 30天：每週一個點（最多 5 個點）- 取該週第一筆有效數據
+  for (let i = 4; i >= 0; i--) {
+    const targetDate = today.subtract(i * 7, 'day');
+    const weekStart = targetDate.startOf('week').format('YYYY-MM-DD');
+    const weekEnd = targetDate.endOf('week').format('YYYY-MM-DD');
+    
+    // 找該週內第一筆有體重數據的日期
+    const weekDays = days.filter(d => 
+      d.date >= weekStart && 
+      d.date <= weekEnd
+    ).sort((a, b) => a.date.localeCompare(b.date));
+    
+    const day = weekDays.find(d => d.weight != null || d.bodyFat != null || d.skeletalMuscle != null);
+    
+    // 🔧 如果該週沒有數據，跳過
+    if (!day) continue;
+    
+    const dateStr = day.date;
+    const dayMeals = meals.filter(m => m.date === dateStr);
+    const dayExercises = exercises.filter(e => e.date === dateStr);
 
-          const totalKcal = dayMeals.reduce((sum, m) => sum + (m.kcal || 0), 0);
-          const burnedKcal = dayExercises.reduce((sum, e) => sum + (e.kcal || 0), 0);
-          const netKcal = totalKcal - burnedKcal;
-          const totalProtein = dayMeals.reduce((sum, m) => sum + (m.protein || 0), 0);
+    const totalKcal = dayMeals.reduce((sum, m) => sum + (m.kcal || 0), 0);
+    const burnedKcal = dayExercises.reduce((sum, e) => sum + (e.kcal || 0), 0);
+    const netKcal = totalKcal - burnedKcal;
+    const totalProtein = dayMeals.reduce((sum, m) => sum + (m.protein || 0), 0);
 
-          data.push({
-            date: targetDate.format('MM/DD'),
-            fullDate: dateStr,
-            weight: day?.weight ?? null,
-            bodyFat: day?.bodyFat ?? null,
-            skeletalMuscle: day?.skeletalMuscle ?? null,
-            calories: totalKcal > 0 ? netKcal : null,
-            protein: totalProtein > 0 ? totalProtein : null,
-          });
-        }
-      
-      } else if (period === 'yearly') {
-        // 🆕 年趨勢：顯示最近 12 個月，每月取樣一次（每月 1 號或最接近的日期）
-        for (let i = 11; i >= 0; i--) {
-          const targetDate = today.subtract(i, 'month').startOf('month'); // 每月 1 號
-          const dateStr = targetDate.format('YYYY-MM-DD');
-          const day = days.find(d => d.date === dateStr);
-          const dayMeals = meals.filter(m => m.date === dateStr);
-          const dayExercises = exercises.filter(e => e.date === dateStr);
+    data.push({
+      date: targetDate.format('MM/DD'),
+      fullDate: dateStr,
+      weight: day.weight ?? null,
+      bodyFat: day.bodyFat ?? null,
+      skeletalMuscle: day.skeletalMuscle ?? null,
+      calories: totalKcal > 0 ? netKcal : null,
+      protein: totalProtein > 0 ? totalProtein : null,
+    });
+  }
+  } else if (period === '90d') {
+  // 90天：每週一個點（最多 13 個點）- 取該週第一筆有效數據
+  for (let i = 12; i >= 0; i--) {
+    const targetDate = today.subtract(i * 7, 'day');
+    const weekStart = targetDate.startOf('week').format('YYYY-MM-DD');
+    const weekEnd = targetDate.endOf('week').format('YYYY-MM-DD');
+    
+    // 找該週內第一筆有體重數據的日期
+    const weekDays = days.filter(d => 
+      d.date >= weekStart && 
+      d.date <= weekEnd
+    ).sort((a, b) => a.date.localeCompare(b.date));
+    
+    const day = weekDays.find(d => d.weight != null || d.bodyFat != null || d.skeletalMuscle != null);
+    
+    // 🔧 如果該週沒有數據，跳過
+    if (!day) continue;
+    
+    const dateStr = day.date;
+    const dayMeals = meals.filter(m => m.date === dateStr);
+    const dayExercises = exercises.filter(e => e.date === dateStr);
 
-          const totalKcal = dayMeals.reduce((sum, m) => sum + (m.kcal || 0), 0);
-          const burnedKcal = dayExercises.reduce((sum, e) => sum + (e.kcal || 0), 0);
-          const netKcal = totalKcal - burnedKcal;
-          const totalProtein = dayMeals.reduce((sum, m) => sum + (m.protein || 0), 0);
+    const totalKcal = dayMeals.reduce((sum, m) => sum + (m.kcal || 0), 0);
+    const burnedKcal = dayExercises.reduce((sum, e) => sum + (e.kcal || 0), 0);
+    const netKcal = totalKcal - burnedKcal;
+    const totalProtein = dayMeals.reduce((sum, m) => sum + (m.protein || 0), 0);
 
-          data.push({
-            date: targetDate.format('M月'),  // X 軸：1月, 2月, 3月...
-            fullDate: dateStr,
-            weight: day?.weight ?? null,
-            bodyFat: day?.bodyFat ?? null,
-            skeletalMuscle: day?.skeletalMuscle ?? null,
-            calories: totalKcal > 0 ? netKcal : null,
-            protein: totalProtein > 0 ? totalProtein : null,
-          });
-        }
-      }
+    data.push({
+      date: targetDate.format('MM/DD'),
+      fullDate: dateStr,
+      weight: day.weight ?? null,
+      bodyFat: day.bodyFat ?? null,
+      skeletalMuscle: day.skeletalMuscle ?? null,
+      calories: totalKcal > 0 ? netKcal : null,
+      protein: totalProtein > 0 ? totalProtein : null,
+    });
+  }
+  } else if (period === '180d') {
+  // 180天：每月一個點（最多 6 個點）- 取該月第一筆有效數據
+  for (let i = 5; i >= 0; i--) {
+    const targetMonth = today.subtract(i, 'month');
+    const monthStart = targetMonth.startOf('month').format('YYYY-MM-DD');
+    const monthEnd = targetMonth.endOf('month').format('YYYY-MM-DD');
+    
+    // 找該月內第一筆有體重數據的日期
+    const monthDays = days.filter(d => 
+      d.date >= monthStart && 
+      d.date <= monthEnd
+    ).sort((a, b) => a.date.localeCompare(b.date));
+    
+    const day = monthDays.find(d => d.weight != null || d.bodyFat != null || d.skeletalMuscle != null);
+    
+    // 🔧 如果該月沒有數據，跳過不加入圖表
+    if (!day) continue;
+    
+    const dateStr = day.date;
+    const dayMeals = meals.filter(m => m.date === dateStr);
+    const dayExercises = exercises.filter(e => e.date === dateStr);
 
-      return data;
-    }, [period, days, meals, exercises]);
+    const totalKcal = dayMeals.reduce((sum, m) => sum + (m.kcal || 0), 0);
+    const burnedKcal = dayExercises.reduce((sum, e) => sum + (e.kcal || 0), 0);
+    const netKcal = totalKcal - burnedKcal;
+    const totalProtein = dayMeals.reduce((sum, m) => sum + (m.protein || 0), 0);
+
+    data.push({
+      date: targetMonth.format('M月'),
+      fullDate: dateStr,
+      weight: day.weight ?? null,
+      bodyFat: day.bodyFat ?? null,
+      skeletalMuscle: day.skeletalMuscle ?? null,
+      calories: totalKcal > 0 ? netKcal : null,
+      protein: totalProtein > 0 ? totalProtein : null,
+    });
+  }
+  } else if (period === '365d') {
+  // 365天：每月一個點（最多 12 個點）- 取該月第一筆有效數據
+  for (let i = 11; i >= 0; i--) {
+    const targetMonth = today.subtract(i, 'month');
+    const monthStart = targetMonth.startOf('month').format('YYYY-MM-DD');
+    const monthEnd = targetMonth.endOf('month').format('YYYY-MM-DD');
+    
+    // 找該月內第一筆有體重數據的日期
+    const monthDays = days.filter(d => 
+      d.date >= monthStart && 
+      d.date <= monthEnd
+    ).sort((a, b) => a.date.localeCompare(b.date));
+    
+    const day = monthDays.find(d => d.weight != null || d.bodyFat != null || d.skeletalMuscle != null);
+    
+    // 🔧 如果該月沒有數據，跳過不加入圖表
+    if (!day) continue;
+    
+    const dateStr = day.date;
+    const dayMeals = meals.filter(m => m.date === dateStr);
+    const dayExercises = exercises.filter(e => e.date === dateStr);
+
+    const totalKcal = dayMeals.reduce((sum, m) => sum + (m.kcal || 0), 0);
+    const burnedKcal = dayExercises.reduce((sum, e) => sum + (e.kcal || 0), 0);
+    const netKcal = totalKcal - burnedKcal;
+    const totalProtein = dayMeals.reduce((sum, m) => sum + (m.protein || 0), 0);
+
+    data.push({
+      date: targetMonth.format('M月'),
+      fullDate: dateStr,
+      weight: day.weight ?? null,
+      bodyFat: day.bodyFat ?? null,
+      skeletalMuscle: day.skeletalMuscle ?? null,
+      calories: totalKcal > 0 ? netKcal : null,
+      protein: totalProtein > 0 ? totalProtein : null,
+    });
+  }
+  }
+
+  return data;
+}, [period, days, meals, exercises]);
 
     // 🐛 DEBUG: 檢查 chartData
     useEffect(() => {
@@ -7700,7 +7796,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
             </div>
             <div style={{ fontSize: 15, lineHeight: 1.6 }}>
               <p style={{ margin: '4px 0' }}>
-                <b>{period === 'week' ? '本週' : period === 'longTerm' ? '90 天' : '年度'}{config.label}趨勢：{insights.trend}</b>
+                <b>{period === '7d' ? '本週' : period === '30d' ? '本月' : period === '90d' ? '90 天' : period === '180d' ? '半年' : '年度'}{config.label}趨勢：{insights.trend}</b>
               </p>
               <p style={{ margin: '4px 0', color: 'var(--text-sub)' }}>
                 從 <b>{insights.firstValue}</b> {config.unit} → <b>{insights.lastValue}</b> {config.unit}
@@ -7716,146 +7812,176 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
           </section>
         )}
 
-        {/* 切換按鈕 */}
-        <section className="card">
-          {/* 第一排：週報 + 90天趨勢 */}
-          <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-            <button
-              onClick={() => setPeriod('week')}
-              style={{
-                flex: 1,
-                padding: '10px',
-                borderRadius: 8,
-                border: period === 'week' ? '2px solid #5c9c84' : '1px solid var(--line)',
-                background: period === 'week' ? '#f0f8f4' : '#fff',
-                fontWeight: period === 'week' ? 700 : 400,
-                cursor: 'pointer',
-              }}
-            >
-              週報 (7天)
-            </button>
-            <button
-              onClick={() => setPeriod('longTerm')}
-              style={{
-                flex: 1,
-                padding: '10px',
-                borderRadius: 8,
-                border: period === 'longTerm' ? '2px solid #5c9c84' : '1px solid var(--line)',
-                background: period === 'longTerm' ? '#f0f8f4' : '#fff',
-                fontWeight: period === 'longTerm' ? 700 : 400,
-                cursor: 'pointer',
-              }}
-            >
-              90 天趨勢
-            </button>
-          </div>
+     
+        {/* 時間與指標選擇 */}
+{/* 時間與指標選擇 */}
+<section className="card">
+  {/* 時間範圍選擇：帶 Icon */}
+  <div style={{ marginBottom: 16 }}>
+    <h3 style={{ 
+      fontSize: 15, 
+      fontWeight: 600, 
+      marginBottom: 8, 
+      color: '#666',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 6
+    }}>
+      <svg 
+  width="20" 
+  height="20" 
+  viewBox="0 0 24 24" 
+  fill="none" 
+  stroke="#5c9c84"
+  strokeWidth="2" 
+  strokeLinecap="round" 
+  strokeLinejoin="round"
+>
+  <circle cx="12" cy="12" r="10"></circle>
+  <polyline points="12 6 12 12 16 14"></polyline>
+</svg>
+時間範圍
+    </h3>
+    <div
+      style={{
+        display: 'flex',
+        gap: 8,
+        background: '#f3f4f6',
+        borderRadius: 999,
+        padding: 4,
+        overflow: 'hidden',
+      }}
+    >
+      {[
+        { value: '7d', label: '7天' },
+        { value: '30d', label: '30天' },
+        { value: '90d', label: '90天' },
+        { value: '180d', label: '180天' },
+        { value: '365d', label: '1年' },
+      ].map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          onClick={() => setPeriod(option.value as any)}
+          style={{
+            flex: 1,
+            height: 36,
+            padding: '0 8px',
+            border: 'none',
+            borderRadius: 999,
+            background: period === option.value ? '#fff' : 'transparent',
+            color: period === option.value ? 'var(--mint-dark, #5c9c84)' : '#6b7280',
+            boxShadow: period === option.value ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+            fontWeight: period === option.value ? 800 : 700,
+            fontSize: '13px',
+            cursor: 'pointer',
+            transition: 'all 0.18s ease',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  </div>
 
-          {/* 🆕 第二排：年趨勢（動態顯示：只在有 90 天以上數據時顯示） */}
-          {hasLongTermData && (
-            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-              <button
-                onClick={() => setPeriod('yearly')}
-                style={{
-                  flex: 1,
-                  padding: '10px',
-                  borderRadius: 8,
-                  border: period === 'yearly' ? '2px solid #5c9c84' : '1px solid var(--line)',
-                  background: period === 'yearly' ? '#f0f8f4' : '#fff',
-                  fontWeight: period === 'yearly' ? 700 : 400,
-                  cursor: 'pointer',
-                }}
-              >
-                📅 年趨勢 (365天)
-              </button>
-            </div>
-          )}
-
-          {/* 如果沒有年趨勢按鈕，增加 marginBottom */}
-          {!hasLongTermData && <div style={{ marginBottom: 8 }} />}
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            {/* 🆕 身體組成合併圖表按鈕 */}
-            <button
-              onClick={() => setMetric('bodyComposition')}
-              style={{
-                padding: '10px',
-                borderRadius: 8,
-                border: metric === 'bodyComposition' ? '2px solid #5c9c84' : '1px solid var(--line)',
-                background: metric === 'bodyComposition' ? 'linear-gradient(135deg, #f0f8f4 0%, #fffaf6 100%)' : '#fff',
-                fontWeight: metric === 'bodyComposition' ? 700 : 400,
-                cursor: 'pointer',
-                gridColumn: '1 / -1', // 佔滿整行
-              }}
-            >
-              📊 身體組成
-            </button>
-            <button
-              onClick={() => setMetric('weight')}
-              style={{
-                padding: '10px',
-                borderRadius: 8,
-                border: metric === 'weight' ? '2px solid #5c9c84' : '1px solid var(--line)',
-                background: metric === 'weight' ? '#f0f8f4' : '#fff',
-                fontWeight: metric === 'weight' ? 700 : 400,
-                cursor: 'pointer',
-              }}
-            >
-              體重
-            </button>
-            <button
-              onClick={() => setMetric('bodyFat')}
-              style={{
-                padding: '10px',
-                borderRadius: 8,
-                border: metric === 'bodyFat' ? '2px solid #e68a3a' : '1px solid var(--line)',
-                background: metric === 'bodyFat' ? '#fffaf6' : '#fff',
-                fontWeight: metric === 'bodyFat' ? 700 : 400,
-                cursor: 'pointer',
-              }}
-            >
-              體脂率
-            </button>
-            <button
-              onClick={() => setMetric('skeletalMuscle')}
-              style={{
-                padding: '10px',
-                borderRadius: 8,
-                border: metric === 'skeletalMuscle' ? '2px solid #10b981' : '1px solid var(--line)',
-                background: metric === 'skeletalMuscle' ? '#f0fdf4' : '#fff',
-                fontWeight: metric === 'skeletalMuscle' ? 700 : 400,
-                cursor: 'pointer',
-              }}
-            >
-              骨骼肌率
-            </button>
-            <button
-              onClick={() => setMetric('calories')}
-              style={{
-                padding: '10px',
-                borderRadius: 8,
-                border: metric === 'calories' ? '2px solid #4a90e2' : '1px solid var(--line)',
-                background: metric === 'calories' ? '#f6fbff' : '#fff',
-                fontWeight: metric === 'calories' ? 700 : 400,
-                cursor: 'pointer',
-              }}
-            >
-              淨熱量
-            </button>
-            <button
-              onClick={() => setMetric('protein')}
-              style={{
-                padding: '10px',
-                borderRadius: 8,
-                border: metric === 'protein' ? '2px solid #d64545' : '1px solid var(--line)',
-                background: metric === 'protein' ? '#fff6f6' : '#fff',
-                fontWeight: metric === 'protein' ? 700 : 400,
-                cursor: 'pointer',
-              }}
-            >
-              蛋白質
-            </button>
-          </div>
-        </section>
+  {/* 指標選擇：移除標題 */}
+  <div style={{ marginBottom: 0 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+      {/* 身體組成按鈕（佔滿整行） */}
+      <button
+        onClick={() => setMetric('bodyComposition')}
+        style={{
+          padding: '12px',
+          borderRadius: 8,
+          border: metric === 'bodyComposition' ? '2px solid #5c9c84' : '1px solid var(--line)',
+          background: metric === 'bodyComposition' ? 'linear-gradient(135deg, #f0f8f4 0%, #fffaf6 100%)' : '#fff',
+          fontWeight: metric === 'bodyComposition' ? 700 : 400,
+          cursor: 'pointer',
+          gridColumn: '1 / -1',
+          fontSize: 'var(--font-md)',
+        }}
+      >
+  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+    <img src={`${import.meta.env.BASE_URL}icons/analysis-icon.png`} alt="" style={{ width: 32, height: 32 }} />
+    <span>身體組成</span>
+  </div>
+</button>
+      
+      {/* 其他指標按鈕 */}
+      <button
+        onClick={() => setMetric('weight')}
+        style={{
+          padding: '12px',
+          borderRadius: 8,
+          border: metric === 'weight' ? '2px solid #5c9c84' : '1px solid var(--line)',
+          background: metric === 'weight' ? '#f0f8f4' : '#fff',
+          fontWeight: metric === 'weight' ? 700 : 400,
+          cursor: 'pointer',
+          fontSize: 'var(--font-md)',
+        }}
+      >
+        體重
+      </button>
+      <button
+        onClick={() => setMetric('bodyFat')}
+        style={{
+          padding: '12px',
+          borderRadius: 8,
+          border: metric === 'bodyFat' ? '2px solid #e68a3a' : '1px solid var(--line)',
+          background: metric === 'bodyFat' ? '#fffaf6' : '#fff',
+          fontWeight: metric === 'bodyFat' ? 700 : 400,
+          cursor: 'pointer',
+          fontSize: 'var(--font-md)',
+        }}
+      >
+        體脂率
+      </button>
+      <button
+        onClick={() => setMetric('skeletalMuscle')}
+        style={{
+          padding: '12px',
+          borderRadius: 8,
+          border: metric === 'skeletalMuscle' ? '2px solid #10b981' : '1px solid var(--line)',
+          background: metric === 'skeletalMuscle' ? '#f0fdf4' : '#fff',
+          fontWeight: metric === 'skeletalMuscle' ? 700 : 400,
+          cursor: 'pointer',
+          fontSize: 'var(--font-md)',
+        }}
+      >
+        骨骼肌率
+      </button>
+      <button
+        onClick={() => setMetric('calories')}
+        style={{
+          padding: '12px',
+          borderRadius: 8,
+          border: metric === 'calories' ? '2px solid #4a90e2' : '1px solid var(--line)',
+          background: metric === 'calories' ? '#f6fbff' : '#fff',
+          fontWeight: metric === 'calories' ? 700 : 400,
+          cursor: 'pointer',
+          fontSize: 'var(--font-md)',
+        }}
+      >
+        淨熱量
+      </button>
+      <button
+        onClick={() => setMetric('protein')}
+        style={{
+          padding: '12px',
+          borderRadius: 8,
+          border: metric === 'protein' ? '2px solid #d64545' : '1px solid var(--line)',
+          background: metric === 'protein' ? '#fff6f6' : '#fff',
+          fontWeight: metric === 'protein' ? 700 : 400,
+          cursor: 'pointer',
+          fontSize: 'var(--font-md)',
+        }}
+      >
+        蛋白質
+      </button>
+    </div>
+  </div>
+</section>
 
         {/* 趨勢圖 */}
         <section className="card">
@@ -7865,10 +7991,10 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
           <div style={{ width: '100%', overflowX: 'auto', paddingBottom: 10 }}>
             {/* 設定 minWidth，資料多時自動變寬讓使用者滑動 */}
             <div style={{ 
-      minWidth: chartData.length > 10 ? 600 : '100%', 
-      height: 300,        // 確保這裡有 300
-      minHeight: 300      // 多加這行保險
-  }}>
+  minWidth: (period === '90d' || period === '180d' || period === '365d') ? 600 : '100%', 
+  height: 300,
+  minHeight: 300
+}}>
               
               {/* 🆕 身體組成合併圖表（雙 Y 軸） */}
               {metric === 'bodyComposition' ? (
@@ -7987,11 +8113,11 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
               )}
             </div>
             {/* 底部提示 */}
-            {(period === 'longTerm' || period === 'yearly') && (
-               <div style={{ textAlign: 'center', fontSize: 15, color: '#999', marginTop: 4 }}>
-                 ← 左右滑動查看更多數據 →
-               </div>
-            )}
+            {(period === '90d' || period === '180d' || period === '365d') && (
+  <div style={{ textAlign: 'center', fontSize: 15, color: '#999', marginTop: 4 }}>
+    ← 左右滑動查看更多數據 →
+  </div>
+)}
           </div>
         </section>
       </div>
