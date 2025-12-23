@@ -6392,7 +6392,7 @@ useEffect(() => {
       if (editingBodyField === 'vf') setVfInput(val);
     }}
     // 內臟脂肪通常是整數，其他可以有小數
-    allowDecimal={editingBodyField !== 'vf'}
+    allowDecimal={true}
     onConfirm={saveBody}
   />
 </section>
