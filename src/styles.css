@@ -1669,3 +1669,35 @@ body {
   font-weight: 600;
   box-shadow: 0 2px 6px rgba(0,0,0,0.08);
 }
+
+/* 由下往上滑入動畫 */
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Settings 頁面輸入框統一樣式 */
+.settings-input-box {
+  width: 100%;
+  padding: 12px;
+  font-size: var(--font-size-base);
+  background-color: #f8f9fa;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s;
+  color: var(--text);
+  box-sizing: border-box;
+}
+
+.settings-input-box:active {
+  background-color: #e9ecef;
+  transform: scale(0.98);
+}

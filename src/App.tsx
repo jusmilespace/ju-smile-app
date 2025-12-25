@@ -113,9 +113,9 @@ const NumberPadModal: React.FC<NumberPadModalProps> = ({
       style={{
         position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.0)', zIndex: 200, // 背景改為全透明
         display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-        pointerEvents: 'none' /* 🟢 關鍵修改：讓點擊穿透背景，這樣你可以直接點擊其他欄位來切換 */
+        pointerEvents: 'auto' /* 🟢 關鍵修改：讓點擊穿透背景，這樣你可以直接點擊其他欄位來切換 */
       }}
-      // 移除 onClick={onClose}，避免誤觸關閉
+      onClick={onClose} 
     >
       <div
         style={{
@@ -6405,17 +6405,38 @@ useEffect(() => {
 
 type SettingsPageProps = {
   onOpenAbout: () => void;
+  onOpenNumericKeyboard: (target: string, currentValue: string) => void; // 新增
 };
 
-const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
+const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout, onOpenNumericKeyboard }) => {
   const { showToast } = React.useContext(ToastContext);
   const [localSettings, setLocalSettings] = useState<Settings>(settings);
-
   // 🆕 新增編輯常用組合的狀態
   const [editingCombo, setEditingCombo] = useState<MealCombo | null>(null);
   const [editingComboName, setEditingComboName] = useState('');
+  const [showComboManageModal, setShowComboManageModal] = useState(false); // 🆕 新增
   // 🆕 新增：用於編輯組合明細的狀態
   const [editingComboItems, setEditingComboItems] = useState<ComboItem[]>([]);
+
+  // 🆕 編輯組合項目的熱量輸入
+  const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
+  const [showEditItemKcalPad, setShowEditItemKcalPad] = useState(false);
+
+   // 🆕 臨時儲存正在輸入的數值（字串格式，保留小數點）
+  const [tempInputValue, setTempInputValue] = useState<string>('');
+
+  // 🆕 控制各個數字鍵盤的顯示
+  const [showTargetWeightPad, setShowTargetWeightPad] = useState(false);
+  const [showCalorieGoalPad, setShowCalorieGoalPad] = useState(false);
+  const [showProteinGoalPad, setShowProteinGoalPad] = useState(false);
+  const [showWaterGoalPad, setShowWaterGoalPad] = useState(false);
+  const [showBodyFatGoalPad, setShowBodyFatGoalPad] = useState(false);
+  const [showSkeletalMuscleGoalPad, setShowSkeletalMuscleGoalPad] = useState(false);
+  const [showVisceralFatGoalPad, setShowVisceralFatGoalPad] = useState(false);
+  const [showExerciseMinutesGoalPad, setShowExerciseMinutesGoalPad] = useState(false);
+
+  // 🆕 用於數字輸入
+  const [editingField, setEditingField] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -6450,7 +6471,37 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
 
   showToast('success','已儲存目標設定');
 }
-
+// 🆕 儲存數字輸入
+function saveNumberInput(value: string) {
+  const num = Number(value);
+  
+  if (editingField === 'targetWeight') {
+    setLocalSettings((s) => ({ ...s, targetWeight: num || undefined }));
+  }
+  else if (editingField === 'calorieGoal') {
+    setLocalSettings((s) => ({ ...s, calorieGoal: num || undefined }));
+  }
+  else if (editingField === 'proteinGoal') {
+    setLocalSettings((s) => ({ ...s, proteinGoal: num || undefined }));
+  }
+  else if (editingField === 'waterGoalMl') {
+    setLocalSettings((s) => ({ ...s, waterGoalMl: num || undefined }));
+  }
+  else if (editingField === 'bodyFatGoal') {
+    setLocalSettings((s) => ({ ...s, bodyFatGoal: num || undefined }));
+  }
+  else if (editingField === 'skeletalMuscleGoal') {
+    setLocalSettings((s) => ({ ...s, skeletalMuscleGoal: num || undefined }));
+  }
+  else if (editingField === 'visceralFatGoal') {
+    setLocalSettings((s) => ({ ...s, visceralFatGoal: num || undefined }));
+  }
+  else if (editingField === 'exerciseMinutesGoal') {
+    setLocalSettings((s) => ({ ...s, exerciseMinutesGoal: num || undefined }));
+  }
+  
+  setEditingField(null);
+}
 
   // 🆕 儲存常用組合的編輯（包含明細）
   function saveComboEdit() {
@@ -6586,148 +6637,124 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
             />
           </label>
           <label>
-            目標體重 (kg)
-            <input
-              type="number"
-              value={localSettings.targetWeight ?? ''}
-              onChange={(e) =>
-                setLocalSettings((s) => ({
-                  ...s,
-                  targetWeight: e.target.value
-                    ? Number(e.target.value)
-                    : undefined,
-                }))
-              }
-            />
-          </label>
+  目標體重 (kg)
+  <div
+  className="settings-input-box"
+  onClick={() => {
+    setTempInputValue(String(localSettings.targetWeight ?? ''));
+    setShowTargetWeightPad(true);
+  }}
+>
+  {localSettings.targetWeight ?? '請輸入'}
+</div>
+</label>
           <label>
-            目標攝取熱量 (kcal)
-            <input
-              type="number"
-              value={localSettings.calorieGoal ?? ''}
-              onChange={(e) =>
-                setLocalSettings((s) => ({
-                  ...s,
-                  calorieGoal: e.target.value
-                    ? Number(e.target.value)
-                    : undefined,
-                }))
-              }
-            />
-          </label>
-          <label>
-            每日蛋白質目標 (g)
-            <div className="hint">
-              建議 1.2–1.6 g × 體重(kg)。<br />
-              <strong>若有腎臟疾病請依醫師建議調整。</strong>
-            </div>
-            <input
-              type="number"
-              value={localSettings.proteinGoal ?? ''}
-              onChange={(e) =>
-                setLocalSettings((s) => ({
-                  ...s,
-                  proteinGoal: e.target.value
-                    ? Number(e.target.value)
-                    : undefined,
-                }))
-              }
-            />
-          </label>
+  目標攝取熱量 (kcal)
+  <div
+  className="settings-input-box"
+  onClick={() => {
+    setTempInputValue(String(localSettings.calorieGoal ?? ''));
+    setShowCalorieGoalPad(true);
+  }}
+>
+  {localSettings.calorieGoal ?? '請輸入'}
+</div>
+</label>
+         <label>
+  每日蛋白質目標 (g)
+  <div className="hint">
+    建議 1.2–1.6 g × 體重(kg)。<br />
+    <strong>若有腎臟疾病請依醫師建議調整。</strong>
+  </div>
+  <div
+  className="settings-input-box"
+  onClick={() => {
+    setTempInputValue(String(localSettings.proteinGoal ?? ''));
+    setShowProteinGoalPad(true);
+  }}
+>
+  {localSettings.proteinGoal ?? '請輸入'}
+</div>
+</label>
+
+         <label>
+  每日飲水目標 (ml)
+  <div className="hint">建議：30–35 ml × 體重(kg)</div>
+  <div
+  className="settings-input-box"
+  onClick={() => {
+    setTempInputValue(String(localSettings.waterGoalMl ?? ''));
+    setShowWaterGoalPad(true);
+  }}
+>
+  {localSettings.waterGoalMl ?? '請輸入'}
+</div>
+</label>
+
+        <label>
+  體脂率目標 (%)
+  <div className="hint">
+    男性健康體脂：約 8–19%。<br />
+    女性健康體脂：約 20–30%。
+  </div>
+  <div
+  className="settings-input-box"
+  onClick={() => {
+    setTempInputValue(String(localSettings.bodyFatGoal ?? ''));
+    setShowBodyFatGoalPad(true);
+  }}
+>
+  {localSettings.bodyFatGoal ?? '請輸入'}
+</div>
+</label>
+
+         <label>
+  骨骼肌率目標 (%)
+  <div className="hint">
+    男性健康骨骼肌率：約 33–39%。<br />
+    女性健康骨骼肌率：約 24–30%。
+  </div>
+  <div
+  className="settings-input-box"
+  onClick={() => {
+    setTempInputValue(String(localSettings.skeletalMuscleGoal ?? ''));
+    setShowSkeletalMuscleGoalPad(true);
+  }}
+>
+  {localSettings.skeletalMuscleGoal ?? '請輸入'}
+</div>
+</label>
 
           <label>
-            每日飲水目標 (ml)
-            <div className="hint">建議：30–35 ml × 體重(kg)</div>
-            <input
-              type="number"
-              value={localSettings.waterGoalMl ?? ''}
-              onChange={(e) =>
-                setLocalSettings((s) => ({
-                  ...s,
-                  waterGoalMl: e.target.value
-                    ? Number(e.target.value)
-                    : undefined,
-                }))
-              }
-            />
-          </label>
+  內臟脂肪指數目標
+  <div className="hint">建議目標 ≤ 9</div>
+  <div
+  className="settings-input-box"
+  onClick={() => {
+    setTempInputValue(String(localSettings.visceralFatGoal ?? ''));
+    setShowVisceralFatGoalPad(true);
+  }}
+>
+  {localSettings.visceralFatGoal ?? '請輸入'}
+</div>
+</label>
 
           <label>
-            體脂率目標 (%)
-            <div className="hint">
-              男性健康體脂：約 8–19%。<br />
-              女性健康體脂：約 20–30%。
-            </div>
-            <input
-              type="number"
-              value={localSettings.bodyFatGoal ?? ''}
-              onChange={(e) =>
-                setLocalSettings((s) => ({
-                  ...s,
-                  bodyFatGoal: e.target.value
-                    ? Number(e.target.value)
-                    : undefined,
-                }))
-              }
-            />
-          </label>
-
-          <label>
-            骨骼肌率目標 (%)
-            <div className="hint">
-              男性健康骨骼肌率：約 33–39%。<br />
-              女性健康骨骼肌率：約 24–30%。
-            </div>
-            <input
-              type="number"
-              value={localSettings.skeletalMuscleGoal ?? ''}
-              onChange={(e) =>
-                setLocalSettings((s) => ({
-                  ...s,
-                  skeletalMuscleGoal: e.target.value
-                    ? Number(e.target.value)
-                    : undefined,
-                }))
-              }
-            />
-          </label>
-
-          <label>
-            內臟脂肪指數目標
-            <div className="hint">建議目標 ≤ 9</div>
-            <input
-              type="number"
-              value={localSettings.visceralFatGoal ?? ''}
-              onChange={(e) =>
-                setLocalSettings((s) => ({
-                  ...s,
-                  visceralFatGoal: e.target.value
-                    ? Number(e.target.value)
-                    : undefined,
-                }))
-              }
-            />
-          </label>
-
-          <label>
-            每日運動時間目標 (分鐘)
-            <div className="hint">
-              最低：每週 150 分鐘中等強度（約 30 分鐘 × 5 天）。<br />
-              減脂建議：45–60 分鐘/天，5–6 天/週＋每週 2–3 天肌力訓練。
-            </div>
-            <input
-              type="number"
-              value={localSettings.exerciseMinutesGoal ?? ''}
-              onChange={(e) =>
-                setLocalSettings((s) => ({
-                  ...s,
-                  exerciseMinutesGoal: e.target.value
-                    ? Number(e.target.value)
-                    : undefined,
-                }))
-              }
-            />
-          </label>
+  每日運動時間目標 (分鐘)
+  <div className="hint">
+    最低：每週 150 分鐘中等強度（約 30 分鐘 × 5 天）。<br />
+    減脂建議：45–60 分鐘/天，5–6 天/週＋每週 2–3 天肌力訓練。
+  </div>
+  <div
+  className="settings-input-box"
+  onClick={() => {
+    setTempInputValue(String(localSettings.exerciseMinutesGoal ?? ''));
+    setShowExerciseMinutesGoalPad(true);
+  }}
+>
+  {localSettings.exerciseMinutesGoal ?? '請輸入'}
+</div>
+</label>
 
           <button className="primary" onClick={saveSettings}>
             儲存目標設定
@@ -6736,67 +6763,27 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
       </section>
 
       {/* 常用飲食組合管理 */}
-      <section className="card">
-        <h2>常用飲食組合管理 ({combos.length} 組)</h2>
-        <div className="list-section">
-          {combos.length === 0 && (
-            <div className="hint">尚未儲存任何常用組合</div>
-          )}
-          {combos.map((c) => (
-            <div key={c.id} className="list-item">
-              <div>
-                <div>{c.name}</div>
-                <div className="sub">
-                  {c.items.length} 品項 · 總計約{' '}
-                  {c.items.reduce((sum, item) => sum + item.kcal, 0)} kcal
-                </div>
-                <details style={{ marginTop: '4px' }}>
-                  <summary style={{ fontSize: '12px' }}>查看明細</summary>
-                  <ul
-                    style={{
-                      paddingLeft: '20px',
-                      margin: '4px 0 0 0',
-                    }}
-                  >
-                    {c.items.map((item, index) => (
-  <li
-    key={index}
-    style={{
-      fontSize: '12px',
-      listStyleType: 'disc',
-    }}
-  >
-    {item.label}
-    {item.amountText ? ` ${item.amountText}` : ''}
-    {` · ${item.kcal} kcal`}
-  </li>
-))}
-
-                  </ul>
-                </details>
-              </div>
-              <div className="btn-row">
-                <button
-                  className="small"
-                  onClick={() => {
-                    setEditingCombo(c);
-                    setEditingComboName(c.name);
-                    setEditingComboItems(c.items);
-                  }}
-                >
-                  編輯
-                </button>
-                <button
-                  className="small"
-                  onClick={() => deleteCombo(c.id)}
-                >
-                  刪除
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+<section className="card">
+  <h2>常用飲食組合管理</h2>
+  <div className="form-section">
+    <button
+      className="secondary"
+      onClick={() => setShowComboManageModal(true)}
+      style={{
+        width: '100%',
+        padding: '14px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '8px',
+        fontSize: 'var(--font-size-base)',
+      }}
+    >
+      <span style={{ fontSize: '20px' }}>📋</span>
+      <span>管理常用飲食組合 ({combos.length} 組)</span>
+    </button>
+  </div>
+</section>
 {/* 📖 使用說明與參考 (從紀錄頁搬移過來) */}
       <section className="card">
         <h2>📖 使用說明與參考</h2>
@@ -6934,39 +6921,42 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
                     }}
                   >
                     <div
-                      style={{
-                        flex: 1,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 4,
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontSize: 14,
-                          lineHeight: 1.3,
-                        }}
-                      >
-                        Kcal
-                      </div>
-                      <input
-                        type="number"
-                        value={item.kcal}
-                        onChange={(e) => {
-                          const v = Number(e.target.value) || 0;
-                          setEditingComboItems((prev) =>
-                            prev.map((it, i) =>
-                              i === index ? { ...it, kcal: v } : it
-                            )
-                          );
-                        }}
-                        style={{
-                          padding: '6px',
-                          width: '100%',
-                          boxSizing: 'border-box',
-                        }}
-                      />
-                    </div>
+  style={{
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
+  }}
+>
+  <div
+    style={{
+      fontSize: 14,
+      lineHeight: 1.3,
+    }}
+  >
+    Kcal
+  </div>
+  <div
+    onClick={() => {
+      setEditingItemIndex(index);
+      setShowEditItemKcalPad(true);
+    }}
+    style={{
+      padding: '6px',
+      width: '100%',
+      boxSizing: 'border-box',
+      backgroundColor: '#f8f9fa',
+      border: '1px solid var(--line)',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      minHeight: '32px',
+      display: 'flex',
+      alignItems: 'center',
+    }}
+  >
+    {item.kcal || '0'}
+  </div>
+</div>
 
                     <div
                       style={{
@@ -7049,10 +7039,306 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout }) => {
                 取消
               </button>
             </div>
+            {showEditItemKcalPad && editingItemIndex !== null && (
+              <NumberPadModal
+                visible={showEditItemKcalPad}
+                onClose={() => {
+                  setShowEditItemKcalPad(false);
+                  setEditingItemIndex(null);
+                }}
+                title="熱量 (kcal)"
+                unit="kcal"
+                value={String(editingComboItems[editingItemIndex]?.kcal || 0)}
+                allowDecimal={true}
+                onChange={(val) => {
+                  if (editingItemIndex !== null) {
+                    const v = Number(val) || 0;
+                    setEditingComboItems((prev) =>
+                      prev.map((it, i) =>
+                        i === editingItemIndex ? { ...it, kcal: v } : it
+                      )
+                    );
+                  }
+                }}
+                onConfirm={() => {
+                  setShowEditItemKcalPad(false);
+                  setEditingItemIndex(null);
+                }}
+              />
+            )}
+          </div>
+        
+        </div>
+      )}
+      {/* 目標體重鍵盤 */}
+<NumberPadModal
+  visible={showTargetWeightPad}
+  onClose={() => setShowTargetWeightPad(false)}
+  title="目標體重"
+  unit="kg"
+  value={tempInputValue}
+  allowDecimal={true}
+  onChange={(val) => setTempInputValue(val)} // 只更新臨時值
+  onConfirm={() => {
+    // 確認時才轉成數字並儲存
+    setLocalSettings((s) => ({ 
+      ...s, 
+      targetWeight: tempInputValue ? Number(tempInputValue) : undefined 
+    }));
+    setShowTargetWeightPad(false);
+  }}
+/>
+
+{/* 目標攝取熱量鍵盤 */}
+<NumberPadModal
+  visible={showCalorieGoalPad}
+  onClose={() => setShowCalorieGoalPad(false)}
+  title="目標攝取熱量"
+  unit="kcal"
+  value={tempInputValue}
+  allowDecimal={true}
+  onChange={(val) => setTempInputValue(val)}
+  onConfirm={() => {
+    setLocalSettings((s) => ({ 
+      ...s, 
+      calorieGoal: tempInputValue ? Number(tempInputValue) : undefined 
+    }));
+    setShowCalorieGoalPad(false);
+  }}
+/>
+
+{/* 每日蛋白質目標鍵盤 */}
+<NumberPadModal
+  visible={showProteinGoalPad}
+  onClose={() => setShowProteinGoalPad(false)}
+  title="每日蛋白質目標"
+  unit="g"
+  value={tempInputValue}
+  allowDecimal={true}
+  onChange={(val) => setTempInputValue(val)}
+  onConfirm={() => {
+    setLocalSettings((s) => ({ 
+      ...s, 
+      proteinGoal: tempInputValue ? Number(tempInputValue) : undefined 
+    }));
+    setShowProteinGoalPad(false);
+  }}
+/>
+
+{/* 每日飲水目標鍵盤 */}
+<NumberPadModal
+  visible={showWaterGoalPad}
+  onClose={() => setShowWaterGoalPad(false)}
+  title="每日飲水目標"
+  unit="ml"
+  value={tempInputValue}
+  allowDecimal={true}
+  onChange={(val) => setTempInputValue(val)}
+  onConfirm={() => {
+    setLocalSettings((s) => ({ 
+      ...s, 
+      waterGoalMl: tempInputValue ? Number(tempInputValue) : undefined 
+    }));
+    setShowWaterGoalPad(false);
+  }}
+/>
+
+{/* 體脂率目標鍵盤 */}
+<NumberPadModal
+  visible={showBodyFatGoalPad}
+  onClose={() => setShowBodyFatGoalPad(false)}
+  title="體脂率目標"
+  unit="%"
+  value={tempInputValue}
+  allowDecimal={true}
+  onChange={(val) => setTempInputValue(val)}
+  onConfirm={() => {
+    setLocalSettings((s) => ({ 
+      ...s, 
+      bodyFatGoal: tempInputValue ? Number(tempInputValue) : undefined 
+    }));
+    setShowBodyFatGoalPad(false);
+  }}
+/>
+
+{/* 骨骼肌率目標鍵盤 */}
+<NumberPadModal
+  visible={showSkeletalMuscleGoalPad}
+  onClose={() => setShowSkeletalMuscleGoalPad(false)}
+  title="骨骼肌率目標"
+  unit="%"
+  value={tempInputValue}
+  allowDecimal={true}
+  onChange={(val) => setTempInputValue(val)}
+  onConfirm={() => {
+    setLocalSettings((s) => ({ 
+      ...s, 
+      skeletalMuscleGoal: tempInputValue ? Number(tempInputValue) : undefined 
+    }));
+    setShowSkeletalMuscleGoalPad(false);
+  }}
+/>
+
+{/* 內臟脂肪指數目標鍵盤 */}
+<NumberPadModal
+  visible={showVisceralFatGoalPad}
+  onClose={() => setShowVisceralFatGoalPad(false)}
+  title="內臟脂肪指數目標"
+  unit=""
+  value={tempInputValue}
+  allowDecimal={true}
+  onChange={(val) => setTempInputValue(val)}
+  onConfirm={() => {
+    setLocalSettings((s) => ({ 
+      ...s, 
+      visceralFatGoal: tempInputValue ? Number(tempInputValue) : undefined 
+    }));
+    setShowVisceralFatGoalPad(false);
+  }}
+/>
+
+{/* 每日運動時間目標鍵盤 */}
+<NumberPadModal
+  visible={showExerciseMinutesGoalPad}
+  onClose={() => setShowExerciseMinutesGoalPad(false)}
+  title="每日運動時間目標"
+  unit="分鐘"
+  value={tempInputValue}
+  allowDecimal={true}
+  onChange={(val) => setTempInputValue(val)}
+  onConfirm={() => {
+    setLocalSettings((s) => ({ 
+      ...s, 
+      exerciseMinutesGoal: tempInputValue ? Number(tempInputValue) : undefined 
+    }));
+    setShowExerciseMinutesGoalPad(false);
+  }}
+/>
+
+{/* 常用飲食組合管理 Modal */}
+{showComboManageModal && (
+  <div
+    style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'white',
+      zIndex: 9999,
+      display: 'flex',
+      flexDirection: 'column',
+      animation: 'slideInUp 0.3s ease-out',
+    }}
+  >
+          {/* 頂部標題列 */}
+          <div
+            style={{
+              padding: '16px',
+              borderBottom: '1px solid var(--line)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              position: 'sticky',
+              top: 0,
+              backgroundColor: 'white',
+              zIndex: 1,
+            }}
+          >
+            <h2 style={{ margin: 0, fontSize: 'var(--font-size-xlarge)' }}>
+              常用飲食組合
+            </h2>
+            <button
+              className="secondary"
+              onClick={() => setShowComboManageModal(false)}
+              style={{ padding: '8px 20px' }}
+            >
+              完成
+            </button>
+          </div>
+
+          {/* 捲動內容區 */}
+          <div
+            style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '16px',
+              backgroundColor: '#f8f9fa',
+            }}
+          >
+            {combos.length === 0 ? (
+              <div
+                style={{
+                  textAlign: 'center',
+                  color: '#6c757d',
+                  marginTop: '60px',
+                }}
+              >
+                <div style={{ fontSize: '48px', marginBottom: '16px' }}>📝</div>
+                <p>尚無常用組合</p>
+                <p style={{ fontSize: '14px' }}>
+                  在 Plan 頁面可以儲存常用組合
+                </p>
+              </div>
+            ) : (
+              combos.map((c) => (
+                <div
+                  key={c.id}
+                  className="card"
+                  style={{
+                    marginBottom: '12px',
+                    padding: '16px',
+                  }}
+                >
+                  {/* 組合名稱 */}
+                  <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px' }}>
+                    {c.name}
+                  </div>
+
+                  {/* 組合內容 */}
+                  <details style={{ marginBottom: '12px' }}>
+                    <summary style={{ fontSize: '14px', cursor: 'pointer' }}>
+                      {c.items.length} 品項 · 總計約{' '}
+                      {c.items.reduce((sum, item) => sum + item.kcal, 0)} kcal
+                    </summary>
+                    <ul style={{ paddingLeft: '20px', marginTop: '8px' }}>
+                      {c.items.map((item, idx) => (
+                        <li key={idx} style={{ fontSize: '14px', marginBottom: '4px' }}>
+                          {item.label}
+                          {item.amountText ? ` ${item.amountText}` : ''}
+                          {` · ${item.kcal} kcal`}
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+
+                  {/* 操作按鈕 */}
+                  <div className="btn-row" style={{ gap: '8px' }}>
+                    <button
+                      className="small"
+                      onClick={() => {
+                        setEditingCombo(c);
+                        setEditingComboName(c.name);
+                        setEditingComboItems(c.items);
+                        setShowComboManageModal(false);
+                      }}
+                    >
+                      編輯
+                    </button>
+                    <button
+                      className="small"
+                      onClick={() => deleteCombo(c.id)}
+                      style={{ backgroundColor: '#dc3545', color: 'white' }}
+                    >
+                      刪除
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}
-
       {/* 資料來源同步 (CSV) */}
       <section className="card">
         <h2>資料來源同步 (CSV)</h2>
@@ -8129,6 +8415,52 @@ const chartData = useMemo(() => {
 return (
   <ToastContext.Provider value={{ showToast }}>
     <ToastStyles />
+    
+    {/* 🆕 數字鍵盤動畫 - 由下往上滑入 */}
+    <style>{`
+  /* 由下往上滑入 */
+  @keyframes slideIn {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes slideInFromRight {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes slideInUp {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+  
+  /* 滑出動畫（如果需要） */
+  @keyframes slideOut {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(100%);
+    }
+  }
+  
+  .modal-backdrop > div {
+    animation: slideInFromRight 0.3s ease-out;
+    border-radius: 24px 24px 0 0;
+  }
+`}</style>
     
     <div className="app">
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
