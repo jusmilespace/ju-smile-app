@@ -1784,3 +1784,39 @@ body {
 .settings-actions {
   padding: 12px 0;
 }
+
+這是一個非常重要的 UX 觀察！你是對的，原本的「建議文字（Hints）」對於使用者設定目標來說至關重要，我們在追求畫面清爽的同時，不應該犧牲這些關鍵資訊。
+
+我們採用的解決方案是：保留清爽的列表結構，但將建議文字以「副標題」的方式加回每個選項下方。 這樣既不雜亂，又能讓使用者一眼看到參考標準。
+
+請依照以下步驟修改 styles.css 與 App.tsx。
+
+一、修改 styles.css
+我們需要新增一個樣式，讓列表左側可以容納「標題 + 副標題」。請在 styles.css 的 Settings List Style 區塊（就是上次新增的那區）補充以下 CSS：
+
+CSS
+
+/* ...原本的 .settings-row 等樣式保持不變... */
+
+/* 🆕 新增：用於包裹「標題+建議文字」的容器 */
+.settings-row-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px; /* 標題跟建議稍微拉開一點 */
+  flex: 1;  /* 佔據剩餘空間，避免被右邊數值擠壓 */
+}
+
+/* 🆕 新增：建議文字的樣式 */
+.settings-hint {
+  font-size: 13px;
+  color: #9ca3af; /* 淺灰色，不搶眼 */
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+/* 微調原本的 label，取消 flex 讓它自然排列 */
+.settings-label {
+  /* 原本可能有 display: flex; 這裡可以視情況保留或調整 */
+  margin-bottom: 0;
+}

@@ -6411,6 +6411,9 @@ type SettingsPageProps = {
 const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout, onOpenNumericKeyboard }) => {
   const { showToast } = React.useContext(ToastContext);
   const [localSettings, setLocalSettings] = useState<Settings>(settings);
+
+  const [showGuideModal, setShowGuideModal] = useState(false);
+
   // 🆕 新增編輯常用組合的狀態
   const [editingCombo, setEditingCombo] = useState<MealCombo | null>(null);
   const [editingComboName, setEditingComboName] = useState('');
@@ -6620,7 +6623,9 @@ function saveNumberInput(value: string) {
       <div className="settings-list-card">
         {/* 起始日 */}
         <div className="settings-row">
-          <div className="settings-label">開始減重日期</div>
+          <div className="settings-row-text">
+            <div className="settings-label">開始減重日期</div>
+          </div>
           <input
             type="date"
             value={localSettings.startDate || ''}
@@ -6641,7 +6646,9 @@ function saveNumberInput(value: string) {
 
         {/* 達成日 */}
         <div className="settings-row">
-          <div className="settings-label">預計達成日期</div>
+          <div className="settings-row-text">
+            <div className="settings-label">預計達成日期</div>
+          </div>
           <input
             type="date"
             value={localSettings.targetDate || ''}
@@ -6668,7 +6675,10 @@ function saveNumberInput(value: string) {
             setShowTargetWeightPad(true);
           }}
         >
-          <div className="settings-label">目標體重</div>
+          <div className="settings-row-text">
+            <div className="settings-label">目標體重</div>
+            <div className="settings-hint">設定您想達成的體重</div>
+          </div>
           <div className={`settings-value ${!localSettings.targetWeight ? 'placeholder' : ''}`}>
             {localSettings.targetWeight ? `${localSettings.targetWeight} kg` : '未設定'} <span className="chevron">›</span>
           </div>
@@ -6682,53 +6692,81 @@ function saveNumberInput(value: string) {
             setShowCalorieGoalPad(true);
           }}
         >
-          <div className="settings-label">每日熱量目標</div>
+          <div className="settings-row-text">
+            <div className="settings-label">每日熱量目標</div>
+            <div className="settings-hint">建議：TDEE 減去 300~500 kcal</div>
+          </div>
           <div className={`settings-value ${!localSettings.calorieGoal ? 'placeholder' : ''}`}>
             {localSettings.calorieGoal ? `${localSettings.calorieGoal} kcal` : '未設定'} <span className="chevron">›</span>
           </div>
         </div>
       </div>
 
-      {/* 第二組：身體數值目標 */}
+      {/* 第二組：身體數值目標 (補回詳細建議) */}
       <div className="settings-group-title">📊 進階身體指標</div>
       <div className="settings-list-card">
+        
+        {/* 蛋白質 */}
         <div className="settings-row" onClick={() => { setTempInputValue(String(localSettings.proteinGoal ?? '')); setShowProteinGoalPad(true); }}>
-          <div className="settings-label">蛋白質目標</div>
+          <div className="settings-row-text">
+            <div className="settings-label">蛋白質目標</div>
+            <div className="settings-hint">建議：1.2 ~ 1.6g × 體重(kg)</div>
+          </div>
           <div className={`settings-value ${!localSettings.proteinGoal ? 'placeholder' : ''}`}>
             {localSettings.proteinGoal ? `${localSettings.proteinGoal} g` : '未設定'} <span className="chevron">›</span>
           </div>
         </div>
 
+        {/* 飲水 */}
         <div className="settings-row" onClick={() => { setTempInputValue(String(localSettings.waterGoalMl ?? '')); setShowWaterGoalPad(true); }}>
-          <div className="settings-label">飲水目標</div>
+          <div className="settings-row-text">
+            <div className="settings-label">飲水目標</div>
+            <div className="settings-hint">建議：30 ~ 35ml × 體重(kg)</div>
+          </div>
           <div className={`settings-value ${!localSettings.waterGoalMl ? 'placeholder' : ''}`}>
             {localSettings.waterGoalMl ? `${localSettings.waterGoalMl} ml` : '未設定'} <span className="chevron">›</span>
           </div>
         </div>
 
+        {/* 運動時間 */}
         <div className="settings-row" onClick={() => { setTempInputValue(String(localSettings.exerciseMinutesGoal ?? '')); setShowExerciseMinutesGoalPad(true); }}>
-          <div className="settings-label">運動時間目標</div>
+          <div className="settings-row-text">
+            <div className="settings-label">運動時間目標</div>
+            <div className="settings-hint">建議每週至少 150 分鐘</div>
+          </div>
           <div className={`settings-value ${!localSettings.exerciseMinutesGoal ? 'placeholder' : ''}`}>
             {localSettings.exerciseMinutesGoal ? `${localSettings.exerciseMinutesGoal} min` : '未設定'} <span className="chevron">›</span>
           </div>
         </div>
 
+        {/* 體脂率 */}
         <div className="settings-row" onClick={() => { setTempInputValue(String(localSettings.bodyFatGoal ?? '')); setShowBodyFatGoalPad(true); }}>
-          <div className="settings-label">體脂率目標</div>
+          <div className="settings-row-text">
+            <div className="settings-label">體脂率目標</div>
+            <div className="settings-hint">標準：男 8-19% / 女 20-30%</div>
+          </div>
           <div className={`settings-value ${!localSettings.bodyFatGoal ? 'placeholder' : ''}`}>
             {localSettings.bodyFatGoal ? `${localSettings.bodyFatGoal}%` : '未設定'} <span className="chevron">›</span>
           </div>
         </div>
 
+        {/* 骨骼肌率 */}
         <div className="settings-row" onClick={() => { setTempInputValue(String(localSettings.skeletalMuscleGoal ?? '')); setShowSkeletalMuscleGoalPad(true); }}>
-          <div className="settings-label">骨骼肌率目標</div>
+          <div className="settings-row-text">
+            <div className="settings-label">骨骼肌率目標</div>
+            <div className="settings-hint">標準：男 33-39% / 女 24-30%</div>
+          </div>
           <div className={`settings-value ${!localSettings.skeletalMuscleGoal ? 'placeholder' : ''}`}>
             {localSettings.skeletalMuscleGoal ? `${localSettings.skeletalMuscleGoal}%` : '未設定'} <span className="chevron">›</span>
           </div>
         </div>
 
+        {/* 內臟脂肪 */}
         <div className="settings-row" onClick={() => { setTempInputValue(String(localSettings.visceralFatGoal ?? '')); setShowVisceralFatGoalPad(true); }}>
-          <div className="settings-label">內臟脂肪目標</div>
+          <div className="settings-row-text">
+            <div className="settings-label">內臟脂肪目標</div>
+            <div className="settings-hint">建議標準 ≤ 9</div>
+          </div>
           <div className={`settings-value ${!localSettings.visceralFatGoal ? 'placeholder' : ''}`}>
             {localSettings.visceralFatGoal ? localSettings.visceralFatGoal : '未設定'} <span className="chevron">›</span>
           </div>
@@ -6755,7 +6793,10 @@ function saveNumberInput(value: string) {
         {/* 資料來源同步 (CSV) - 簡化版 */}
         <div className="settings-row" style={{ display: 'block', height: 'auto', padding: '16px 20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <div className="settings-label">🔄 外部資料同步 (CSV)</div>
+            <div className="settings-row-text">
+               <div className="settings-label">🔄 外部資料同步 (CSV)</div>
+               <div className="settings-hint">更新食物與運動資料庫</div>
+            </div>
             <button className="small" onClick={syncCsv} disabled={csvLoading}>
               {csvLoading ? '同步中…' : '立即同步'}
             </button>
@@ -6773,6 +6814,17 @@ function saveNumberInput(value: string) {
           </details>
         </div>
       </div>
+
+      <div className="settings-group-title">💡 幫助與參考</div>
+<div className="settings-list-card">
+  <div className="settings-row" onClick={() => setShowGuideModal(true)}>
+    <div className="settings-row-text">
+      <div className="settings-label">📖 使用教學 & 份量參考</div>
+      <div className="settings-hint">手掌法估算、搜尋技巧說明</div>
+    </div>
+    <div className="settings-value"><span className="chevron">›</span></div>
+  </div>
+</div>
 
       {/* 第四組：備份與還原 */}
       <div className="settings-group-title">☁️ 備份與還原</div>
@@ -6810,7 +6862,7 @@ function saveNumberInput(value: string) {
              onClick={onOpenAbout}
              style={{ borderRadius: 999, padding: '8px 24px', background: '#fff', border: '1px solid #ddd' }}
            >
-             ℹ️ 關於 Ju Smile App & 使用說明
+             ℹ️ 關於 App
            </button>
            <div style={{ marginTop: 12, fontSize: 12, color: '#999' }}>Version {APP_VERSION}</div>
         </div>
@@ -6875,7 +6927,7 @@ function saveNumberInput(value: string) {
         </div>
       )}
 
-      {/* 各種目標的數字鍵盤 Modal (保持原樣，僅格式化方便閱讀) */}
+      {/* 各種目標的數字鍵盤 Modal */}
       <NumberPadModal visible={showTargetWeightPad} onClose={() => setShowTargetWeightPad(false)} title="目標體重" unit="kg" value={tempInputValue} allowDecimal={true} onChange={(val) => setTempInputValue(val)} onConfirm={() => { setLocalSettings((s) => ({ ...s, targetWeight: tempInputValue ? Number(tempInputValue) : undefined })); setShowTargetWeightPad(false); }} />
       <NumberPadModal visible={showCalorieGoalPad} onClose={() => setShowCalorieGoalPad(false)} title="目標攝取熱量" unit="kcal" value={tempInputValue} allowDecimal={true} onChange={(val) => setTempInputValue(val)} onConfirm={() => { setLocalSettings((s) => ({ ...s, calorieGoal: tempInputValue ? Number(tempInputValue) : undefined })); setShowCalorieGoalPad(false); }} />
       <NumberPadModal visible={showProteinGoalPad} onClose={() => setShowProteinGoalPad(false)} title="每日蛋白質目標" unit="g" value={tempInputValue} allowDecimal={true} onChange={(val) => setTempInputValue(val)} onConfirm={() => { setLocalSettings((s) => ({ ...s, proteinGoal: tempInputValue ? Number(tempInputValue) : undefined })); setShowProteinGoalPad(false); }} />
@@ -6885,7 +6937,7 @@ function saveNumberInput(value: string) {
       <NumberPadModal visible={showVisceralFatGoalPad} onClose={() => setShowVisceralFatGoalPad(false)} title="內臟脂肪指數目標" unit="" value={tempInputValue} allowDecimal={true} onChange={(val) => setTempInputValue(val)} onConfirm={() => { setLocalSettings((s) => ({ ...s, visceralFatGoal: tempInputValue ? Number(tempInputValue) : undefined })); setShowVisceralFatGoalPad(false); }} />
       <NumberPadModal visible={showExerciseMinutesGoalPad} onClose={() => setShowExerciseMinutesGoalPad(false)} title="每日運動時間目標" unit="分鐘" value={tempInputValue} allowDecimal={true} onChange={(val) => setTempInputValue(val)} onConfirm={() => { setLocalSettings((s) => ({ ...s, exerciseMinutesGoal: tempInputValue ? Number(tempInputValue) : undefined })); setShowExerciseMinutesGoalPad(false); }} />
 
-      {/* 常用飲食組合管理 Modal (全螢幕) */}
+      {/* 常用飲食組合管理 Modal */}
       {showComboManageModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'white', zIndex: 9999, display: 'flex', flexDirection: 'column', animation: 'slideInUp 0.3s ease-out' }}>
           <div style={{ padding: '16px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, backgroundColor: 'white', zIndex: 1 }}>
@@ -6923,6 +6975,65 @@ function saveNumberInput(value: string) {
           </div>
         </div>
       )}
+
+      {/* 使用說明 Modal */}
+{showGuideModal && (
+  <div className="modal-backdrop" onClick={() => setShowGuideModal(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3000, padding: '20px 0' }}>
+    <div className="modal" onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: 16, padding: '24px 20px', maxWidth: 400, width: '90%', maxHeight: '85vh', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+      
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <h2 style={{ margin: 0, fontSize: '20px' }}>📖 使用說明與參考</h2>
+        <button onClick={() => setShowGuideModal(false)} style={{ border: 'none', background: '#f3f4f6', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', fontSize: 16 }}>✕</button>
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto', fontSize: '15px', lineHeight: '1.6', color: '#374151' }}>
+        
+        <h3 style={{ color: 'var(--mint-dark)', marginTop: 0, fontSize: 16 }}>🔍 快速搜尋模式</h3>
+        <ul style={{ paddingLeft: 20, margin: '8px 0 20px' }}>
+          <li><b>常用組合</b>：搜尋框下方顯示，點擊 <b>+</b> 一鍵加入。</li>
+          <li><b>食物搜尋</b>：輸入名稱（如「雞胸肉」），選取結果並填入份量。</li>
+          <li><b>類別估算</b>：若無資料，切換「類別/估算模式」，選食物類型輸入份數。</li>
+        </ul>
+
+        <h3 style={{ color: 'var(--mint-dark)', fontSize: 16 }}>🖐️ 手掌法份量估算</h3>
+        <p style={{ margin: '8px 0', fontSize: 14, color: '#666' }}>
+          適合外食或不方便秤重時，用自己的手來測量。
+        </p>
+        
+        <div style={{ background: '#f9fafb', borderRadius: 12, padding: 12, marginBottom: 12 }}>
+          <strong style={{ display: 'block', marginBottom: 4 }}>👊 拳頭 (Fist)</strong>
+          <div style={{ fontSize: 14, color: '#555' }}>
+            適用：<b>水果、熟蔬菜、飯/麵</b><br/>
+            • 1 個拳頭水果 ≈ 1 份 (約 130g)<br/>
+            • 1 個拳頭熟菜 ≈ 1 份 (約 100g)<br/>
+            • 1 個拳頭熟飯 ≈ 4 份 (約 160g)
+          </div>
+        </div>
+
+        <div style={{ background: '#f9fafb', borderRadius: 12, padding: 12, marginBottom: 12 }}>
+          <strong style={{ display: 'block', marginBottom: 4 }}>✋ 手掌心 (Palm)</strong>
+          <div style={{ fontSize: 14, color: '#555' }}>
+            適用：<b>肉類、魚類、豆腐</b><br/>
+            • 手掌大小、小指厚度 ≈ 3 份 (約 100g 熟肉)
+          </div>
+        </div>
+
+        <div style={{ background: '#f9fafb', borderRadius: 12, padding: 12 }}>
+          <strong style={{ display: 'block', marginBottom: 4 }}>👍 大拇指 (Thumb)</strong>
+          <div style={{ fontSize: 14, color: '#555' }}>
+            適用：<b>油脂、堅果、種子</b><br/>
+            • 1 個指節 ≈ 1 份 (約 5g 油)
+          </div>
+        </div>
+
+      </div>
+      
+      <button className="primary" onClick={() => setShowGuideModal(false)} style={{ marginTop: 20, width: '100%', padding: '12px', borderRadius: 12 }}>
+        我知道了
+      </button>
+    </div>
+  </div>
+)}
     </div>
   );
 };
