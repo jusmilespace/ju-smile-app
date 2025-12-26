@@ -313,9 +313,10 @@ const PALM_PORTION_ICON_MAP_BY_ID: Record<string, { src: string; alt: string }> 
 };
 
 const PALM_PORTION_ICON_MAP: Record<string, { src: string; alt: string }> = {
-  '✋': { src: proteinImg, alt: '豆魚蛋肉類' },
-  '👊': { src: grainsImg, alt: '拳頭份量（蔬菜/全穀/水果）' },
-  '👍': { src: fatImg, alt: '油脂與堅果種子類' },
+  '✋': { src: `${APP_BASE_URL}icons/palm.png`, alt: '豆魚蛋肉類 (1掌心)' },
+  '👊': { src: `${APP_BASE_URL}icons/fist.png`, alt: '蔬菜/全穀/水果 (1拳頭)' },
+  '👍': { src: `${APP_BASE_URL}icons/thumb.png`, alt: '油脂與堅果 (1拇指)' },
+  // 乳品類維持原樣，或如果您有 icons/dairy.png 也可以一併改
   '🥛': { src: dairyImg, alt: '乳品類' },
 };
 
@@ -2435,7 +2436,13 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
       minWidth: 0,
     }}
   >
-    🖐️&nbsp;手掌法
+    {/* 🆕 替換 Emoji 為圖片 */}
+    <img 
+      src={`${APP_BASE_URL}icons/palm.png`} 
+      alt="hand" 
+      style={{ width: 18, height: 18, marginRight: 6, objectFit: 'contain' }} 
+    />
+    手掌法
   </button>
 </div>
 
@@ -7001,7 +7008,11 @@ function saveNumberInput(value: string) {
         </p>
         
         <div style={{ background: '#f9fafb', borderRadius: 12, padding: 12, marginBottom: 12 }}>
-          <strong style={{ display: 'block', marginBottom: 4 }}>👊 拳頭 (Fist)</strong>
+          {/* 🆕 拳頭 */}
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+            <img src={`${APP_BASE_URL}icons/fist.png`} alt="Fist" style={{ width: 24, height: 24, marginRight: 8, objectFit: 'contain' }} />
+            <strong>拳頭 (Fist)</strong>
+          </div>
           <div style={{ fontSize: 14, color: '#555' }}>
             適用：<b>水果、熟蔬菜、飯/麵</b><br/>
             • 1 個拳頭水果 ≈ 1 份 (約 130g)<br/>
@@ -7011,7 +7022,11 @@ function saveNumberInput(value: string) {
         </div>
 
         <div style={{ background: '#f9fafb', borderRadius: 12, padding: 12, marginBottom: 12 }}>
-          <strong style={{ display: 'block', marginBottom: 4 }}>✋ 手掌心 (Palm)</strong>
+          {/* 🆕 手掌 */}
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+            <img src={`${APP_BASE_URL}icons/palm.png`} alt="Palm" style={{ width: 24, height: 24, marginRight: 8, objectFit: 'contain' }} />
+            <strong>手掌心 (Palm)</strong>
+          </div>
           <div style={{ fontSize: 14, color: '#555' }}>
             適用：<b>肉類、魚類、豆腐</b><br/>
             • 手掌大小、小指厚度 ≈ 3 份 (約 100g 熟肉)
@@ -7019,7 +7034,11 @@ function saveNumberInput(value: string) {
         </div>
 
         <div style={{ background: '#f9fafb', borderRadius: 12, padding: 12 }}>
-          <strong style={{ display: 'block', marginBottom: 4 }}>👍 大拇指 (Thumb)</strong>
+          {/* 🆕 拇指 */}
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+            <img src={`${APP_BASE_URL}icons/thumb.png`} alt="Thumb" style={{ width: 24, height: 24, marginRight: 8, objectFit: 'contain' }} />
+            <strong>大拇指 (Thumb)</strong>
+          </div>
           <div style={{ fontSize: 14, color: '#555' }}>
             適用：<b>油脂、堅果、種子</b><br/>
             • 1 個指節 ≈ 1 份 (約 5g 油)
