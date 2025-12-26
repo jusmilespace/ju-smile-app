@@ -4,6 +4,11 @@ import dayjs from 'dayjs';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { VisualPortionPicker } from './VisualPortionPicker';
 
+// 🟢 新增：匯入手掌法圖片
+import palmImg from './assets/palm.png';
+import fistImg from './assets/fist.png';
+import thumbImg from './assets/thumb.png';
+
 
 // 🖐️ 手掌法圖示（與 VisualPortionPicker 共用的 6 張 img）
 import proteinImg from './assets/protein.png';
@@ -302,23 +307,9 @@ type MealCombo = {
   items: ComboItem[];
 };
 
-// 🖐️ 手掌法份量：根據類別 ID 對應圖片（因為蔬菜/全穀/水果都是 👊，需要額外判斷）
-const PALM_PORTION_ICON_MAP_BY_ID: Record<string, { src: string; alt: string }> = {
-  protein: { src: proteinImg, alt: '豆魚蛋肉類' },
-  veggie: { src: veggieImg, alt: '蔬菜類' },
-  grains: { src: grainsImg, alt: '全穀雜糧類' },
-  fruit: { src: fruitImg, alt: '水果類' },
-  fat: { src: fatImg, alt: '油脂與堅果種子類' },
-  dairy: { src: dairyImg, alt: '乳品類' },
-};
 
-const PALM_PORTION_ICON_MAP: Record<string, { src: string; alt: string }> = {
-  '✋': { src: `${APP_BASE_URL}icons/palm.png`, alt: '豆魚蛋肉類 (1掌心)' },
-  '👊': { src: `${APP_BASE_URL}icons/fist.png`, alt: '蔬菜/全穀/水果 (1拳頭)' },
-  '👍': { src: `${APP_BASE_URL}icons/thumb.png`, alt: '油脂與堅果 (1拇指)' },
-  // 乳品類維持原樣，或如果您有 icons/dairy.png 也可以一併改
-  '🥛': { src: dairyImg, alt: '乳品類' },
-};
+
+
 
 function renderPalmAmountText(amountText?: string, counts?: { [key: string]: number }): React.ReactNode {
   if (!amountText) return null;
@@ -361,77 +352,7 @@ function renderPalmAmountText(amountText?: string, counts?: { [key: string]: num
     }
   }
 
-  // 如果沒有 counts，就用原本的 amountText 顯示
-  // 如果字串裡沒有手掌法 emoji，就直接原樣顯示
-  const hasPalmEmoji = Object.keys(PALM_PORTION_ICON_MAP).some((emoji) =>
-    amountText.includes(emoji)
-  );
-  if (!hasPalmEmoji) {
-    return amountText;
-  }
-
-  // 範例格式：✋×1 + 👊×1 + 👊×1 + 👍×1 + 🥛×1
-  const segments = amountText
-    .split('+')
-    .map((s) => s.trim())
-    .filter(Boolean);
-
-  return (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: 4,
-      }}
-    >
-      {segments.map((seg, idx) => {
-        const match = seg.match(/^(.+?)(?:×|x)([0-9]+(?:\.[0-9]+)?)$/);
-        if (!match) {
-          // 解析不到就直接顯示原文字，避免壞掉
-          return (
-            <span key={idx} style={{ marginRight: 4 }}>
-              {seg}
-            </span>
-          );
-        }
-
-        const emoji = match[1];
-        const count = match[2];
-        const cfg = PALM_PORTION_ICON_MAP[emoji];
-
-        if (!cfg) {
-          return (
-            <span key={idx} style={{ marginRight: 4 }}>
-              {seg}
-            </span>
-          );
-        }
-
-        return (
-          <span
-            key={idx}
-            style={{ display: 'inline-flex', alignItems: 'center' }}
-          >
-            <img
-              src={cfg.src}
-              alt={cfg.alt}
-              style={{
-                width: 18,
-                height: 18,
-                marginRight: 2,
-                objectFit: 'contain',
-              }}
-            />
-            <span>×{count}</span>
-            {idx < segments.length - 1 && (
-              <span style={{ margin: '0 4px' }}>+</span>
-            )}
-          </span>
-        );
-      })}
-    </span>
-  );
+  return amountText;
 }
 type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -2436,13 +2357,7 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
       minWidth: 0,
     }}
   >
-    {/* 🆕 替換 Emoji 為圖片 */}
-    <img 
-      src={`${APP_BASE_URL}icons/palm.png`} 
-      alt="hand" 
-      style={{ width: 18, height: 18, marginRight: 6, objectFit: 'contain' }} 
-    />
-    手掌法
+    🖐️&nbsp;手掌法
   </button>
 </div>
 
@@ -2908,10 +2823,10 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
               </div>
             </div>
             
-            {/* 完整營養素資訊 */}
-            <div style={{ fontSize: 'var(--font-xs)', color: '#666', marginBottom: 4 }}>
-              {m.amountText || ''}
-            </div>
+            {/* 🟢 修改重點：使用 renderPalmAmountText 來顯示帶有食物圖示的份量 */}
+    <div style={{ fontSize: 'var(--font-xs)', color: '#666', marginBottom: 4, minHeight: 20 }}>
+      {renderPalmAmountText(m.amountText, m.counts)}
+    </div>
                         <div style={{ fontSize: 'var(--font-xs)', color: '#333', fontWeight: 500 }}>
               {m.kcal} kcal
             </div>
@@ -7008,11 +6923,7 @@ function saveNumberInput(value: string) {
         </p>
         
         <div style={{ background: '#f9fafb', borderRadius: 12, padding: 12, marginBottom: 12 }}>
-          {/* 🆕 拳頭 */}
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
-            <img src={`${APP_BASE_URL}icons/fist.png`} alt="Fist" style={{ width: 24, height: 24, marginRight: 8, objectFit: 'contain' }} />
-            <strong>拳頭 (Fist)</strong>
-          </div>
+          <strong style={{ display: 'block', marginBottom: 4 }}>👊 拳頭 (Fist)</strong>
           <div style={{ fontSize: 14, color: '#555' }}>
             適用：<b>水果、熟蔬菜、飯/麵</b><br/>
             • 1 個拳頭水果 ≈ 1 份 (約 130g)<br/>
@@ -7022,11 +6933,7 @@ function saveNumberInput(value: string) {
         </div>
 
         <div style={{ background: '#f9fafb', borderRadius: 12, padding: 12, marginBottom: 12 }}>
-          {/* 🆕 手掌 */}
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
-            <img src={`${APP_BASE_URL}icons/palm.png`} alt="Palm" style={{ width: 24, height: 24, marginRight: 8, objectFit: 'contain' }} />
-            <strong>手掌心 (Palm)</strong>
-          </div>
+          <strong style={{ display: 'block', marginBottom: 4 }}>✋ 手掌心 (Palm)</strong>
           <div style={{ fontSize: 14, color: '#555' }}>
             適用：<b>肉類、魚類、豆腐</b><br/>
             • 手掌大小、小指厚度 ≈ 3 份 (約 100g 熟肉)
@@ -7034,11 +6941,7 @@ function saveNumberInput(value: string) {
         </div>
 
         <div style={{ background: '#f9fafb', borderRadius: 12, padding: 12 }}>
-          {/* 🆕 拇指 */}
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
-            <img src={`${APP_BASE_URL}icons/thumb.png`} alt="Thumb" style={{ width: 24, height: 24, marginRight: 8, objectFit: 'contain' }} />
-            <strong>大拇指 (Thumb)</strong>
-          </div>
+          <strong style={{ display: 'block', marginBottom: 4 }}>👍 大拇指 (Thumb)</strong>
           <div style={{ fontSize: 14, color: '#555' }}>
             適用：<b>油脂、堅果、種子</b><br/>
             • 1 個指節 ≈ 1 份 (約 5g 油)
