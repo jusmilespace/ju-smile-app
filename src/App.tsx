@@ -6605,733 +6605,317 @@ function saveNumberInput(value: string) {
 
 
   return (
-    <div className="page page-settings" style={{ paddingBottom: '90px' }}>
-      {/* 我的目標 */}
-      <section className="card">
-        <h2>我的目標</h2>
-        <div className="form-section">
-          <label>
-            減重起始日期
-            <input
-              type="date"
-              value={localSettings.startDate || ''}
-              onChange={(e) =>
-                setLocalSettings((s) => ({
-                  ...s,
-                  startDate: e.target.value || undefined,
-                }))
-              }
-            />
-          </label>
-          <label>
-            預計達成日期
-            <input
-              type="date"
-              value={localSettings.targetDate || ''}
-              onChange={(e) =>
-                setLocalSettings((s) => ({
-                  ...s,
-                  targetDate: e.target.value || undefined,
-                }))
-              }
-            />
-          </label>
-          <label>
-  目標體重 (kg)
-  <div
-  className="settings-input-box"
-  onClick={() => {
-    setTempInputValue(String(localSettings.targetWeight ?? ''));
-    setShowTargetWeightPad(true);
-  }}
->
-  {localSettings.targetWeight ?? '請輸入'}
-</div>
-</label>
-          <label>
-  目標攝取熱量 (kcal)
-  <div
-  className="settings-input-box"
-  onClick={() => {
-    setTempInputValue(String(localSettings.calorieGoal ?? ''));
-    setShowCalorieGoalPad(true);
-  }}
->
-  {localSettings.calorieGoal ?? '請輸入'}
-</div>
-</label>
-         <label>
-  每日蛋白質目標 (g)
-  <div className="hint">
-    建議 1.2–1.6 g × 體重(kg)。<br />
-    <strong>若有腎臟疾病請依醫師建議調整。</strong>
-  </div>
-  <div
-  className="settings-input-box"
-  onClick={() => {
-    setTempInputValue(String(localSettings.proteinGoal ?? ''));
-    setShowProteinGoalPad(true);
-  }}
->
-  {localSettings.proteinGoal ?? '請輸入'}
-</div>
-</label>
+    <div className="page page-settings" style={{ paddingBottom: '100px', background: '#f5fbf8' }}>
+      
+      {/* 頁面標題 */}
+      <div style={{ padding: '12px 16px 20px' }}>
+        <h1 style={{ margin: 0, fontSize: '28px', color: '#1f2937' }}>我的設定</h1>
+        <p style={{ margin: '4px 0 0', color: '#6b7280', fontSize: '14px' }}>
+          打造專屬於你的健康計畫
+        </p>
+      </div>
 
-         <label>
-  每日飲水目標 (ml)
-  <div className="hint">建議：30–35 ml × 體重(kg)</div>
-  <div
-  className="settings-input-box"
-  onClick={() => {
-    setTempInputValue(String(localSettings.waterGoalMl ?? ''));
-    setShowWaterGoalPad(true);
-  }}
->
-  {localSettings.waterGoalMl ?? '請輸入'}
-</div>
-</label>
-
-        <label>
-  體脂率目標 (%)
-  <div className="hint">
-    男性健康體脂：約 8–19%。<br />
-    女性健康體脂：約 20–30%。
-  </div>
-  <div
-  className="settings-input-box"
-  onClick={() => {
-    setTempInputValue(String(localSettings.bodyFatGoal ?? ''));
-    setShowBodyFatGoalPad(true);
-  }}
->
-  {localSettings.bodyFatGoal ?? '請輸入'}
-</div>
-</label>
-
-         <label>
-  骨骼肌率目標 (%)
-  <div className="hint">
-    男性健康骨骼肌率：約 33–39%。<br />
-    女性健康骨骼肌率：約 24–30%。
-  </div>
-  <div
-  className="settings-input-box"
-  onClick={() => {
-    setTempInputValue(String(localSettings.skeletalMuscleGoal ?? ''));
-    setShowSkeletalMuscleGoalPad(true);
-  }}
->
-  {localSettings.skeletalMuscleGoal ?? '請輸入'}
-</div>
-</label>
-
-          <label>
-  內臟脂肪指數目標
-  <div className="hint">建議目標 ≤ 9</div>
-  <div
-  className="settings-input-box"
-  onClick={() => {
-    setTempInputValue(String(localSettings.visceralFatGoal ?? ''));
-    setShowVisceralFatGoalPad(true);
-  }}
->
-  {localSettings.visceralFatGoal ?? '請輸入'}
-</div>
-</label>
-
-          <label>
-  每日運動時間目標 (分鐘)
-  <div className="hint">
-    最低：每週 150 分鐘中等強度（約 30 分鐘 × 5 天）。<br />
-    減脂建議：45–60 分鐘/天，5–6 天/週＋每週 2–3 天肌力訓練。
-  </div>
-  <div
-  className="settings-input-box"
-  onClick={() => {
-    setTempInputValue(String(localSettings.exerciseMinutesGoal ?? ''));
-    setShowExerciseMinutesGoalPad(true);
-  }}
->
-  {localSettings.exerciseMinutesGoal ?? '請輸入'}
-</div>
-</label>
-
-          <button className="primary" onClick={saveSettings}>
-            儲存目標設定
-          </button>
+      {/* 第一組：核心計畫 */}
+      <div className="settings-group-title">📅 減重與核心計畫</div>
+      <div className="settings-list-card">
+        {/* 起始日 */}
+        <div className="settings-row">
+          <div className="settings-label">開始減重日期</div>
+          <input
+            type="date"
+            value={localSettings.startDate || ''}
+            onChange={(e) =>
+              setLocalSettings((s) => ({ ...s, startDate: e.target.value || undefined }))
+            }
+            style={{ 
+              border: 'none', 
+              textAlign: 'right', 
+              background: 'transparent', 
+              fontSize: 16, 
+              color: 'var(--mint-dark)', 
+              fontFamily: 'inherit',
+              outline: 'none'
+            }}
+          />
         </div>
-      </section>
 
-      {/* 常用飲食組合管理 */}
-<section className="card">
-  <h2>常用飲食組合管理</h2>
-  <div className="form-section">
-    <button
-      className="secondary"
-      onClick={() => setShowComboManageModal(true)}
-      style={{
-        width: '100%',
-        padding: '14px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '8px',
-        fontSize: 'var(--font-size-base)',
-      }}
-    >
-      <span style={{ fontSize: '20px' }}>📋</span>
-      <span>管理常用飲食組合 ({combos.length} 組)</span>
-    </button>
-  </div>
-</section>
-{/* 📖 使用說明與參考 (從紀錄頁搬移過來) */}
-      <section className="card">
-        <h2>📖 使用說明與參考</h2>
-        <details>
-          <summary>如何記錄飲食？</summary>
-          <div className="form-section" style={{ fontSize: 14, lineHeight: 1.6, color: '#444' }}>
-            <p>
-              <strong>🔍 快速搜尋模式</strong><br />
-              1. <b>常用組合</b>：搜尋框下方顯示，點擊 <b>+</b> 一鍵加入。<br />
-              2. <b>食物搜尋</b>：輸入名稱（如「雞胸肉」），選取結果並填入份量。<br />
-              3. <b>類別估算</b>：若無資料，切換「類別/估算模式」，選食物類型輸入份數。
-            </p>
-            <p style={{ marginTop: 12 }}>
-              <strong>🖐️ 手掌法模式</strong><br />
-              適合外食或不方便秤重時使用。<br />
-              1. 輸入食物名稱。<br />
-              2. 依照下方「手掌份量參考」輸入份數。<br />
-              3. 系統自動計算營養成分。
-            </p>
-          </div>
-        </details>
+        {/* 達成日 */}
+        <div className="settings-row">
+          <div className="settings-label">預計達成日期</div>
+          <input
+            type="date"
+            value={localSettings.targetDate || ''}
+            onChange={(e) =>
+              setLocalSettings((s) => ({ ...s, targetDate: e.target.value || undefined }))
+            }
+            style={{ 
+              border: 'none', 
+              textAlign: 'right', 
+              background: 'transparent', 
+              fontSize: 16, 
+              color: 'var(--mint-dark)', 
+              fontFamily: 'inherit',
+              outline: 'none'
+            }}
+          />
+        </div>
 
-        <details style={{ marginTop: 12 }}>
-          <summary>🖐️ 手掌份量估算法 & 常見食物重量</summary>
-          <ul className="met-list" style={{ marginTop: 8 }}>
-            <li>
-              <strong>拳頭 (Fist) 👊：</strong>
-              <ul style={{ paddingLeft: 20, marginTop: 4, listStyleType: 'disc' }}>
-                <li>水果：1 個拳頭 ≈ 1 份 (約 130g)</li>
-                <li>熟蔬菜：1 個拳頭 ≈ 1 份 (約 100g)</li>
-                <li>飯/麵：1 個拳頭熟飯 ≈ 4 份 (約 160g)</li>
-              </ul>
-            </li>
-            <li style={{ marginTop: 8 }}>
-              <strong>手掌心 (Palm) ✋：</strong>
-              <ul style={{ paddingLeft: 20, marginTop: 4, listStyleType: 'disc' }}>
-                <li>肉/魚：手掌大、小指厚 ≈ 3 份 (約 100g)</li>
-              </ul>
-            </li>
-            <li style={{ marginTop: 8 }}>
-              <strong>大拇指 (Thumb) 👍：</strong>
-              <ul style={{ paddingLeft: 20, marginTop: 4, listStyleType: 'disc' }}>
-                <li>油脂/堅果：1 指節 ≈ 1 份 (5g)</li>
-              </ul>
-            </li>
-          </ul>
-        </details>
-      </section>
-      {/* 編輯常用組合彈窗 */}
-      {editingCombo && (
-        <div
-          className="modal-backdrop"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 20,
-            padding: '20px 0',
+        {/* 目標體重 */}
+        <div 
+          className="settings-row"
+          onClick={() => {
+            setTempInputValue(String(localSettings.targetWeight ?? ''));
+            setShowTargetWeightPad(true);
           }}
         >
-          <div
-            className="modal"
-            style={{
-              background: '#fff',
-              borderRadius: 12,
-              padding: 16,
-              maxWidth: 400,
-              width: '90%',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            }}
-          >
+          <div className="settings-label">目標體重</div>
+          <div className={`settings-value ${!localSettings.targetWeight ? 'placeholder' : ''}`}>
+            {localSettings.targetWeight ? `${localSettings.targetWeight} kg` : '未設定'} <span className="chevron">›</span>
+          </div>
+        </div>
+
+        {/* 熱量目標 */}
+        <div 
+          className="settings-row"
+          onClick={() => {
+            setTempInputValue(String(localSettings.calorieGoal ?? ''));
+            setShowCalorieGoalPad(true);
+          }}
+        >
+          <div className="settings-label">每日熱量目標</div>
+          <div className={`settings-value ${!localSettings.calorieGoal ? 'placeholder' : ''}`}>
+            {localSettings.calorieGoal ? `${localSettings.calorieGoal} kcal` : '未設定'} <span className="chevron">›</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 第二組：身體數值目標 */}
+      <div className="settings-group-title">📊 進階身體指標</div>
+      <div className="settings-list-card">
+        <div className="settings-row" onClick={() => { setTempInputValue(String(localSettings.proteinGoal ?? '')); setShowProteinGoalPad(true); }}>
+          <div className="settings-label">蛋白質目標</div>
+          <div className={`settings-value ${!localSettings.proteinGoal ? 'placeholder' : ''}`}>
+            {localSettings.proteinGoal ? `${localSettings.proteinGoal} g` : '未設定'} <span className="chevron">›</span>
+          </div>
+        </div>
+
+        <div className="settings-row" onClick={() => { setTempInputValue(String(localSettings.waterGoalMl ?? '')); setShowWaterGoalPad(true); }}>
+          <div className="settings-label">飲水目標</div>
+          <div className={`settings-value ${!localSettings.waterGoalMl ? 'placeholder' : ''}`}>
+            {localSettings.waterGoalMl ? `${localSettings.waterGoalMl} ml` : '未設定'} <span className="chevron">›</span>
+          </div>
+        </div>
+
+        <div className="settings-row" onClick={() => { setTempInputValue(String(localSettings.exerciseMinutesGoal ?? '')); setShowExerciseMinutesGoalPad(true); }}>
+          <div className="settings-label">運動時間目標</div>
+          <div className={`settings-value ${!localSettings.exerciseMinutesGoal ? 'placeholder' : ''}`}>
+            {localSettings.exerciseMinutesGoal ? `${localSettings.exerciseMinutesGoal} min` : '未設定'} <span className="chevron">›</span>
+          </div>
+        </div>
+
+        <div className="settings-row" onClick={() => { setTempInputValue(String(localSettings.bodyFatGoal ?? '')); setShowBodyFatGoalPad(true); }}>
+          <div className="settings-label">體脂率目標</div>
+          <div className={`settings-value ${!localSettings.bodyFatGoal ? 'placeholder' : ''}`}>
+            {localSettings.bodyFatGoal ? `${localSettings.bodyFatGoal}%` : '未設定'} <span className="chevron">›</span>
+          </div>
+        </div>
+
+        <div className="settings-row" onClick={() => { setTempInputValue(String(localSettings.skeletalMuscleGoal ?? '')); setShowSkeletalMuscleGoalPad(true); }}>
+          <div className="settings-label">骨骼肌率目標</div>
+          <div className={`settings-value ${!localSettings.skeletalMuscleGoal ? 'placeholder' : ''}`}>
+            {localSettings.skeletalMuscleGoal ? `${localSettings.skeletalMuscleGoal}%` : '未設定'} <span className="chevron">›</span>
+          </div>
+        </div>
+
+        <div className="settings-row" onClick={() => { setTempInputValue(String(localSettings.visceralFatGoal ?? '')); setShowVisceralFatGoalPad(true); }}>
+          <div className="settings-label">內臟脂肪目標</div>
+          <div className={`settings-value ${!localSettings.visceralFatGoal ? 'placeholder' : ''}`}>
+            {localSettings.visceralFatGoal ? localSettings.visceralFatGoal : '未設定'} <span className="chevron">›</span>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ padding: '0 16px 24px' }}>
+        <button className="primary" style={{ width: '100%', fontSize: 18, padding: '14px', borderRadius: 12 }} onClick={saveSettings}>
+          儲存所有目標設定
+        </button>
+      </div>
+
+      {/* 第三組：資料管理 */}
+      <div className="settings-group-title">📂 資料庫與管理</div>
+      <div className="settings-list-card">
+        {/* 常用組合 */}
+        <div className="settings-row" onClick={() => setShowComboManageModal(true)}>
+          <div className="settings-label">📋 管理常用飲食組合</div>
+          <div className="settings-value">
+            {combos.length} 組 <span className="chevron">›</span>
+          </div>
+        </div>
+
+        {/* 資料來源同步 (CSV) - 簡化版 */}
+        <div className="settings-row" style={{ display: 'block', height: 'auto', padding: '16px 20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <div className="settings-label">🔄 外部資料同步 (CSV)</div>
+            <button className="small" onClick={syncCsv} disabled={csvLoading}>
+              {csvLoading ? '同步中…' : '立即同步'}
+            </button>
+          </div>
+          {csvError && <div style={{ color: '#e02424', fontSize: 13, marginBottom: 8 }}>{csvError}</div>}
+          
+          <details style={{ fontSize: 13, color: '#666' }}>
+            <summary style={{ cursor: 'pointer', outline: 'none' }}>進階：編輯 CSV 來源連結</summary>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+               <input className="settings-input-clean" value={srcType} onChange={e=>setSrcType(e.target.value)} placeholder="Type Table URL" style={{background:'#f3f4f6', padding:8, borderRadius:6, width:'100%', boxSizing:'border-box'}} />
+               <input className="settings-input-clean" value={srcUnit} onChange={e=>setSrcUnit(e.target.value)} placeholder="Unit Map URL" style={{background:'#f3f4f6', padding:8, borderRadius:6, width:'100%', boxSizing:'border-box'}} />
+               <input className="settings-input-clean" value={srcFood} onChange={e=>setSrcFood(e.target.value)} placeholder="Food DB URL" style={{background:'#f3f4f6', padding:8, borderRadius:6, width:'100%', boxSizing:'border-box'}} />
+               <input className="settings-input-clean" value={srcMet} onChange={e=>setSrcMet(e.target.value)} placeholder="Exercise Met URL" style={{background:'#f3f4f6', padding:8, borderRadius:6, width:'100%', boxSizing:'border-box'}} />
+            </div>
+          </details>
+        </div>
+      </div>
+
+      {/* 第四組：備份與還原 */}
+      <div className="settings-group-title">☁️ 備份與還原</div>
+      <div className="settings-list-card">
+        <div className="settings-row" onClick={handleExportJson}>
+          <div className="settings-label">📤 匯出備份 (JSON)</div>
+          <div className="settings-value"><span className="chevron">›</span></div>
+        </div>
+        
+        <div className="settings-row" onClick={handleBackupToDrive}>
+          <div className="settings-label">☁️ 一鍵備份到 Google Drive</div>
+          <div className="settings-value"><span className="chevron">›</span></div>
+        </div>
+
+        <div className="settings-row" onClick={handleImportClick}>
+          <div className="settings-label">📥 匯入備份 (JSON)</div>
+          <div className="settings-value"><span className="chevron">›</span></div>
+        </div>
+        <input
+            type="file"
+            accept="application/json"
+            style={{ display: 'none' }}
+            ref={fileInputRef}
+            onChange={handleImportJson}
+        />
+      </div>
+
+      {/* 底部區域 */}
+      <div style={{ padding: '0 16px', textAlign: 'center' }}>
+        <InstallGuideWidget />
+        
+        <div style={{ marginTop: 24, paddingBottom: 24 }}>
+           <button 
+             className="secondary" 
+             onClick={onOpenAbout}
+             style={{ borderRadius: 999, padding: '8px 24px', background: '#fff', border: '1px solid #ddd' }}
+           >
+             ℹ️ 關於 Ju Smile App & 使用說明
+           </button>
+           <div style={{ marginTop: 12, fontSize: 12, color: '#999' }}>Version {APP_VERSION}</div>
+        </div>
+      </div>
+
+      {/* ================= MODALS 保持原樣 ================= */}
+
+      {/* 編輯常用組合彈窗 */}
+      {editingCombo && (
+        <div className="modal-backdrop" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '20px 0' }}>
+          <div className="modal" style={{ background: '#fff', borderRadius: 12, padding: 16, maxWidth: 400, width: '90%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
             <h3 style={{ marginTop: 0 }}>編輯組合：{editingCombo.name}</h3>
             <div className="form-section">
               <label>
                 組合名稱
-                <input
-                  value={editingComboName}
-                  onChange={(e) => setEditingComboName(e.target.value)}
-                  placeholder="例如：午餐便當組合"
-                />
+                <input value={editingComboName} onChange={(e) => setEditingComboName(e.target.value)} placeholder="例如：午餐便當組合" style={{width:'100%', padding:8, marginTop:4}} />
               </label>
             </div>
-
-            <h4 style={{ marginBottom: 8 }}>
-              組合明細 ({editingComboItems.length} 項)
-            </h4>
-            <div
-              className="list-section"
-              style={{
-                border: '1px solid var(--line)',
-                borderRadius: 8,
-                padding: 8,
-              }}
-            >
+            <h4 style={{ marginBottom: 8 }}>組合明細 ({editingComboItems.length} 項)</h4>
+            <div className="list-section" style={{ border: '1px solid var(--line)', borderRadius: 8, padding: 8 }}>
               {editingComboItems.map((item, index) => (
-                <div
-                  key={index}
-                  style={{
-                    marginBottom: 12,
-                    borderBottom: '1px dotted #ccc',
-                    paddingBottom: 8,
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                    }}
-                  >
+                <div key={index} style={{ marginBottom: 12, borderBottom: '1px dotted #ccc', paddingBottom: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <b style={{ fontSize: 15 }}>{item.label}</b>
-                    <button
-                      className="small"
-                      onClick={() =>
-                        setEditingComboItems((prev) =>
-                          prev.filter((_, i) => i !== index)
-                        )
-                      }
-                      style={{ padding: '2px 8px' }}
-                    >
-                      移除
-                    </button>
+                    <button className="small" onClick={() => setEditingComboItems((prev) => prev.filter((_, i) => i !== index))} style={{ padding: '2px 8px', background:'#fee2e2', color:'#dc2626' }}>移除</button>
                   </div>
-                                                                  <div
-                    className="inline-inputs"
-                    style={{
-                      marginTop: 6,
-                      display: 'flex',
-                      gap: 10,
-                    }}
-                  >
-                    <div
-  style={{
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 4,
-  }}
->
-  <div
-    style={{
-      fontSize: 14,
-      lineHeight: 1.3,
-    }}
-  >
-    Kcal
-  </div>
-  <div
-    onClick={() => {
-      setEditingItemIndex(index);
-      setShowEditItemKcalPad(true);
-    }}
-    style={{
-      padding: '6px',
-      width: '100%',
-      boxSizing: 'border-box',
-      backgroundColor: '#f8f9fa',
-      border: '1px solid var(--line)',
-      borderRadius: '4px',
-      cursor: 'pointer',
-      minHeight: '32px',
-      display: 'flex',
-      alignItems: 'center',
-    }}
-  >
-    {item.kcal || '0'}
-  </div>
-</div>
-
-                    <div
-                      style={{
-                        flex: 1,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 4,
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontSize: 14,
-                          lineHeight: 1.3,
-                        }}
-                      >
-                        份量描述
+                  <div className="inline-inputs" style={{ marginTop: 6, display: 'flex', gap: 10 }}>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <div style={{ fontSize: 14, lineHeight: 1.3 }}>Kcal</div>
+                      <div onClick={() => { setEditingItemIndex(index); setShowEditItemKcalPad(true); }} style={{ padding: '6px', width: '100%', boxSizing: 'border-box', backgroundColor: '#f8f9fa', border: '1px solid var(--line)', borderRadius: '4px', cursor: 'pointer', minHeight: '32px', display: 'flex', alignItems: 'center' }}>
+                        {item.kcal || '0'}
                       </div>
-                      <input
-                        type="text"
-                        value={item.amountText || ''}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          setEditingComboItems((prev) =>
-                            prev.map((it, i) =>
-                              i === index ? { ...it, amountText: v } : it
-                            )
-                          );
-                        }}
-                        style={{
-                          padding: '6px',
-                          width: '100%',
-                          boxSizing: 'border-box',
-                        }}
-                      />
+                    </div>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <div style={{ fontSize: 14, lineHeight: 1.3 }}>份量描述</div>
+                      <input type="text" value={item.amountText || ''} onChange={(e) => { const v = e.target.value; setEditingComboItems((prev) => prev.map((it, i) => i === index ? { ...it, amountText: v } : it)); }} style={{ padding: '6px', width: '100%', boxSizing: 'border-box' }} />
                     </div>
                   </div>
-
-
-
                 </div>
               ))}
-              {editingComboItems.length === 0 && (
-                <div className="hint">組合中無品項，請重新紀錄。</div>
-              )}
-
-              <div
-                style={{
-                  textAlign: 'center',
-                  paddingTop: 10,
-                  fontSize: 14,
-                }}
-              >
-                總熱量：
-                <b>
-                  {editingComboItems.reduce(
-                    (sum, item) => sum + (item.kcal || 0),
-                    0
-                  )}{' '}
-                  kcal
-                </b>
-              </div>
+              {editingComboItems.length === 0 && <div className="hint">組合中無品項，請重新紀錄。</div>}
+              <div style={{ textAlign: 'center', paddingTop: 10, fontSize: 14 }}>總熱量：<b>{editingComboItems.reduce((sum, item) => sum + (item.kcal || 0), 0)} kcal</b></div>
             </div>
-
             <div className="btn-row" style={{ marginTop: 16 }}>
-              <button
-                className="primary"
-                onClick={saveComboEdit}
-                disabled={
-                  !editingComboName.trim() || editingComboItems.length === 0
-                }
-              >
-                儲存全部變更
-              </button>
-              <button
-                onClick={() => {
-                  setEditingCombo(null);
-                  setEditingComboItems([]);
-                }}
-              >
-                取消
-              </button>
+              <button className="primary" onClick={saveComboEdit} disabled={!editingComboName.trim() || editingComboItems.length === 0}>儲存全部變更</button>
+              <button onClick={() => { setEditingCombo(null); setEditingComboItems([]); }}>取消</button>
             </div>
+            {/* 組合內熱量編輯鍵盤 */}
             {showEditItemKcalPad && editingItemIndex !== null && (
               <NumberPadModal
                 visible={showEditItemKcalPad}
-                onClose={() => {
-                  setShowEditItemKcalPad(false);
-                  setEditingItemIndex(null);
-                }}
+                onClose={() => { setShowEditItemKcalPad(false); setEditingItemIndex(null); }}
                 title="熱量 (kcal)"
                 unit="kcal"
                 value={String(editingComboItems[editingItemIndex]?.kcal || 0)}
                 allowDecimal={true}
-                onChange={(val) => {
-                  if (editingItemIndex !== null) {
-                    const v = Number(val) || 0;
-                    setEditingComboItems((prev) =>
-                      prev.map((it, i) =>
-                        i === editingItemIndex ? { ...it, kcal: v } : it
-                      )
-                    );
-                  }
-                }}
-                onConfirm={() => {
-                  setShowEditItemKcalPad(false);
-                  setEditingItemIndex(null);
-                }}
+                onChange={(val) => { if (editingItemIndex !== null) { const v = Number(val) || 0; setEditingComboItems((prev) => prev.map((it, i) => i === editingItemIndex ? { ...it, kcal: v } : it)); } }}
+                onConfirm={() => { setShowEditItemKcalPad(false); setEditingItemIndex(null); }}
               />
             )}
           </div>
-        
         </div>
       )}
-      {/* 目標體重鍵盤 */}
-<NumberPadModal
-  visible={showTargetWeightPad}
-  onClose={() => setShowTargetWeightPad(false)}
-  title="目標體重"
-  unit="kg"
-  value={tempInputValue}
-  allowDecimal={true}
-  onChange={(val) => setTempInputValue(val)} // 只更新臨時值
-  onConfirm={() => {
-    // 確認時才轉成數字並儲存
-    setLocalSettings((s) => ({ 
-      ...s, 
-      targetWeight: tempInputValue ? Number(tempInputValue) : undefined 
-    }));
-    setShowTargetWeightPad(false);
-  }}
-/>
 
-{/* 目標攝取熱量鍵盤 */}
-<NumberPadModal
-  visible={showCalorieGoalPad}
-  onClose={() => setShowCalorieGoalPad(false)}
-  title="目標攝取熱量"
-  unit="kcal"
-  value={tempInputValue}
-  allowDecimal={true}
-  onChange={(val) => setTempInputValue(val)}
-  onConfirm={() => {
-    setLocalSettings((s) => ({ 
-      ...s, 
-      calorieGoal: tempInputValue ? Number(tempInputValue) : undefined 
-    }));
-    setShowCalorieGoalPad(false);
-  }}
-/>
+      {/* 各種目標的數字鍵盤 Modal (保持原樣，僅格式化方便閱讀) */}
+      <NumberPadModal visible={showTargetWeightPad} onClose={() => setShowTargetWeightPad(false)} title="目標體重" unit="kg" value={tempInputValue} allowDecimal={true} onChange={(val) => setTempInputValue(val)} onConfirm={() => { setLocalSettings((s) => ({ ...s, targetWeight: tempInputValue ? Number(tempInputValue) : undefined })); setShowTargetWeightPad(false); }} />
+      <NumberPadModal visible={showCalorieGoalPad} onClose={() => setShowCalorieGoalPad(false)} title="目標攝取熱量" unit="kcal" value={tempInputValue} allowDecimal={true} onChange={(val) => setTempInputValue(val)} onConfirm={() => { setLocalSettings((s) => ({ ...s, calorieGoal: tempInputValue ? Number(tempInputValue) : undefined })); setShowCalorieGoalPad(false); }} />
+      <NumberPadModal visible={showProteinGoalPad} onClose={() => setShowProteinGoalPad(false)} title="每日蛋白質目標" unit="g" value={tempInputValue} allowDecimal={true} onChange={(val) => setTempInputValue(val)} onConfirm={() => { setLocalSettings((s) => ({ ...s, proteinGoal: tempInputValue ? Number(tempInputValue) : undefined })); setShowProteinGoalPad(false); }} />
+      <NumberPadModal visible={showWaterGoalPad} onClose={() => setShowWaterGoalPad(false)} title="每日飲水目標" unit="ml" value={tempInputValue} allowDecimal={true} onChange={(val) => setTempInputValue(val)} onConfirm={() => { setLocalSettings((s) => ({ ...s, waterGoalMl: tempInputValue ? Number(tempInputValue) : undefined })); setShowWaterGoalPad(false); }} />
+      <NumberPadModal visible={showBodyFatGoalPad} onClose={() => setShowBodyFatGoalPad(false)} title="體脂率目標" unit="%" value={tempInputValue} allowDecimal={true} onChange={(val) => setTempInputValue(val)} onConfirm={() => { setLocalSettings((s) => ({ ...s, bodyFatGoal: tempInputValue ? Number(tempInputValue) : undefined })); setShowBodyFatGoalPad(false); }} />
+      <NumberPadModal visible={showSkeletalMuscleGoalPad} onClose={() => setShowSkeletalMuscleGoalPad(false)} title="骨骼肌率目標" unit="%" value={tempInputValue} allowDecimal={true} onChange={(val) => setTempInputValue(val)} onConfirm={() => { setLocalSettings((s) => ({ ...s, skeletalMuscleGoal: tempInputValue ? Number(tempInputValue) : undefined })); setShowSkeletalMuscleGoalPad(false); }} />
+      <NumberPadModal visible={showVisceralFatGoalPad} onClose={() => setShowVisceralFatGoalPad(false)} title="內臟脂肪指數目標" unit="" value={tempInputValue} allowDecimal={true} onChange={(val) => setTempInputValue(val)} onConfirm={() => { setLocalSettings((s) => ({ ...s, visceralFatGoal: tempInputValue ? Number(tempInputValue) : undefined })); setShowVisceralFatGoalPad(false); }} />
+      <NumberPadModal visible={showExerciseMinutesGoalPad} onClose={() => setShowExerciseMinutesGoalPad(false)} title="每日運動時間目標" unit="分鐘" value={tempInputValue} allowDecimal={true} onChange={(val) => setTempInputValue(val)} onConfirm={() => { setLocalSettings((s) => ({ ...s, exerciseMinutesGoal: tempInputValue ? Number(tempInputValue) : undefined })); setShowExerciseMinutesGoalPad(false); }} />
 
-{/* 每日蛋白質目標鍵盤 */}
-<NumberPadModal
-  visible={showProteinGoalPad}
-  onClose={() => setShowProteinGoalPad(false)}
-  title="每日蛋白質目標"
-  unit="g"
-  value={tempInputValue}
-  allowDecimal={true}
-  onChange={(val) => setTempInputValue(val)}
-  onConfirm={() => {
-    setLocalSettings((s) => ({ 
-      ...s, 
-      proteinGoal: tempInputValue ? Number(tempInputValue) : undefined 
-    }));
-    setShowProteinGoalPad(false);
-  }}
-/>
-
-{/* 每日飲水目標鍵盤 */}
-<NumberPadModal
-  visible={showWaterGoalPad}
-  onClose={() => setShowWaterGoalPad(false)}
-  title="每日飲水目標"
-  unit="ml"
-  value={tempInputValue}
-  allowDecimal={true}
-  onChange={(val) => setTempInputValue(val)}
-  onConfirm={() => {
-    setLocalSettings((s) => ({ 
-      ...s, 
-      waterGoalMl: tempInputValue ? Number(tempInputValue) : undefined 
-    }));
-    setShowWaterGoalPad(false);
-  }}
-/>
-
-{/* 體脂率目標鍵盤 */}
-<NumberPadModal
-  visible={showBodyFatGoalPad}
-  onClose={() => setShowBodyFatGoalPad(false)}
-  title="體脂率目標"
-  unit="%"
-  value={tempInputValue}
-  allowDecimal={true}
-  onChange={(val) => setTempInputValue(val)}
-  onConfirm={() => {
-    setLocalSettings((s) => ({ 
-      ...s, 
-      bodyFatGoal: tempInputValue ? Number(tempInputValue) : undefined 
-    }));
-    setShowBodyFatGoalPad(false);
-  }}
-/>
-
-{/* 骨骼肌率目標鍵盤 */}
-<NumberPadModal
-  visible={showSkeletalMuscleGoalPad}
-  onClose={() => setShowSkeletalMuscleGoalPad(false)}
-  title="骨骼肌率目標"
-  unit="%"
-  value={tempInputValue}
-  allowDecimal={true}
-  onChange={(val) => setTempInputValue(val)}
-  onConfirm={() => {
-    setLocalSettings((s) => ({ 
-      ...s, 
-      skeletalMuscleGoal: tempInputValue ? Number(tempInputValue) : undefined 
-    }));
-    setShowSkeletalMuscleGoalPad(false);
-  }}
-/>
-
-{/* 內臟脂肪指數目標鍵盤 */}
-<NumberPadModal
-  visible={showVisceralFatGoalPad}
-  onClose={() => setShowVisceralFatGoalPad(false)}
-  title="內臟脂肪指數目標"
-  unit=""
-  value={tempInputValue}
-  allowDecimal={true}
-  onChange={(val) => setTempInputValue(val)}
-  onConfirm={() => {
-    setLocalSettings((s) => ({ 
-      ...s, 
-      visceralFatGoal: tempInputValue ? Number(tempInputValue) : undefined 
-    }));
-    setShowVisceralFatGoalPad(false);
-  }}
-/>
-
-{/* 每日運動時間目標鍵盤 */}
-<NumberPadModal
-  visible={showExerciseMinutesGoalPad}
-  onClose={() => setShowExerciseMinutesGoalPad(false)}
-  title="每日運動時間目標"
-  unit="分鐘"
-  value={tempInputValue}
-  allowDecimal={true}
-  onChange={(val) => setTempInputValue(val)}
-  onConfirm={() => {
-    setLocalSettings((s) => ({ 
-      ...s, 
-      exerciseMinutesGoal: tempInputValue ? Number(tempInputValue) : undefined 
-    }));
-    setShowExerciseMinutesGoalPad(false);
-  }}
-/>
-
-{/* 常用飲食組合管理 Modal */}
-{showComboManageModal && (
-  <div
-    style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'white',
-      zIndex: 9999,
-      display: 'flex',
-      flexDirection: 'column',
-      animation: 'slideInUp 0.3s ease-out',
-    }}
-  >
-          {/* 頂部標題列 */}
-          <div
-            style={{
-              padding: '16px',
-              borderBottom: '1px solid var(--line)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              position: 'sticky',
-              top: 0,
-              backgroundColor: 'white',
-              zIndex: 1,
-            }}
-          >
-            <h2 style={{ margin: 0, fontSize: 'var(--font-size-xlarge)' }}>
-              常用飲食組合
-            </h2>
-            <button
-              className="secondary"
-              onClick={() => setShowComboManageModal(false)}
-              style={{ padding: '8px 20px' }}
-            >
-              完成
-            </button>
+      {/* 常用飲食組合管理 Modal (全螢幕) */}
+      {showComboManageModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'white', zIndex: 9999, display: 'flex', flexDirection: 'column', animation: 'slideInUp 0.3s ease-out' }}>
+          <div style={{ padding: '16px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, backgroundColor: 'white', zIndex: 1 }}>
+            <h2 style={{ margin: 0, fontSize: '20px' }}>常用飲食組合</h2>
+            <button className="secondary" onClick={() => setShowComboManageModal(false)} style={{ padding: '8px 20px' }}>完成</button>
           </div>
-
-          {/* 捲動內容區 */}
-          <div
-            style={{
-              flex: 1,
-              overflowY: 'auto',
-              padding: '16px',
-              backgroundColor: '#f8f9fa',
-            }}
-          >
+          <div style={{ flex: 1, overflowY: 'auto', padding: '16px', backgroundColor: '#f8f9fa' }}>
             {combos.length === 0 ? (
-              <div
-                style={{
-                  textAlign: 'center',
-                  color: '#6c757d',
-                  marginTop: '60px',
-                }}
-              >
+              <div style={{ textAlign: 'center', color: '#6c757d', marginTop: '60px' }}>
                 <div style={{ fontSize: '48px', marginBottom: '16px' }}>📝</div>
                 <p>尚無常用組合</p>
-                <p style={{ fontSize: '14px' }}>
-                  在 Plan 頁面可以儲存常用組合
-                </p>
+                <p style={{ fontSize: '14px' }}>在 Plan 頁面可以儲存常用組合</p>
               </div>
             ) : (
               combos.map((c) => (
-                <div
-                  key={c.id}
-                  className="card"
-                  style={{
-                    marginBottom: '12px',
-                    padding: '16px',
-                  }}
-                >
-                  {/* 組合名稱 */}
-                  <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px' }}>
-                    {c.name}
-                  </div>
-
-                  {/* 組合內容 */}
+                <div key={c.id} className="card" style={{ marginBottom: '12px', padding: '16px', borderRadius:16, border:'none', boxShadow:'0 2px 8px rgba(0,0,0,0.05)' }}>
+                  <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color:'var(--mint-dark)' }}>{c.name}</div>
                   <details style={{ marginBottom: '12px' }}>
-                    <summary style={{ fontSize: '14px', cursor: 'pointer' }}>
-                      {c.items.length} 品項 · 總計約{' '}
-                      {c.items.reduce((sum, item) => sum + item.kcal, 0)} kcal
-                    </summary>
-                    <ul style={{ paddingLeft: '20px', marginTop: '8px' }}>
+                    <summary style={{ fontSize: '14px', cursor: 'pointer', color:'#555' }}>{c.items.length} 品項 · 總計約 {c.items.reduce((sum, item) => sum + item.kcal, 0)} kcal</summary>
+                    <ul style={{ paddingLeft: '20px', marginTop: '8px', color:'#777' }}>
                       {c.items.map((item, idx) => (
                         <li key={idx} style={{ fontSize: '14px', marginBottom: '4px' }}>
-                          {item.label}
-                          {item.amountText ? ` ${item.amountText}` : ''}
-                          {` · ${item.kcal} kcal`}
+                          {item.label} {item.amountText ? ` ${item.amountText}` : ''} {` · ${item.kcal} kcal`}
                         </li>
                       ))}
                     </ul>
                   </details>
-
-                  {/* 操作按鈕 */}
                   <div className="btn-row" style={{ gap: '8px' }}>
-                    <button
-                      className="small"
-                      onClick={() => {
-                        setEditingCombo(c);
-                        setEditingComboName(c.name);
-                        setEditingComboItems(c.items);
-                        setShowComboManageModal(false);
-                      }}
-                    >
-                      編輯
-                    </button>
-                    <button
-                      className="small"
-                      onClick={() => deleteCombo(c.id)}
-                      style={{ backgroundColor: '#dc3545', color: 'white' }}
-                    >
-                      刪除
-                    </button>
+                    <button className="small" onClick={() => { setEditingCombo(c); setEditingComboName(c.name); setEditingComboItems(c.items); setShowComboManageModal(false); }}>編輯</button>
+                    <button className="small" onClick={() => deleteCombo(c.id)} style={{ backgroundColor: '#fee2e2', color: '#dc2626' }}>刪除</button>
                   </div>
                 </div>
               ))
@@ -7339,93 +6923,6 @@ function saveNumberInput(value: string) {
           </div>
         </div>
       )}
-      {/* 資料來源同步 (CSV) */}
-      <section className="card">
-        <h2>資料來源同步 (CSV)</h2>
-        <div className="form-section">
-          <label>
-            Type Table
-            <input
-              value={srcType}
-              onChange={(e) => setSrcType(e.target.value)}
-              placeholder="/ju-smile-app/data/Type_Table.csv"
-            />
-          </label>
-          <label>
-            Unit Map
-            <input
-              value={srcUnit}
-              onChange={(e) => setSrcUnit(e.target.value)}
-              placeholder="/ju-smile-app/data/Unit_Map.csv"
-            />
-          </label>
-          <label>
-            Food DB
-            <input
-              value={srcFood}
-              onChange={(e) => setSrcFood(e.target.value)}
-              placeholder="/ju-smile-app/data/Food_DB.csv"
-            />
-          </label>
-          <label>
-            Exercise MET
-            <input
-              value={srcMet}
-              onChange={(e) => setSrcMet(e.target.value)}
-              placeholder="/ju-smile-app/data/Exercise_Met.csv"
-            />
-          </label>
-          <button className="primary" onClick={syncCsv} disabled={csvLoading}>
-            {csvLoading ? '同步中…' : '同步精準資料'}
-          </button>
-          {csvError && <div className="error-text">{csvError}</div>}
-        </div>
-      </section>
-
-      {/* 資料匯出 / 匯入 */}
-      <section className="card">
-        <h2>資料匯出 / 匯入</h2>
-        <div className="form-section">
-          <div className="btn-row">
-            <button className="secondary" onClick={handleExportJson}>
-              匯出 JSON
-            </button>
-            <button className="secondary" onClick={handleImportClick}>
-              匯入 JSON
-            </button>
-            <button className="secondary" onClick={handleBackupToDrive}>
-              一鍵備份到 Google Drive
-            </button>
-          </div>
-          <input
-            type="file"
-            accept="application/json"
-            style={{ display: 'none' }}
-            ref={fileInputRef}
-            onChange={handleImportJson}
-          />
-        </div>
-      </section>
-      <InstallGuideWidget />
-
-
-      {/* 去關於頁的入口 */}
-      <section className="card">
-        <h2>關於 Ju Smile App</h2>
-        <div className="form-section">
-          <p style={{ marginBottom: 8 }}>
-            查看 App 版本、資料儲存方式與備份建議。
-          </p>
-          <button
-            type="button"
-            className="secondary"
-            onClick={onOpenAbout}
-            style={{ borderRadius: 999, padding: '8px 16px', cursor: 'pointer' }}
-          >
-            查看 App 版本 & 詳細說明
-          </button>
-        </div>
-      </section>
     </div>
   );
 };

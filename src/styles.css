@@ -1701,3 +1701,86 @@ body {
   background-color: #e9ecef;
   transform: scale(0.98);
 }
+
+/* =========================================
+   🔧 Settings List Style (iOS Style)
+   ========================================= */
+
+/* 設定頁的容器卡片：去除內距，由列表項目自己撐開 */
+.settings-list-card {
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden; /* 讓內部的子元素不會凸出圓角 */
+  box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+  margin-bottom: 20px;
+  border: 1px solid #f0f0f0;
+}
+
+/* 每一行設定項目 */
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: #fff;
+  border-bottom: 1px solid #f3f4f6;
+  cursor: pointer;
+  transition: background 0.2s;
+  min-height: 56px;
+}
+
+.settings-row:last-child {
+  border-bottom: none;
+}
+
+.settings-row:active {
+  background: #f9fafb;
+}
+
+/* 左側：設定名稱 */
+.settings-label {
+  font-size: 16px;
+  color: #1f2937;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 右側：目前數值 */
+.settings-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--mint-dark); /* 使用品牌深綠色強調數值 */
+  text-align: right;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 數值尚未設定時的樣式 */
+.settings-value.placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+  font-size: 14px;
+}
+
+/* 右箭頭 (Chevron) - 非必要，但加入更有引導感 */
+.chevron {
+  color: #d1d5db;
+  font-size: 14px;
+}
+
+/* 群組標題 */
+.settings-group-title {
+  padding: 0 12px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+/* 針對原有的 form-section 做微調，讓按鈕不會貼太緊 */
+.settings-actions {
+  padding: 12px 0;
+}
