@@ -7760,19 +7760,19 @@ const chartData = useMemo(() => {
     });
   }
   } else if (period === '30d') {
-  // 30天：每週一個點（最多 5 個點）- 取該週第一筆有效數據
   for (let i = 4; i >= 0; i--) {
     const targetDate = today.subtract(i * 7, 'day');
     const weekStart = targetDate.startOf('week').format('YYYY-MM-DD');
     const weekEnd = targetDate.endOf('week').format('YYYY-MM-DD');
     
-    // 找該週內第一筆有體重數據的日期
     const weekDays = days.filter(d => 
       d.date >= weekStart && 
       d.date <= weekEnd
     ).sort((a, b) => a.date.localeCompare(b.date));
     
-    const day = weekDays.find(d => d.weight != null || d.bodyFat != null || d.skeletalMuscle != null);
+    // 🔧 改成取該週「最後一筆（最新）」有效數據
+    const validDays = weekDays.filter(d => d.weight != null || d.bodyFat != null || d.skeletalMuscle != null);
+    const day = validDays[validDays.length - 1];
     
     // 🔧 如果該週沒有數據，跳過
     if (!day) continue;
@@ -7809,7 +7809,8 @@ const chartData = useMemo(() => {
       d.date <= weekEnd
     ).sort((a, b) => a.date.localeCompare(b.date));
     
-    const day = weekDays.find(d => d.weight != null || d.bodyFat != null || d.skeletalMuscle != null);
+    const validDays = weekDays.filter(d => d.weight != null || d.bodyFat != null || d.skeletalMuscle != null);
+const day = validDays[validDays.length - 1];
     
     // 🔧 如果該週沒有數據，跳過
     if (!day) continue;
@@ -7846,7 +7847,8 @@ const chartData = useMemo(() => {
       d.date <= monthEnd
     ).sort((a, b) => a.date.localeCompare(b.date));
     
-    const day = monthDays.find(d => d.weight != null || d.bodyFat != null || d.skeletalMuscle != null);
+    const validDays = monthDays.filter(d => d.weight != null || d.bodyFat != null || d.skeletalMuscle != null);
+const day = validDays[validDays.length - 1];
     
     // 🔧 如果該月沒有數據，跳過不加入圖表
     if (!day) continue;
@@ -7883,7 +7885,8 @@ const chartData = useMemo(() => {
       d.date <= monthEnd
     ).sort((a, b) => a.date.localeCompare(b.date));
     
-    const day = monthDays.find(d => d.weight != null || d.bodyFat != null || d.skeletalMuscle != null);
+    const validDays = monthDays.filter(d => d.weight != null || d.bodyFat != null || d.skeletalMuscle != null);
+const day = validDays[validDays.length - 1];
     
     // 🔧 如果該月沒有數據，跳過不加入圖表
     if (!day) continue;
