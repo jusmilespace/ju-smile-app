@@ -8,7 +8,7 @@ import femalePng from './assets/female.png';
 import malePng from './assets/male.png';
 
 import logoV1 from './assets/logo_v1.png'; 
-import logoV2 from './assets/logo_v2.png';
+
 
 // 🟢 新增：匯入手掌法圖片
 import palmImg from './assets/palm.png';
