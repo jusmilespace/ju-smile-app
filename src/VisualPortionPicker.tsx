@@ -10,6 +10,7 @@ import dairyImg from './assets/dairy.png';
 import palmImg from './assets/palm.png';
 import fistImg from './assets/fist.png';
 import thumbImg from './assets/thumb.png';
+import milkImg from './assets/milk.png';
 
 // 定義變數對應匯入的圖檔
 const HAND_ICON_PALM = palmImg;
@@ -103,7 +104,7 @@ const PORTION_TYPES: PortionType[] = [
     name: '乳品類',
     desc: '參考：牛奶 1杯 ≈ 1份 (240ml)',
     unit: '份',
-    handIcon: dairyImg, // 乳品沒有手勢，直接用類別圖示
+    handIcon: milkImg, 
     kcal: 150,
     protein: 8,
     carbs: 12,

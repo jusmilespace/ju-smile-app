@@ -8,6 +8,7 @@ import { VisualPortionPicker } from './VisualPortionPicker';
 import palmImg from './assets/palm.png';
 import fistImg from './assets/fist.png';
 import thumbImg from './assets/thumb.png';
+import milkImg from './assets/milk.png';
 
 
 // 🖐️ 手掌法圖示（與 VisualPortionPicker 共用的 6 張 img）
