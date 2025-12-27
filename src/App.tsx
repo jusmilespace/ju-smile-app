@@ -7853,141 +7853,190 @@ const day = validDays[validDays.length - 1];
   </div>
 </section>
 
-        {/* 趨勢圖 */}
+        {/* 趨勢圖 - Ju Smile 風格版 */}
         <section className="card">
-          <h2 style={{ marginBottom: 16 }}>{config.label}趨勢</h2>
+          {/* 標題與圖例說明 */}
+          <div style={{ marginBottom: 16 }}>
+             <h2 style={{ margin: 0 }}>{config.label}趨勢</h2>
+          </div>
           
-          {/* 🆕 優化：外層加入橫向捲動容器，避免 X 軸過擠 */}
+          {/* 外層橫向捲動容器 */}
           <div style={{ width: '100%', overflowX: 'auto', paddingBottom: 10 }}>
-            {/* 設定 minWidth，資料多時自動變寬讓使用者滑動 */}
+            {/* 圖表容器 */}
             <div style={{ 
-  minWidth: (period === '90d' || period === '180d' || period === '365d') ? 600 : '100%', 
-  height: 300,
-  minHeight: 300
-}}>
+              minWidth: (period === '90d' || period === '180d' || period === '365d') ? 600 : '100%', 
+              height: 300,
+              minHeight: 300,
+              fontSize: '12px' // 調整整體字體大小
+            }}>
               
-              {/* 🆕 身體組成合併圖表（雙 Y 軸） */}
+              {/* 📊 情境 A：身體組成合併圖表（雙 Y 軸） */}
               {metric === 'bodyComposition' ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                  <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
+                    {/* 1. 背景：只留水平線，顏色極淡 */}
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                    
+                    {/* 2. X 軸 */}
                     <XAxis 
                       dataKey="date" 
-                      style={{ fontSize: 15 }}
+                      axisLine={false} // 隱藏軸線
+                      tickLine={false} // 隱藏刻度線
+                      tick={{ fill: '#9ca3af', fontSize: 11 }}
                       interval="preserveStartEnd" 
-                      tick={{ fontSize: 11 }}
-                      angle={-45} // 傾斜標籤避免重疊
+                      angle={-45}
                       textAnchor="end"
                       height={60}
+                      dy={10}
                     />
-                    {/* 左側 Y 軸：體重 (顯示單位 kg) */}
-                    <YAxis
-                      yAxisId="left"
-                      domain={['auto', 'auto']}
-                      style={{ fontSize: 11 }}
-                      tickFormatter={(v) => `${v}kg`} 
-                      width={50} // 預留寬度給單位
-                    />
-                    {/* 右側 Y 軸：體脂率 & 骨骼肌率 (顯示單位 %) */}
-                    <YAxis
-                      yAxisId="right"
-                      orientation="right"
-                      domain={['auto', 'auto']}
-                      style={{ fontSize: 11 }}
-                      tickFormatter={(v) => `${v}%`}
-                      width={45} // 預留寬度給單位
-                    />
+                    
+                    {/* 左邊 Y 軸 (體重)：加寬到 40 */}
+  <YAxis
+    yAxisId="left"
+    domain={['auto', 'auto']}
+    axisLine={false}
+    tickLine={false}
+    tick={{ fill: '#1f2937', fontWeight: 600, fontSize: 11 }}
+    tickFormatter={(v) => `${v}`} 
+    width={40}  // 🟢 改大一點
+  />
+
+  {/* 右邊 Y 軸 (體脂)：加寬到 40 */}
+  <YAxis
+    yAxisId="right"
+    orientation="right"
+    domain={['auto', 'auto']}
+    axisLine={false}
+    tickLine={false}
+    tick={{ fill: '#9ca3af', fontSize: 11 }}
+    tickFormatter={(v) => `${v}%`}
+    width={40}  // 🟢 改大一點
+  />
+
+                    {/* 5. 提示框：圓角卡片風 */}
+                    {/* 修正後的 Tooltip：判斷中文名稱來顯示正確單位 */}
                     <Tooltip
-                      contentStyle={{ background: '#fff', border: '1px solid #ccc', borderRadius: 8 }}
+                      cursor={{ stroke: '#9ca3af', strokeWidth: 1, strokeDasharray: '4 4' }}
+                      contentStyle={{
+                        backgroundColor: '#fff',
+                        borderRadius: '12px',
+                        border: 'none',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                        padding: '12px'
+                      }}
                       formatter={(value: any, name: string) => {
-                        if (name === 'weight') return [`${Number(value).toFixed(1)} kg`, '體重'];
-                        if (name === 'bodyFat') return [`${Number(value).toFixed(1)}%`, '體脂率'];
-                        if (name === 'skeletalMuscle') return [`${Number(value).toFixed(1)}%`, '骨骼肌率'];
+                        // 🟢 修正：這裡要判斷 <Line name="..."> 設定的中文
+                        if (name === '體重') return [`${Number(value).toFixed(1)} kg`, name];
+                        if (name === '體脂率') return [`${Number(value).toFixed(1)}%`, name];
+                        if (name === '骨骼肌率') return [`${Number(value).toFixed(1)}%`, name];
+                        // 預設回傳
                         return [value, name];
                       }}
                     />
-                    <Legend verticalAlign="top" height={36}/>
+                    
+                    <Legend verticalAlign="top" iconType="circle" height={36}/>
+                    
+                    {/* 線條 A: 體重 (最重要，用深色 Charcoal) */}
                     <Line
                       yAxisId="left"
                       type="monotone"
                       dataKey="weight"
                       name="體重"
-                      stroke="#5c9c84"
+                      stroke="#1f2937"
                       strokeWidth={3}
-                      dot={{ r: 4, fill: '#5c9c84' }}
-                      activeDot={{ r: 6 }}
+                      dot={{ r: 3, fill: '#1f2937', stroke: '#fff', strokeWidth: 2 }}
+                      activeDot={{ r: 6, fill: '#1f2937', strokeWidth: 0 }}
                       connectNulls
                     />
+                    {/* 線條 B: 體脂 (用警示橘色，但在品牌色系內) */}
                     <Line
                       yAxisId="right"
                       type="monotone"
                       dataKey="bodyFat"
                       name="體脂率"
-                      stroke="#e68a3a"
+                      stroke="#f59e0b" // Amber
                       strokeWidth={2}
-                      strokeDasharray="5 5"
-                      dot={{ r: 3, fill: '#e68a3a' }}
+                      strokeDasharray="5 5" // 虛線區隔
+                      dot={{ r: 3, fill: '#f59e0b', stroke: '#fff', strokeWidth: 1 }}
                       activeDot={{ r: 5 }}
                       connectNulls
                     />
+                    {/* 線條 C: 骨骼肌 (用品牌色 Mint) */}
                     <Line
                       yAxisId="right"
                       type="monotone"
                       dataKey="skeletalMuscle"
                       name="骨骼肌率"
-                      stroke="#10b981"
+                      stroke="#97d0ba" // Mint
                       strokeWidth={2}
-                      strokeDasharray="2 2"
-                      dot={{ r: 3, fill: '#10b981' }}
+                      dot={{ r: 3, fill: '#97d0ba', stroke: '#fff', strokeWidth: 1 }}
                       activeDot={{ r: 5 }}
                       connectNulls
                     />
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
-                // 單一指標圖表
+                
+                // 📊 情境 B：單一指標圖表
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                  <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                    
                     <XAxis 
                       dataKey="date" 
-                      style={{ fontSize: 15 }}
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#9ca3af', fontSize: 11 }}
                       interval="preserveStartEnd"
-                      tick={{ fontSize: 11 }}
                       angle={-45}
                       textAnchor="end"
                       height={60}
+                      dy={10}
                     />
-                    {/* Y 軸加上單位 */}
-                    <YAxis
-                      domain={config.yAxisDomain}
-                      style={{ fontSize: 11 }}
-                      tickFormatter={(value) => `${value}${config.unit}`}
-                      width={55}
-                    />
+                    
+                    {/* Y 軸：加寬到 45 (為了容納 2000 這種大數字) */}
+  <YAxis
+    domain={config.yAxisDomain}
+    axisLine={false}
+    tickLine={false}
+    tick={{ fill: '#9ca3af', fontSize: 11 }}
+    width={45}  // 🟢 45px 足夠放下 4 位數
+  />
+                    
                     <Tooltip
-                      contentStyle={{ background: '#fff', border: '1px solid #ccc', borderRadius: 8 }}
+                      cursor={{ stroke: '#9ca3af', strokeWidth: 1, strokeDasharray: '4 4' }}
+                      contentStyle={{
+                        backgroundColor: '#fff',
+                        borderRadius: '12px',
+                        border: 'none',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                        padding: '8px 12px'
+                      }}
                       formatter={(value: any) => [`${Number(value).toFixed(1)} ${config.unit}`, config.label]}
                     />
+                    
                     <Line
                       type="monotone"
                       dataKey={metric}
-                      stroke={config.color}
+                      stroke="#97d0ba" // 🟢 強制統一使用品牌色 Mint
                       strokeWidth={3}
-                      dot={{ r: 4, fill: config.color }}
-                      activeDot={{ r: 6 }}
+                      dot={{ r: 4, fill: '#97d0ba', stroke: '#fff', strokeWidth: 2 }}
+                      activeDot={{ r: 6, fill: '#1f2937', strokeWidth: 0 }} // 按下時變深色
                       connectNulls
                     />
                   </LineChart>
                 </ResponsiveContainer>
               )}
             </div>
-            {/* 底部提示 */}
+            
+            {/* 底部滑動提示 */}
             {(period === '90d' || period === '180d' || period === '365d') && (
-  <div style={{ textAlign: 'center', fontSize: 15, color: '#999', marginTop: 4 }}>
-    ← 左右滑動查看更多數據 →
-  </div>
-)}
+              <div style={{ textAlign: 'center', fontSize: 13, color: '#9ca3af', marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <span>←</span> 
+                <span style={{ fontSize: 12 }}>左右滑動查看歷史數據</span> 
+                <span>→</span>
+              </div>
+            )}
           </div>
         </section>
       </div>
