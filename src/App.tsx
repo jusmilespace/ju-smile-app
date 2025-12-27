@@ -7,6 +7,9 @@ import { VisualPortionPicker } from './VisualPortionPicker';
 import femalePng from './assets/female.png'; 
 import malePng from './assets/male.png';
 
+import logoV1 from './assets/logo_v1.png'; 
+import logoV2 from './assets/logo_v2.png';
+
 // 🟢 新增：匯入手掌法圖片
 import palmImg from './assets/palm.png';
 import fistImg from './assets/fist.png';
@@ -6553,12 +6556,32 @@ function saveNumberInput(value: string) {
   return (
     <div className="page page-settings" style={{ paddingBottom: '100px', background: '#f5fbf8' }}>
       
-      {/* 頁面標題 */}
-      <div style={{ padding: '12px 16px 20px' }}>
-        <h1 style={{ margin: 0, fontSize: '28px', color: '#1f2937' }}>我的設定</h1>
-        <p style={{ margin: '4px 0 0', color: '#6b7280', fontSize: '14px' }}>
-          打造專屬於你的健康計畫
-        </p>
+     {/* 頁面標題 - 修改後 (Logo 靠左，緊鄰標題) */}
+      <div style={{ 
+        padding: '12px 16px 20px', 
+        display: 'flex',           // 彈性排版
+        alignItems: 'center'       // 垂直置中
+        // 🔴 已移除 justifyContent: 'space-between'，Logo 不會再跑到最右邊了
+      }}>
+        {/* 左側：文字區 */}
+        <div>
+          <h1 style={{ margin: 0, fontSize: '28px', color: '#1f2937' }}>我的設定</h1>
+          <p style={{ margin: '4px 0 0', color: '#6b7280', fontSize: '14px' }}>
+            打造專屬於你的健康計畫
+          </p>
+        </div>
+
+        {/* 右側：Logo */}
+        <img 
+          src={logoV1} 
+          alt="Ju Smile" 
+          style={{ 
+            width: '64px',      
+            height: 'auto', 
+            objectFit: 'contain',
+            marginLeft: '120px'  // 🟢 設定 Logo 與文字的距離
+          }} 
+        />
       </div>
 
       {/* 第一組：核心計畫 */}
@@ -8065,7 +8088,11 @@ return (
       )}
 
       {tab === 'settings' && (
-        <SettingsPage onOpenAbout={() => setTab('about')} />
+        <div style={{ height: '100%', overflowY: 'auto', background: '#f7faf9' }}>
+
+          {/* 原本的設定頁面元件 */}
+          <SettingsPage onOpenAbout={() => setTab('about')} />
+        </div>
       )}
 
       {tab === 'plan' && <PlanPage />}
