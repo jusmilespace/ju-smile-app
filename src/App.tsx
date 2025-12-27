@@ -4,6 +4,9 @@ import dayjs from 'dayjs';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { VisualPortionPicker } from './VisualPortionPicker';
 
+import femalePng from './assets/female.png'; 
+import malePng from './assets/male.png';
+
 // 🟢 新增：匯入手掌法圖片
 import palmImg from './assets/palm.png';
 import fistImg from './assets/fist.png';
@@ -6986,147 +6989,80 @@ function saveNumberInput(value: string) {
   );
 };
 
-  // ======== Plan 頁 ========
+ // ======== Plan 頁 (最終完整版：含積極減重 + 大字體選單) ========
   const PlanPage: React.FC = () => {
     const { showToast } = React.useContext(ToastContext);
-    // 這是用來關閉下拉選單的小工具
-    const closeDropdown = (e: React.MouseEvent) => {
-      const details = e.currentTarget.closest('details');
-      if (details) {
-        details.removeAttribute('open');
-      }
-    };
-    // 基本資料：從 localStorage 還原，沒有就留空
-    const [gender, setGender] = useState<'female' | 'male' | ''>(() => {
+
+    // 1. 初始化 State
+    const [form, setForm] = useState(() => {
       try {
-        const raw = localStorage.getItem('JU_PLAN_FORM');
-        if (!raw) return '';
-        const obj = JSON.parse(raw);
-        return obj.gender === 'female' || obj.gender === 'male' ? obj.gender : '';
+        return JSON.parse(localStorage.getItem('JU_PLAN_FORM') || '{}');
       } catch {
-        return '';
+        return {};
       }
     });
 
-    const [age, setAge] = useState<string>(() => {
-      try {
-        const raw = localStorage.getItem('JU_PLAN_FORM');
-        if (!raw) return '';
-        const obj = JSON.parse(raw);
-        return obj.age != null ? String(obj.age) : '';
-      } catch {
-        return '';
-      }
-    }); // 例: 30
+    const [gender, setGender] = useState<string>(form.gender || 'female');
+    const [birthDate, setBirthDate] = useState<string>(form.birthDate || '');
+    const [age, setAge] = useState<number>(Number(form.age) || 30);
+    const [height, setHeight] = useState<string>(form.height ? String(form.height) : '165');
+    const [weight, setWeight] = useState<string>(form.weight ? String(form.weight) : '60');
+    const [activity, setActivity] = useState<string>(form.activity || 'light');
+    const [selectedGoal, setSelectedGoal] = useState<number | null>(form.selectedGoal ? Number(form.selectedGoal) : null);
 
-    const [height, setHeight] = useState<string>(() => {
-      try {
-        const raw = localStorage.getItem('JU_PLAN_FORM');
-        if (!raw) return '';
-        const obj = JSON.parse(raw);
-        return obj.height != null ? String(obj.height) : '';
-      } catch {
-        return '';
-      }
-    }); // 例: 165
+    // 控制活動量選單開關
+    const [showActivityModal, setShowActivityModal] = useState(false);
 
-    const [weight, setWeight] = useState<string>(() => {
-      try {
-        const raw = localStorage.getItem('JU_PLAN_FORM');
-        if (!raw) return '';
-        const obj = JSON.parse(raw);
-        return obj.weight != null ? String(obj.weight) : '';
-      } catch {
-        return '';
-      }
-    }); // 例: 60
+    // 活動量選項
+    const activityOptions = [
+      { value: 'sedentary', label: '😴 久坐', desc: '幾乎不運動 / 辦公室工作' },
+      { value: 'light',     label: '🚶 輕量活動', desc: '每週運動 1-3 天 / 輕鬆散步' },
+      { value: 'moderate',  label: '🏃 中等活動', desc: '每週運動 3-5 天 / 中強度運動' },
+      { value: 'active',    label: '🏋️ 活躍', desc: '每週運動 6-7 天 / 體力工作' },
+      { value: 'very',      label: '🔥 非常活躍', desc: '每天高強度訓練 / 職業運動員' },
+    ];
+    const currentActivityLabel = activityOptions.find(opt => opt.value === activity)?.label || '請選擇';
 
-    const [activity, setActivity] =
-      useState<'sedentary' | 'light' | 'moderate' | 'active' | 'very' | ''>(() => {
-        try {
-          const raw = localStorage.getItem('JU_PLAN_FORM');
-          if (!raw) return '';
-          const obj = JSON.parse(raw);
-          const v = obj.activity;
-          if (
-            v === 'sedentary' ||
-            v === 'light' ||
-            v === 'moderate' ||
-            v === 'active' ||
-            v === 'very'
-          ) {
-            return v;
-          }
-          return '';
-        } catch {
-          return '';
+    // 生日自動算年齡
+    useEffect(() => {
+      if (birthDate) {
+        const birth = new Date(birthDate);
+        const today = new Date();
+        let calculatedAge = today.getFullYear() - birth.getFullYear();
+        const m = today.getMonth() - birth.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+          calculatedAge--;
         }
-      });
+        setAge(calculatedAge);
+      }
+    }, [birthDate]);
 
-    const w = Number(weight) || 0;
-    const h = Number(height) || 0;
-    const a = Number(age) || 0;
-    // ...（後面原本程式碼照舊）
+    // 儲存
+    useEffect(() => {
+      const newForm = { gender, birthDate, age, height, weight, activity, selectedGoal };
+      localStorage.setItem('JU_PLAN_FORM', JSON.stringify(newForm));
+    }, [gender, birthDate, age, height, weight, activity, selectedGoal]);
 
+    // 計算
     const bmr = useMemo(() => {
-      if (!gender || !w || !h || !a) return 0;
+      const w = Number(weight) || 0;
+      const h = Number(height) || 0;
+      const a = Number(age) || 0;
+      if (!w || !h || !a) return 0;
       return Math.round(
         gender === 'male'
           ? 10 * w + 6.25 * h - 5 * a + 5
           : 10 * w + 6.25 * h - 5 * a - 161
       );
-    }, [gender, w, h, a]);
+    }, [gender, weight, height, age]);
 
     const tdee = useMemo(() => {
       if (!bmr || !activity) return 0;
-      const mult = {
+      const mult: Record<string, number> = {
         sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725, very: 1.9,
-      }[activity];
-      return Math.round(bmr * (mult || 0));
+      };
+      return Math.round(bmr * (mult[activity] || 1.2));
     }, [bmr, activity]);
-
-    const [selectedGoal, setSelectedGoal] = useState<number | null>(null);
-    // 初始化：還原上次輸入的表單內容
-    useEffect(() => {
-      try {
-        const raw = localStorage.getItem('JU_PLAN_FORM');
-        if (raw) {
-          const obj = JSON.parse(raw);
-          if (obj && typeof obj === 'object') {
-            if (obj.gender) setGender(obj.gender);
-            if (obj.age != null) setAge(String(obj.age));
-            if (obj.height != null) setHeight(String(obj.height));
-            if (obj.weight != null) setWeight(String(obj.weight));
-            if (obj.activity) setActivity(obj.activity);
-            if (obj.selectedGoal != null) setSelectedGoal(Number(obj.selectedGoal));
-          }
-        }
-      } catch { /* ignore */ }
-    }, []);
-
-    // 變更時即時保存
-    useEffect(() => {
-      const data = { gender, age, height, weight, activity, selectedGoal };
-      try { localStorage.setItem('JU_PLAN_FORM', JSON.stringify(data)); } catch { /* ignore */ }
-    }, [gender, age, height, weight, activity, selectedGoal]);
-
-    // 小圓環
-    const ResultRing: React.FC<{ value: number; label: string }> = ({ value, label }) => (
-      <div className="ring-card" style={{ minWidth: 140 }}>
-        <div className="ring" style={{ ['--p' as any]: 85 }}>
-          <div className="ring-center">
-            <div className="ring-value" style={{ fontSize: 22, fontWeight: 800 }}>{value || 0}</div>
-            <div style={{ fontSize: 15, opacity: 0.75 }}>{label}</div>
-          </div>
-        </div>
-        <div className="ring-label" style={{ color: 'var(--mint-dark)', fontWeight: 700 }}>
-          {label === 'BMR' ? '基礎代謝率' : '每日總消耗'}
-        </div>
-        <div className="ring-sub" style={{ opacity: 0.75 }}>
-          {label === 'BMR' ? '維持生命最低熱量' : '維持體重熱量'}
-        </div>
-      </div>
-    );
 
     const GoalCard: React.FC<{ title: string; kcal: number; tip?: string; warn?: string; recommended?: boolean; }> =
       ({ title, kcal, tip, warn, recommended }) => (
@@ -7135,139 +7071,193 @@ function saveNumberInput(value: string) {
           style={{
             border: selectedGoal === kcal ? '2px solid #5c9c84' : '1px solid var(--line)',
             background: recommended ? '#fafffc' : '#fff',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            marginBottom: 10,
+            padding: '12px 16px'
           }}
           onClick={() => setSelectedGoal(kcal)}
         >
-          <div className="meal-header">
-            {selectedGoal === kcal && <span className="tag" style={{ marginRight: 8, background: '#5c9c84' }}>已選</span>}
-            <span className="meal-title" style={{ color: recommended ? 'var(--mint-dark)' : 'var(--text-main)' }}>
+          <div className="meal-header" style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+            {selectedGoal === kcal && <span className="tag" style={{ marginRight: 8, background: '#5c9c84', color: '#fff', padding: '2px 8px', borderRadius: 12, fontSize: 12 }}>已選</span>}
+            <span className="meal-title" style={{ color: recommended ? 'var(--mint-dark)' : 'var(--text-main)', fontWeight: 600, fontSize: 16 }}>
               {title}
             </span>
-            {recommended && <span className="tag" style={{ marginLeft: 8 }}>推薦</span>}
+            {recommended && <span className="tag" style={{ marginLeft: 'auto', background: '#e6fffa', color: '#5c9c84', padding: '2px 8px', borderRadius: 12, fontSize: 12 }}>推薦</span>}
           </div>
           <div className="meal-body">
-            <div className="kcal">{Math.max(0, Math.round(kcal))} kcal</div>
-            {tip && <div className="tip">{tip}</div>}
-            {warn && <div className="warning" style={{ color: '#d64545' }}>{warn}</div>}
+            <div className="kcal" style={{ fontSize: 18, fontWeight: 700 }}>{Math.max(0, Math.round(kcal))} <span style={{fontSize:13, fontWeight:400}}>kcal</span></div>
+            {tip && <div className="tip" style={{ fontSize: 13, color: '#666' }}>{tip}</div>}
+            {warn && <div className="warning" style={{ color: '#d64545', fontSize: 12, marginTop: 4 }}>{warn}</div>}
           </div>
         </div>
       );
 
-    const activityOptions: BigOption[] = [
-  { value: 'sedentary', label: '久坐 (1.2) · 幾乎不運動 / 整天久坐' },
-  { value: 'light',     label: '輕量 (1.375) · 每週 1–3 天輕度活動' },
-  { value: 'moderate',  label: '中等 (1.55) · 每週 3–5 天中等強度活動' },
-  { value: 'active',    label: '活躍 (1.725) · 每週 6–7 天運動或站立工作' },
-  { value: 'very',      label: '非常活躍 (1.9) · 高強度訓練 / 體力工作' },
-];
-
-
     return (
-      <div className="page page-plan" style={{ padding: 16, paddingBottom: '96px' }}>
-        <h1 style={{ fontSize: 22, marginBottom: 12 }}>BMR / TDEE 計算</h1>
+      <div className="page page-plan" style={{ padding: '16px 16px 96px 16px', maxWidth: 600, margin: '0 auto' }}>
+        
+        <div style={{ marginBottom: 16 }}>
+          <h2 style={{ fontSize: 22, marginBottom: 4, color: 'var(--text-main)' }}>個人計畫 Plan</h2>
+          <p style={{ color: '#666', fontSize: 13, margin: 0 }}>設定身體數值，計算每日熱量需求</p>
+        </div>
 
-        <section className="card">
-          <h2>基本資料</h2>
-          <div className="form-section">
-            <label>
-              性別
-              <BigSelect
-                options={[
-                  { value: 'female', label: '女性' },
-                  { value: 'male', label: '男性' },
-                ]}
-                value={gender}
-                onChange={(v) => {
-                  setGender(v as any);
-                }}
-                placeholder="請選擇"
+        {/* 基本資料區塊 */}
+        <section className="card" style={{ padding: 16, marginBottom: 16, border: '1px solid var(--line)', borderRadius: 16, background: '#fff' }}>
+          <h3 style={{ fontSize: 16, margin: '0 0 12px 0', borderBottom: '1px solid #eee', paddingBottom: 8, color: '#444' }}>⚙️ 基本設定</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div className="form-group">
+              <label style={{ display: 'block', marginBottom: 6, fontWeight: 500, fontSize: 14 }}>生理性別</label>
+              <div style={{ display: 'flex', gap: 12 }}>
+                {['female', 'male'].map((g) => (
+                  <button
+                    key={g}
+                    onClick={() => setGender(g)}
+                    style={{
+                      flex: 1, padding: '8px', borderRadius: 8,
+                      border: gender === g ? '2px solid #5c9c84' : '1px solid #ddd',
+                      background: gender === g ? '#f0fdf9' : '#fff',
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+                    }}
+                  >
+                    <img src={g === 'female' ? femalePng : malePng} alt={g} style={{ width: 24, height: 24, objectFit: 'contain' }} />
+                    <span style={{ color: gender === g ? '#5c9c84' : '#666', fontWeight: gender === g ? 600 : 400, fontSize: 14 }}>
+                      {g === 'female' ? '女性' : '男性'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label style={{ display: 'block', marginBottom: 6, fontWeight: 500, fontSize: 14 }}>
+                出生年月日 <span style={{fontSize: 12, color: '#888'}}>(自動推算: {age} 歲)</span>
+              </label>
+              <input 
+                type="date" value={birthDate} max={new Date().toISOString().split("T")[0]}
+                onChange={(e) => setBirthDate(e.target.value)}
+                style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', fontSize: 16, background: '#fff' }}
               />
-            </label>
+            </div>
 
-            <label>
-              年齡
-              <input type="number" value={age} onChange={(e) => setAge(e.target.value)} placeholder="例: 30" />
-            </label>
-            <label>
-              身高 (cm)
-              <input type="number" value={height} onChange={(e) => setHeight(e.target.value)} placeholder="例: 165" />
-            </label>
-            <label>
-              體重 (kg)
-              <input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="例: 60" />
-            </label>
-            <label>
-              活動量
-              <BigSelect
-                options={activityOptions}
-                value={activity}
-                onChange={(v) => {
-                  setActivity(v as any);
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div className="form-group">
+                <label style={{ display: 'block', marginBottom: 6, fontWeight: 500, fontSize: 14 }}>身高 (cm)</label>
+                <input type="number" inputMode="decimal" value={height} onChange={(e) => setHeight(e.target.value)} placeholder="165"
+                  style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', fontSize: 16 }} />
+              </div>
+              <div className="form-group">
+                <label style={{ display: 'block', marginBottom: 6, fontWeight: 500, fontSize: 14 }}>體重 (kg)</label>
+                <input type="number" inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="60"
+                  style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', fontSize: 16 }} />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label style={{ display: 'block', marginBottom: 6, fontWeight: 500, fontSize: 14 }}>日常活動量</label>
+              <button type="button" onClick={() => setShowActivityModal(true)}
+                style={{ 
+                  width: '100%', padding: '12px 10px', borderRadius: 8, border: '1px solid #ddd', background: '#fff', 
+                  fontSize: 16, textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#1f2937'
                 }}
-                placeholder="請選擇"
-              />
-            </label>
-
+              >
+                <span>{currentActivityLabel}</span>
+                <span style={{ color: '#999', fontSize: 12 }}>▼</span>
+              </button>
+            </div>
           </div>
         </section>
 
-        <section className="card">
-          <h2>計算結果</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: 16, background: '#f6fbff' }}>
-              <div style={{ fontSize: 15, color: '#5c9c84', fontWeight: 700, letterSpacing: 1 }}>BMR</div>
-              <div style={{ fontSize: 28, fontWeight: 800, margin: '4px 0 8px 0' }}>{bmr || 0}</div>
-              <div style={{ fontSize: 13, opacity: 0.8 }}>基礎代謝率 · 維持生命最低熱量</div>
-            </div>
-            <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: 16, background: '#fffaf6' }}>
-              <div style={{ fontSize: 15, color: '#e68a3a', fontWeight: 700, letterSpacing: 1 }}>TDEE</div>
-              <div style={{ fontSize: 28, fontWeight: 800, margin: '4px 0 8px 0' }}>{tdee || 0}</div>
-              <div style={{ fontSize: 13, opacity: 0.8 }}>每日總消耗 · 維持體重熱量</div>
-            </div>
+        {/* 計算結果區塊 */}
+        <section className="card" style={{ padding: 20, marginBottom: 16, textAlign: 'center', background: '#fff', borderRadius: 16, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+          <div style={{ display: 'inline-block', background: '#e0f2fe', padding: '4px 12px', borderRadius: 20, color: '#0369a1', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
+            您的 TDEE 每日總消耗
           </div>
+          <div style={{ fontSize: 42, fontWeight: 800, color: '#5c9c84', lineHeight: 1 }}>
+            {tdee || 0} <span style={{ fontSize: 18, fontWeight: 500, color: '#9ca3af' }}>kcal</span>
+          </div>
+          <div style={{ color: '#6b7280', fontSize: 13, marginTop: 8 }}>基礎代謝 BMR: <b>{bmr || 0}</b> kcal</div>
         </section>
 
-        <section className="card">
-          <h2>目標攝取建議</h2>
+        {/* 目標建議區塊 */}
+        <section className="card" style={{ padding: 16, background: '#fff', borderRadius: 16 }}>
+          <h3 style={{ fontSize: 16, margin: '0 0 12px 0', color: '#444' }}>🎯 選擇您的目標</h3>
+          
           <div className="meals-card">
             <GoalCard title="維持目前體重" kcal={tdee} tip="熱量平衡 (Net 0)" />
+            
+            <h4 style={{fontSize: 13, color:'#888', margin: '12px 0 6px 0'}}>減重目標</h4>
             <GoalCard title="溫和減重" kcal={tdee ? tdee - 300 : 0} tip="每日赤字 -300 (月減 ~1.2kg)" recommended />
             <GoalCard title="標準減重" kcal={tdee ? tdee - 500 : 0} tip="每日赤字 -500 (月減 ~2kg)"
               warn={tdee && (tdee - 500) < bmr ? '低於 BMR，請評估是否過低' : undefined} />
-            <GoalCard title="積極減重" kcal={tdee ? tdee - 1000 : 0} tip="每日赤字 -1000 (月減 ~4kg)"
-              warn="不建議長期執行，易流失肌肉" />
-            {/* 增重 */}
+            
+            {/* 🟢 補回：積極減重選項 */}
+            <GoalCard 
+              title="積極減重" 
+              kcal={tdee ? tdee - 1000 : 0} 
+              tip="每日赤字 -1000 (月減 ~4kg)" 
+              warn="不建議長期執行，易流失肌肉" 
+            />
+            
+            <h4 style={{fontSize: 13, color:'#888', margin: '12px 0 6px 0'}}>增肌/增重目標</h4>
             <GoalCard title="溫和增重" kcal={tdee ? tdee + 300 : 0} tip="每日盈餘 +300 (月增 ~1.2kg)" />
             <GoalCard title="標準增重" kcal={tdee ? tdee + 500 : 0} tip="每日盈餘 +500 (月增 ~2kg)" />
           </div>
 
-          <div style={{ textAlign: 'center', marginTop: 12 }}>
+          <div style={{ textAlign: 'center', marginTop: 20 }}>
             <button
               className="btn primary"
               disabled={!selectedGoal || !bmr}
               onClick={() => {
-  if (!selectedGoal || !bmr) return;
-  try {
-    localStorage.setItem('JU_PLAN_BMR', String(bmr));
-    localStorage.setItem('JU_PLAN_TDEE', String(tdee || 0));
-    localStorage.setItem('JU_PLAN_GOAL_KCAL', String(selectedGoal));
-    document.dispatchEvent(new CustomEvent('ju:set-goal-kcal', { detail: selectedGoal }));
-    showToast('success', `已加入目標熱量：${selectedGoal} kcal`);
-  } catch {
-    showToast('error', '設定目標熱量時發生錯誤');
-  }
-}}
-              style={{ padding: '10px 16px', borderRadius: 10, border: 'none', background: '#5c9c84', color: '#fff', fontSize: 16 }}
+                if (!selectedGoal || !bmr) return;
+                try {
+                  localStorage.setItem('JU_PLAN_BMR', String(bmr));
+                  localStorage.setItem('JU_PLAN_TDEE', String(tdee || 0));
+                  localStorage.setItem('JU_PLAN_GOAL_KCAL', String(selectedGoal));
+                  document.dispatchEvent(new CustomEvent('ju:set-goal-kcal', { detail: selectedGoal }));
+                  showToast('success', `已加入目標熱量：${selectedGoal} kcal`);
+                } catch {
+                  showToast('error', '設定目標熱量時發生錯誤');
+                }
+              }}
+              style={{ 
+                width: '100%', padding: '12px', borderRadius: 12, border: 'none', 
+                background: (!selectedGoal || !bmr) ? '#d1d5db' : '#5c9c84', 
+                color: '#fff', fontSize: 16, fontWeight: 600,
+                cursor: (!selectedGoal || !bmr) ? 'not-allowed' : 'pointer'
+              }}
             >
-              加入目標熱量
+              確認並套用目標
             </button>
           </div>
-
-          <div className="hint" style={{ marginTop: 8 }}>
-            減掉 <b>1 公斤</b> 的體脂肪約需 <b>7,700 kcal</b>；建議以 TDEE 減去 <b>300–500 kcal</b> 做溫和減重。
-          </div>
         </section>
+
+        {/* 底部滑出選單 (Action Sheet) */}
+        {showActivityModal && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 9999 }}>
+            <div onClick={() => setShowActivityModal(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }} />
+            <div style={{
+              position: 'absolute', bottom: 0, left: 0, right: 0, background: '#fff',
+              borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: '20px 16px 40px 16px', animation: 'slideUp 0.3s ease-out'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <h3 style={{ margin: 0, fontSize: 18 }}>選擇日常活動量</h3>
+                <button onClick={() => setShowActivityModal(false)} style={{ background: 'transparent', border: 'none', fontSize: 24, padding: 4, color: '#999' }}>✕</button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {activityOptions.map((opt) => (
+                  <button key={opt.value} onClick={() => { setActivity(opt.value); setShowActivityModal(false); }}
+                    style={{
+                      padding: '16px', borderRadius: 12, border: activity === opt.value ? '2px solid #5c9c84' : '1px solid #eee',
+                      background: activity === opt.value ? '#f0fdf9' : '#fff', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 4
+                    }}
+                  >
+                    <div style={{ fontSize: 18, fontWeight: 600, color: '#1f2937' }}>{opt.label}</div>
+                    <div style={{ fontSize: 14, color: '#6b7280' }}>{opt.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   };

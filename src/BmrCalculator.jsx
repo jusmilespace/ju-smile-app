@@ -8,7 +8,7 @@ const IconChevronUp = ({ size = 14, style = {} }) => (
   <span style={{ display: 'inline-block', transform: 'translateY(-1px)', ...style }}>▲</span>
 );
 
-/** 目標卡片 */
+/** 目標卡片 Component */
 const GoalCard = ({ title, calories, diff, warning, recommended, onSelect, selected }) => (
   <div
     className="card"
@@ -41,13 +41,17 @@ const GoalCard = ({ title, calories, diff, warning, recommended, onSelect, selec
   </div>
 );
 
-/** BMR/TDEE 計算，並可選擇「目標攝取」 */
+/** 主程式：BMR/TDEE 計算器 */
 const BmrCalculator = () => {
   const [gender, setGender] = useState('female');
+  
+  // 🟢 Change: 改用生日 State，並保留 Age 作為計算中間值
+  const [birthDate, setBirthDate] = useState(localStorage.getItem('JU_PLAN_BIRTHDATE') || '');
   const [age, setAge] = useState(30);
+
   const [height, setHeight] = useState(165); // cm
   const [weight, setWeight] = useState(60);  // kg
-  const [activityLevel, setActivityLevel] = useState('light'); // sedentary/light/moderate/active/very
+  const [activityLevel, setActivityLevel] = useState('light'); // sedentary/light...
 
   const [bmr, setBmr] = useState(0);
   const [tdee, setTdee] = useState(0);
@@ -62,7 +66,35 @@ const BmrCalculator = () => {
     if (b) setBmr(Number(b));
     const t = localStorage.getItem('JU_PLAN_TDEE');
     if (t) setTdee(Number(t));
+    
+    // 補讀取年齡 (若沒有生日時使用)
+    const savedAge = localStorage.getItem('JU_PLAN_AGE');
+    if (savedAge) setAge(Number(savedAge));
+
+    // 補讀取身高體重
+    const h = localStorage.getItem('JU_PLAN_HEIGHT');
+    if (h) setHeight(Number(h));
+    const w = localStorage.getItem('JU_PLAN_WEIGHT');
+    if (w) setWeight(Number(w));
+    const gen = localStorage.getItem('JU_PLAN_GENDER');
+    if (gen) setGender(gen);
   }, []);
+
+  // 🟢 Change: 生日改變時，自動計算年齡並存檔
+  useEffect(() => {
+    if (birthDate) {
+      const birth = new Date(birthDate);
+      const today = new Date();
+      let calculatedAge = today.getFullYear() - birth.getFullYear();
+      const m = today.getMonth() - birth.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+        calculatedAge--;
+      }
+      setAge(calculatedAge);
+      localStorage.setItem('JU_PLAN_BIRTHDATE', birthDate);
+      localStorage.setItem('JU_PLAN_AGE', String(calculatedAge));
+    }
+  }, [birthDate]);
 
   // 計算 BMR/TDEE
   useEffect(() => {
@@ -91,66 +123,119 @@ const BmrCalculator = () => {
     setTdee(tdeeCalc);
   }, [gender, age, height, weight, activityLevel]);
 
-  // 寫入 localStorage，給 App 讀
+  // 寫入 localStorage
   useEffect(() => {
     if (bmr > 0) localStorage.setItem('JU_PLAN_BMR', String(bmr));
     if (tdee > 0) localStorage.setItem('JU_PLAN_TDEE', String(tdee));
     if (selectedGoal != null) localStorage.setItem('JU_PLAN_GOAL_KCAL', String(selectedGoal));
-  }, [bmr, tdee, selectedGoal]);
+    
+    // 存身高體重與性別
+    localStorage.setItem('JU_PLAN_HEIGHT', String(height));
+    localStorage.setItem('JU_PLAN_WEIGHT', String(weight));
+    localStorage.setItem('JU_PLAN_GENDER', gender);
+  }, [bmr, tdee, selectedGoal, height, weight, gender]);
 
   return (
-    <div className="wrap" style={{ padding: 16 }}>
-      <h1 style={{ fontSize: 22, marginBottom: 12 }}>BMR / TDEE 計算</h1>
+    <div className="wrap" style={{ padding: '20px 16px 80px 16px', maxWidth: 600, margin: '0 auto' }}>
+      
+      {/* 標題優化 */}
+      <div style={{ marginBottom: 20 }}>
+        <h2 style={{ fontSize: 'var(--font-xl)', marginBottom: 8, color: 'var(--text-main)' }}>
+          個人計畫 Plan
+        </h2>
+        <p style={{ color: 'var(--text-sub)', fontSize: 'var(--font-sm)', margin: 0 }}>
+          設定身體數值，計算您的每日熱量需求
+        </p>
+      </div>
 
-      <section className="card">
-        <h2>基本資料</h2>
-        <div className="form-section">
-          <label>
-            性別
-            <select value={gender} onChange={(e) => setGender(e.target.value)}>
+      <section className="card" style={{ padding: 20, marginBottom: 24 }}>
+        <h3 style={{ fontSize: 'var(--font-lg)', margin: '0 0 16px 0', borderBottom: '1px solid #eee', paddingBottom: 12 }}>
+          ⚙️ 基本設定
+        </h3>
+        
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          
+          <div className="form-group">
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>生理性別</label>
+            <select 
+              value={gender} 
+              onChange={(e) => setGender(e.target.value)}
+              style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', background: '#fff', fontSize: 16 }}
+            >
               <option value="female">女性</option>
               <option value="male">男性</option>
             </select>
-          </label>
-          <label>
-            年齡
-            <input type="number" value={age} onChange={(e) => setAge(Number(e.target.value))} />
-          </label>
-          <label>
-            身高 (cm)
-            <input type="number" value={height} onChange={(e) => setHeight(Number(e.target.value))} />
-          </label>
-          <label>
-            體重 (kg)
-            <input type="number" value={weight} onChange={(e) => setWeight(Number(e.target.value))} />
-          </label>
-          <label>
-            活動量
-            <select value={activityLevel} onChange={(e) => setActivityLevel(e.target.value)}>
-              <option value="sedentary">久坐(1.2)</option>
-              <option value="light">輕量(1.375)</option>
-              <option value="moderate">中等(1.55)</option>
-              <option value="active">活躍(1.725)</option>
-              <option value="very">非常活躍(1.9)</option>
+          </div>
+
+          {/* 🟢 Change: 改為生日輸入 */}
+          <div className="form-group">
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
+              出生年月日 <span style={{fontSize: 13, color: '#888'}}>(自動算: {age} 歲)</span>
+            </label>
+            <input 
+              type="date" 
+              value={birthDate} 
+              onChange={(e) => setBirthDate(e.target.value)}
+              style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', fontSize: 16 }}
+            />
+          </div>
+
+          {/* 🟢 Change: 身高體重並排顯示，並加入 inputMode */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div className="form-group">
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>身高 (cm)</label>
+              <input 
+                type="number" 
+                inputMode="decimal" // 手機喚起數字鍵盤
+                value={height} 
+                onChange={(e) => setHeight(Number(e.target.value))}
+                style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', fontSize: 16 }}
+              />
+            </div>
+            <div className="form-group">
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>體重 (kg)</label>
+              <input 
+                type="number" 
+                inputMode="decimal" // 手機喚起數字鍵盤
+                value={weight} 
+                onChange={(e) => setWeight(Number(e.target.value))}
+                style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', fontSize: 16 }}
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>日常活動量</label>
+            <select 
+              value={activityLevel} 
+              onChange={(e) => setActivityLevel(e.target.value)}
+              style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #ddd', background: '#fff', fontSize: 16 }}
+            >
+              <option value="sedentary">久坐 (辦公室/沒運動) x1.2</option>
+              <option value="light">輕量 (每週運動 1-3 天) x1.375</option>
+              <option value="moderate">中等 (每週運動 3-5 天) x1.55</option>
+              <option value="active">活躍 (每週運動 6-7 天) x1.725</option>
+              <option value="very">非常活躍 (勞力/運動員) x1.9</option>
             </select>
-          </label>
+          </div>
         </div>
       </section>
 
-      <section className="card">
-        <h2>計算結果</h2>
-        <div className="row">
-          <div>BMR（基礎代謝）</div>
-          <div className="kcal">{bmr} kcal</div>
+      {/* 🟢 Change: 結果顯示區塊視覺優化 */}
+      <section className="card" style={{ padding: 24, marginBottom: 24, textAlign: 'center' }}>
+        <div style={{ display: 'inline-block', background: '#e0f2fe', padding: '6px 16px', borderRadius: 20, color: '#0369a1', fontSize: 14, fontWeight: 600, marginBottom: 10 }}>
+          您的 TDEE 每日總消耗
         </div>
-        <div className="row">
-          <div>TDEE（總消耗）</div>
-          <div className="kcal">{tdee} kcal</div>
+        <div style={{ fontSize: 48, fontWeight: 800, color: 'var(--mint-dark)', lineHeight: 1.2 }}>
+          {tdee} <span style={{ fontSize: 20, fontWeight: 500, color: '#666' }}>kcal</span>
+        </div>
+        <div style={{ color: '#888', fontSize: 14, marginTop: 8 }}>
+          基礎代謝 BMR: {bmr} kcal
         </div>
       </section>
 
-      <section className="card">
-        <h2>目標攝取建議</h2>
+      <section className="card" style={{ padding: 20 }}>
+        <h3 style={{ fontSize: 'var(--font-lg)', margin: '0 0 16px 0' }}>🎯 選擇您的目標</h3>
         <div className="meals-card">
           <GoalCard
             title="維持目前體重"
@@ -194,7 +279,7 @@ const BmrCalculator = () => {
         <button
           className="details-toggle"
           onClick={() => setShowDetails(!showDetails)}
-          style={{ marginTop: 12 }}
+          style={{ marginTop: 12, width: '100%', background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}
         >
           {showDetails ? (
             <>收合更多選項 <IconChevronUp /></>
@@ -203,12 +288,12 @@ const BmrCalculator = () => {
           )}
         </button>
 
-        <div className="hint" style={{ textAlign: 'center', marginTop: 8 }}>
-          目前選擇的目標攝取：{selectedGoal ?? '未選擇'} kcal（會自動帶到「今天」與「我的」頁）
+        <div className="hint" style={{ textAlign: 'center', marginTop: 16, fontSize: 14, color: '#666' }}>
+          目前選擇的目標攝取：<span style={{color: 'var(--mint-dark)', fontWeight: 'bold'}}>{selectedGoal ?? '未選擇'}</span> kcal
         </div>
 
         {/* 加入目標熱量按鈕 */}
-        <div style={{ textAlign: 'center', marginTop: 12 }}>
+        <div style={{ textAlign: 'center', marginTop: 16 }}>
           <button
             className="btn primary"
             disabled={selectedGoal == null}
@@ -216,14 +301,22 @@ const BmrCalculator = () => {
               if (selectedGoal == null) return;
               try {
                 localStorage.setItem('JU_PLAN_GOAL_KCAL', String(selectedGoal));
-                // 通知 App 立即更新「我的」頁的目標攝取熱量
                 document.dispatchEvent(new CustomEvent('ju:set-goal-kcal', { detail: selectedGoal }));
                 alert(`已加入目標熱量：${selectedGoal} kcal`);
               } catch {}
             }}
-            style={{ padding: '10px 16px', borderRadius: 10, border: 'none', background: '#5c9c84', color: '#fff', fontSize: 16 }}
+            style={{ 
+              width: '100%',
+              padding: '14px', 
+              borderRadius: 12, 
+              border: 'none', 
+              background: selectedGoal ? '#5c9c84' : '#ccc', 
+              color: '#fff', 
+              fontSize: 18,
+              fontWeight: 600
+            }}
           >
-            加入目標熱量
+            確認並套用目標
           </button>
         </div>
       </section>
