@@ -285,19 +285,19 @@ export const VisualPortionPicker: React.FC<VisualPortionPickerProps> = ({
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
-                    <div style={{ width: 42, height: 42, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: isActive ? '#f0f9f6' : '#f9fafb', borderRadius: 10, padding: 5 }}>
+                    <div style={{ width: 50, height: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: isActive ? '#f0f9f6' : '#f9fafb', borderRadius: 10, padding: 2 }}>
                       <IconComponent />
                     </div>
                     
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 600, color: '#1f2937', fontSize: 18, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div style={{ fontWeight: 600, color: '#1f2937', fontSize: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span>{portion.name}</span>
                         {/* 🟢 修改：顯示圖片而非 Emoji */}
                         {portion.handIcon && (
                           <img 
                             src={portion.handIcon} 
                             alt="unit" 
-                            style={{ width: 20, height: 20, objectFit: 'contain', opacity: 0.8 }} 
+                            style={{ width: 32, height: 32, objectFit: 'contain', opacity: 0.9 }} 
                           />
                         )}
                       </div>

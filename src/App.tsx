@@ -331,9 +331,9 @@ function renderPalmAmountText(amountText?: string, counts?: { [key: string]: num
                 src={cfg}
                 alt={typeId}
                 style={{
-                  width: 18,
-                  height: 18,
-                  marginRight: 2,
+                  width: 24,
+                  height: 24,
+                  marginRight: 4,
                   objectFit: 'contain',
                 }}
               />
@@ -2358,8 +2358,13 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
       minWidth: 0,
     }}
   >
-    🖐️&nbsp;手掌法
-  </button>
+   <img 
+    src={palmImg} 
+    alt="hand" 
+    style={{ width: 24, height: 24, marginRight: 6, objectFit: 'contain' }} 
+  />
+  手掌法
+</button>
 </div>
 
             
@@ -6918,36 +6923,56 @@ function saveNumberInput(value: string) {
           <li><b>類別估算</b>：若無資料，切換「類別/估算模式」，選食物類型輸入份數。</li>
         </ul>
 
-        <h3 style={{ color: 'var(--mint-dark)', fontSize: 16 }}>🖐️ 手掌法份量估算</h3>
+        <h3 style={{ color: 'var(--mint-dark)', fontSize: 16, display: 'flex', alignItems: 'center' }}>
+  {/* 🟢 修改：使用 palmImg 變數，並設定適當大小與間距 */}
+  <img 
+    src={palmImg} 
+    alt="hand" 
+    style={{ width: 24, height: 24, marginRight: 8, objectFit: 'contain' }} 
+  />
+  手掌法份量估算
+</h3>
         <p style={{ margin: '8px 0', fontSize: 14, color: '#666' }}>
           適合外食或不方便秤重時，用自己的手來測量。
         </p>
         
         <div style={{ background: '#f9fafb', borderRadius: 12, padding: 12, marginBottom: 12 }}>
-          <strong style={{ display: 'block', marginBottom: 4 }}>👊 拳頭 (Fist)</strong>
-          <div style={{ fontSize: 14, color: '#555' }}>
-            適用：<b>水果、熟蔬菜、飯/麵</b><br/>
-            • 1 個拳頭水果 ≈ 1 份 (約 130g)<br/>
-            • 1 個拳頭熟菜 ≈ 1 份 (約 100g)<br/>
-            • 1 個拳頭熟飯 ≈ 4 份 (約 160g)
-          </div>
-        </div>
+  <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+    {/* 🟢 修改：使用 fistImg */}
+    <img src={fistImg} alt="Fist" style={{ width: 32, height: 32, marginRight: 8, objectFit: 'contain' }} />
+    <strong>拳頭 (Fist)</strong>
+  </div>
+  <div style={{ fontSize: 14, color: '#555' }}>
+    適用：<b>水果、熟蔬菜、飯/麵</b><br/>
+    • 1 個拳頭水果 ≈ 1 份 (約 130g)<br/>
+    • 1 個拳頭熟菜 ≈ 1 份 (約 100g)<br/>
+    • 1 個拳頭熟飯 ≈ 4 份 (約 160g)
+  </div>
+</div>
 
-        <div style={{ background: '#f9fafb', borderRadius: 12, padding: 12, marginBottom: 12 }}>
-          <strong style={{ display: 'block', marginBottom: 4 }}>✋ 手掌心 (Palm)</strong>
-          <div style={{ fontSize: 14, color: '#555' }}>
-            適用：<b>肉類、魚類、豆腐</b><br/>
-            • 手掌大小、小指厚度 ≈ 3 份 (約 100g 熟肉)
-          </div>
-        </div>
+<div style={{ background: '#f9fafb', borderRadius: 12, padding: 12, marginBottom: 12 }}>
+  <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+    {/* 🟢 修改：使用 palmImg */}
+    <img src={palmImg} alt="Palm" style={{ width: 32, height: 32, marginRight: 8, objectFit: 'contain' }} />
+    <strong>手掌心 (Palm)</strong>
+  </div>
+  <div style={{ fontSize: 14, color: '#555' }}>
+    適用：<b>肉類、魚類、豆腐</b><br/>
+    • 手掌大小、小指厚度 ≈ 3 份 (約 100g 熟肉)
+  </div>
+</div>
 
-        <div style={{ background: '#f9fafb', borderRadius: 12, padding: 12 }}>
-          <strong style={{ display: 'block', marginBottom: 4 }}>👍 大拇指 (Thumb)</strong>
-          <div style={{ fontSize: 14, color: '#555' }}>
-            適用：<b>油脂、堅果、種子</b><br/>
-            • 1 個指節 ≈ 1 份 (約 5g 油)
-          </div>
-        </div>
+<div style={{ background: '#f9fafb', borderRadius: 12, padding: 12 }}>
+  <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+    {/* 🟢 修改：使用 thumbImg */}
+    <img src={thumbImg} alt="Thumb" style={{ width: 32, height: 32, marginRight: 8, objectFit: 'contain' }} />
+    <strong>大拇指 (Thumb)</strong>
+  </div>
+  <div style={{ fontSize: 14, color: '#555' }}>
+    適用：<b>油脂、堅果、種子</b><br/>
+    • 1 個指節 ≈ 1 份 (約 5g 油)
+  </div>
+</div>
 
       </div>
       
