@@ -22,6 +22,11 @@ import fruitImg from './assets/fruit.png';
 import fatImg from './assets/fat.png';
 import dairyImg from './assets/dairy.png';
 
+// 🆕 新增：運動強度圖示
+import lowIntensityImg from './assets/low_intensity.png';
+import mediumIntensityImg from './assets/medium_intensity.png';
+import highIntensityImg from './assets/high_intensity.png';
+
 const ICON_MAP: { [key: string]: string } = {
   protein: proteinImg,
   veggie: veggieImg,
@@ -4567,7 +4572,14 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
             }
           }}
         >
-          <div className="intensity-icon">{opt.icon}</div>
+          {/* 🟢 修改：將文字 Emoji 改為圖片渲染，並設定適當大小 */}
+          <div className="intensity-icon">
+            <img 
+              src={opt.icon} 
+              alt={opt.label} 
+              style={{ width: 48, height: 48, objectFit: 'contain' }} 
+            />
+          </div>
           <div className="intensity-label">{opt.label}</div>
           <div className="intensity-met">MET {opt.met}</div>
         </div>
@@ -4889,9 +4901,9 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
 
 // 定義三種強度 (低 2.5 / 中 4.0 / 高 7.0) 與對應樣式
 const INTENSITY_OPTIONS = [
-  { id: 'low', label: '低強度', val: '低強度運動', icon: '🧘', met: 2.5, className: 'low' },
-  { id: 'medium', label: '中強度', val: '中強度運動', icon: '🏃', met: 4.0, className: 'medium' },
-  { id: 'high', label: '高強度', val: '高強度運動', icon: '🔥', met: 7.0, className: 'high' },
+  { id: 'low', label: '低強度', val: '低強度運動', icon: lowIntensityImg, met: 2.5, className: 'low' },
+  { id: 'medium', label: '中強度', val: '中強度運動', icon: mediumIntensityImg, met: 4.0, className: 'medium' },
+  { id: 'high', label: '高強度', val: '高強度運動', icon: highIntensityImg, met: 7.0, className: 'high' },
 ];
 
 
@@ -7118,7 +7130,7 @@ function saveNumberInput(value: string) {
                       cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
                     }}
                   >
-                    <img src={g === 'female' ? femalePng : malePng} alt={g} style={{ width: 24, height: 24, objectFit: 'contain' }} />
+                    <img src={g === 'female' ? femalePng : malePng} alt={g} style={{ width: 30, height: 30, objectFit: 'contain' }} />
                     <span style={{ color: gender === g ? '#5c9c84' : '#666', fontWeight: gender === g ? 600 : 400, fontSize: 14 }}>
                       {g === 'female' ? '女性' : '男性'}
                     </span>
