@@ -1,4 +1,3 @@
-// src/components/BarcodeScanner.tsx
 import React, { useState } from 'react';
 import { useZxing } from 'react-zxing';
 import { fetchProductByBarcode, ScannedFood } from '../services/foodApi';
@@ -9,38 +8,59 @@ interface Props {
 }
 
 const BarcodeScanner: React.FC<Props> = ({ onResult, onClose }) => {
+  // 顯示在畫面上的狀態文字
   const [status, setStatus] = useState<string>("請將條碼對準鏡頭...");
   const [isScanning, setIsScanning] = useState(true);
 
   const { ref } = useZxing({
+    // 移除 hints 限制，讓它能掃描所有類型條碼，提高成功率
     onDecodeResult: async (result) => {
       if (!isScanning) return;
       
       const code = result.getText();
-      setIsScanning(false); // 暫停掃描避免重複觸發
-      setStatus(`讀取到條碼：${code}，查詢中...`);
+      console.log("📸 掃描成功！條碼內容：", code); // <--- 在 Console 顯示
+      
+      setIsScanning(false); // 暫停掃描
+      setStatus(`讀取到條碼：${code}，查詢資料庫中...`);
 
-      // 1. 呼叫 API
-      const food = await fetchProductByBarcode(code);
+      try {
+        // 呼叫 API
+        const food = await fetchProductByBarcode(code);
+        console.log("📦 API 回傳結果：", food); // <--- 在 Console 顯示
 
-      if (food) {
-        onResult(food); // 成功回傳
-      } else {
-        setStatus(`找不到條碼 ${code} 的資料`);
-        // 這裡未來可以加入「手動建立」的邏輯
-        setTimeout(() => {
-            setIsScanning(true); // 3秒後重新允許掃描
+        if (food) {
+          setStatus(`成功！找到：${food.name}`);
+          // 延遲一下讓使用者看到成功訊息，再關閉
+          setTimeout(() => {
+             onResult(food);
+          }, 500);
+        } else {
+          setStatus(`❌ 資料庫找不到條碼 ${code}`);
+          console.warn("找不到商品");
+          
+          // 3秒後重新允許掃描
+          setTimeout(() => {
+            setIsScanning(true); 
             setStatus("請將條碼對準鏡頭...");
-        }, 3000);
+          }, 3000);
+        }
+      } catch (err) {
+        console.error("API 發生錯誤", err);
+        setStatus("查詢發生錯誤，請重試");
+        setTimeout(() => setIsScanning(true), 3000);
       }
     },
-    // 設定限制，只讀取 EAN-13 (一般商品) 與 UPC (進口商品) 以提升準確度
-    hints: new Map([['POSSIBLE_FORMATS', ['EAN_13', 'UPC_A', 'UPC_E']]]) 
+    onError: (err) => {
+      // 忽略單純的「未發現條碼」錯誤，避免 console 被洗版
+      if (err.name !== 'NotFoundException') {
+         console.log("Scanner error:", err);
+      }
+    }
   });
 
   return (
-    <div style={styles.overlay}>
-      <div style={styles.modal}>
+    <div style={styles.overlay} onClick={onClose}>
+      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div style={styles.header}>
             <span style={styles.title}>掃描食物條碼</span>
             <button onClick={onClose} style={styles.closeBtn}>✕</button>
@@ -48,20 +68,28 @@ const BarcodeScanner: React.FC<Props> = ({ onResult, onClose }) => {
         
         <div style={styles.cameraContainer}>
             <video ref={ref} style={styles.video} />
+            {/* 掃描紅線視覺效果 */}
             <div style={styles.scanLine} />
         </div>
 
-        <p style={styles.status}>{status}</p>
+        <p style={{
+            marginTop: '15px', 
+            color: status.includes('❌') ? 'red' : '#1f2937', 
+            fontSize: '1rem',
+            fontWeight: 'bold',
+            padding: '0 10px'
+        }}>
+            {status}
+        </p>
       </div>
     </div>
   );
 };
 
-// 簡單的 CSS-in-JS 樣式 (符合你的品牌色)
 const styles: { [key: string]: React.CSSProperties } = {
   overlay: {
     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 1000,
+    backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 9999, // 確保最上層
     display: 'flex', alignItems: 'center', justifyContent: 'center'
   },
   modal: {
@@ -87,11 +115,8 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   scanLine: {
     position: 'absolute', top: '50%', left: '10%', right: '10%', height: '2px',
-    backgroundColor: '#97d0ba', boxShadow: '0 0 4px #97d0ba',
+    backgroundColor: 'red', boxShadow: '0 0 4px red',
     transform: 'translateY(-50%)'
-  },
-  status: {
-    marginTop: '15px', color: '#1f2937', fontSize: '0.9rem'
   }
 };
 
