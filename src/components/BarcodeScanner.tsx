@@ -1,4 +1,3 @@
-// src/components/BarcodeScanner.tsx
 import React, { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { fetchProductByBarcode, ScannedFood } from '../services/foodApi';
@@ -9,26 +8,35 @@ interface Props {
 }
 
 const BarcodeScanner: React.FC<Props> = ({ onResult, onClose }) => {
-  const [status, setStatus] = useState("正在啟動相機...");
-  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const [status, setStatus] = useState("相機啟動中...");
+  // 1. 使用時間戳記產生絕對唯一的 ID，避免 React 快速重刷時 ID 重複
+  const scannerId = useRef(`scanner-${Date.now()}`).current;
   
-  // 🟢 關鍵修正：使用 ref 來追蹤「是否真的啟動完成」
-  // isRunning: 意圖啟動
-  // isReadyToStop: 真正啟動完成，可以被停止
-  const isReadyToStop = useRef(false);
+  // 2. 用來追蹤「元件是否還掛載在畫面上」
+  const isMounted = useRef(true);
+  
+  // 3. 用來存放掃描器實體
+  const scannerRef = useRef<Html5Qrcode | null>(null);
 
   useEffect(() => {
-    // 1. 初始化
-    const html5QrCode = new Html5Qrcode("reader");
-    scannerRef.current = html5QrCode;
-    let isMounted = true; // 確保元件還在才更新狀態
+    isMounted.current = true;
+    let startPromise: Promise<void> | null = null;
 
-    const startScanner = async () => {
+    // 定義核心啟動邏輯
+    const initScanner = async () => {
+        // 雙重確認 DOM 元素存在
+        if (!document.getElementById(scannerId)) {
+            if (isMounted.current) setStatus("等待相機介面...");
+            return;
+        }
+
+        // 建立實體
+        const html5QrCode = new Html5Qrcode(scannerId);
+        scannerRef.current = html5QrCode;
+
         try {
-            console.log("📷 正在請求相機權限...");
-            // 注意：這裡不設 isReadyToStop，因為還沒好
-            
-            await html5QrCode.start(
+            // 儲存這個 Promise，讓 cleanup function 可以等待它完成
+            startPromise = html5QrCode.start(
                 { facingMode: "environment" },
                 {
                     fps: 10,
@@ -40,92 +48,94 @@ const BarcodeScanner: React.FC<Props> = ({ onResult, onClose }) => {
                         Html5QrcodeSupportedFormats.QR_CODE
                     ] 
                 },
-                async (decodedText) => {
-                    // --- 成功掃描 ---
-                    if (!isMounted) return;
-                    console.log("🔥 掃描成功：", decodedText);
-                    
-                    // 暫停掃描
-                    try {
-                       html5QrCode.pause(); 
-                    } catch (e) { /* 忽略暫停錯誤 */ }
-
-                    setStatus(`✨ 讀取到：${decodedText}，查詢中...`);
-
-                    try {
-                        const food = await fetchProductByBarcode(decodedText);
-                        if (!isMounted) return;
-
-                        if (food) {
-                            setStatus(`✅ 找到：${food.name}`);
-                            setTimeout(async () => {
-                                // 停止並回傳
-                                try {
-                                    if (html5QrCode.isScanning) {
-                                       await html5QrCode.stop();
-                                       html5QrCode.clear();
-                                    }
-                                } catch (e) { console.warn("停止失敗", e); }
-                                onResult(food); 
-                            }, 500);
-                        } else {
-                            setStatus(`❌ 無此商品 (${decodedText})`);
-                            setTimeout(() => {
-                                if (isMounted) {
-                                    setStatus("請對準下一個條碼...");
-                                    try { html5QrCode.resume(); } catch(e){}
-                                }
-                            }, 2000);
-                        }
-                    } catch (err) {
-                        setStatus("網路錯誤");
-                        try { html5QrCode.resume(); } catch(e){}
-                    }
+                (decodedText) => {
+                    // --- 掃描成功 ---
+                    if (!isMounted.current) return;
+                    handleScan(decodedText, html5QrCode);
                 },
                 (errorMessage) => {
-                    // 忽略掃描過程雜訊
+                    // 忽略掃描雜訊
                 }
             );
 
-            // 🟢 關鍵點：await 結束後，才標記為「可停止」
-            if (isMounted) {
-                isReadyToStop.current = true;
-                setStatus("相機已啟動，請對準條碼");
+            // 等待啟動完成
+            await startPromise;
+
+            // 啟動完成後，如果發現元件已經被卸載了 (React Strict Mode 常見情況)
+            // 就立刻關閉它
+            if (!isMounted.current) {
+                await html5QrCode.stop();
+                html5QrCode.clear();
             } else {
-                // 如果啟動完成時元件已經被卸載了，立刻停止
-                try {
-                    await html5QrCode.stop();
-                    html5QrCode.clear();
-                } catch (e) { console.warn("卸載清理錯誤", e); }
+                setStatus("請對準條碼");
             }
 
         } catch (err) {
-            console.error("相機啟動失敗", err);
-            if (isMounted) setStatus("無法啟動相機，請確認權限或刷新頁面");
+            console.warn("相機啟動異常:", err);
+            if (isMounted.current) setStatus("無法啟動 (請確認權限)");
         }
     };
 
-    startScanner();
+    // 稍微延遲 50ms 確保 DOM 已經 render 完畢
+    const timer = setTimeout(initScanner, 50);
 
-    // Cleanup: 元件關閉時停止相機
+    // --- Cleanup Function (最關鍵的修正) ---
     return () => {
-        isMounted = false;
-        if (scannerRef.current) {
-            // 🟢 只有當真正啟動完成後，才呼叫 stop
-            if (isReadyToStop.current) {
-                scannerRef.current.stop().then(() => {
-                    try { scannerRef.current?.clear(); } catch(e){}
-                }).catch(err => {
-                    // 這裡 catch 住錯誤，就不會讓整個 App 崩潰
-                    console.warn("相機停止時發生小錯誤 (可忽略):", err);
-                });
-            } else {
-                // 如果還沒啟動完就關閉，只做 clear，不 call stop 以避免崩潰
-                try { scannerRef.current.clear(); } catch(e){}
-            }
+        isMounted.current = false;
+        clearTimeout(timer);
+
+        const scanner = scannerRef.current;
+        if (scanner) {
+            // 如果 start 正在進行中，我們要等它跑完再 stop
+            // 如果已經跑完，就直接 stop
+            // 如果還沒開始，就不做任何事
+            Promise.resolve(startPromise).then(() => {
+                if (scanner.isScanning) {
+                    return scanner.stop();
+                }
+            }).catch((err) => {
+                // 吃掉所有錯誤，這是防止 "Uncaught" 的最後防線
+                console.log("Cleanup error ignored:", err);
+            }).finally(() => {
+                try { scanner.clear(); } catch(e) {}
+            });
         }
     };
-  }, [onResult]);
+  }, []);
+
+  const handleScan = async (code: string, scanner: Html5Qrcode) => {
+      console.log("🔥 掃描到:", code);
+      setStatus("處理中...");
+
+      // 嘗試暫停，失敗則忽略
+      try { scanner.pause(); } catch(e) {}
+
+      try {
+          const food = await fetchProductByBarcode(code);
+          if (!isMounted.current) return;
+
+          if (food) {
+              setStatus(`✅ 找到：${food.name}`);
+              // 找到後，延遲一下再回傳，讓使用者看清楚結果
+              setTimeout(() => {
+                  onResult(food); 
+              }, 500);
+          } else {
+              setStatus(`❌ 無此商品 (${code})`);
+              setTimeout(() => {
+                  if (isMounted.current) {
+                      setStatus("請對準下一個...");
+                      try { scanner.resume(); } catch(e) {}
+                  }
+              }, 2000);
+          }
+      } catch (err) {
+          if (isMounted.current) {
+              setStatus("網路錯誤，重試中");
+              setTimeout(() => { try{scanner.resume();}catch(e){} }, 2000);
+          }
+      }
+  };
 
   return (
     <div style={styles.overlay}>
@@ -135,12 +145,10 @@ const BarcodeScanner: React.FC<Props> = ({ onResult, onClose }) => {
             <button onClick={onClose} style={styles.closeBtn}>✕</button>
         </div>
         
-        <div id="reader" style={styles.cameraContainer}></div>
+        {/* 動態 ID */}
+        <div id={scannerId} style={styles.cameraContainer}></div>
 
         <p style={styles.status}>{status}</p>
-        <p style={{fontSize: '12px', color: '#666', marginTop: '5px'}}>
-           💡 支援：EAN-13, UPC, QR Code
-        </p>
       </div>
     </div>
   );
@@ -168,10 +176,11 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   cameraContainer: {
     width: '100%', minHeight: '300px',
-    backgroundColor: '#000', borderRadius: '8px', overflow: 'hidden'
+    backgroundColor: '#000', borderRadius: '8px', overflow: 'hidden',
+    position: 'relative'
   },
   status: {
-    marginTop: '15px', color: '#333', fontWeight: 'bold'
+    marginTop: '15px', color: '#333', fontWeight: 'bold', minHeight: '24px'
   }
 };
 

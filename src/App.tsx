@@ -1219,7 +1219,8 @@ const COMMON_EXERCISES = [
     };
 
 
-  
+  // 🟢 新增：用來暫存掃描到的 100g 原始資料，作為計算基準
+const [scannedBaseData, setScannedBaseData] = useState<ScannedFood | null>(null);
 
 // 🆕 份量彈窗專用的 State
     const [showServingsModal, setShowServingsModal] = useState(false);
@@ -1363,34 +1364,55 @@ useEffect(() => {
 const [showScanner, setShowScanner] = useState(false);
 
 // 🟢 新增：處理掃描結果的函式
+// 修改這個函式
 const handleScanResult = (food: ScannedFood) => {
-  // 1. 填入名稱
   setFoodName(food.name);
   
-  // 2. 設定為「其他類」模式，這樣才能手動帶入 P/C/F
+  // 🟢 新增：將原始資料存起來
+  setScannedBaseData(food);
+
   setFallbackType('其他類');
-  
-  // 3. 預設份量：通常包裝食品以 1 份或 100g 為主
   setFallbackServings('1');
   
-  // 4. 設定「一份」的定義 (預設 100g，因為 API 通常回傳每 100g 數值)
+  // 預設先填入 100g 的數值
   setFallbackQty('100'); 
   setFallbackUnitLabel('g');
 
-  // 5. 填入營養素 (轉為字串)
   setFallbackProtPerServ(String(food.protein));
   setFallbackCarbPerServ(String(food.carb));
   setFallbackFatPerServ(String(food.fat));
   
-  // 6. 清除其他搜尋狀態，避免衝突
+  // 清除其他狀態
   setSelectedUnitFood(null);
   setSelectedFoodDbRow(null);
+  setEditingMealId(null); // 確保不是在編輯模式
   
-  // 7. 關閉掃描器並提示
   setShowScanner(false);
   showToast('success', `已載入：${food.name}`);
 };
     
+// 🟢 新增：當「重量」改變時，如果是掃描的食物，自動依比例計算營養素
+useEffect(() => {
+  // 只有當「有掃描基準資料」且「有輸入重量」時才執行
+  if (scannedBaseData && fallbackQty) {
+    const weight = parseFloat(fallbackQty);
+    
+    // 避免輸入非數字或負數時出錯
+    if (!isNaN(weight) && weight > 0) {
+      // 計算比例 (例如輸入 38g，比例就是 38/100 = 0.38)
+      const ratio = weight / 100;
+      
+      // 格式化函式：保留一位小數
+      const fmt = (val: number) => (val * ratio).toFixed(1);
+
+      // 自動更新 P/C/F 欄位
+      setFallbackProtPerServ(fmt(scannedBaseData.protein));
+      setFallbackCarbPerServ(fmt(scannedBaseData.carb));
+      setFallbackFatPerServ(fmt(scannedBaseData.fat));
+    }
+  }
+}, [fallbackQty, scannedBaseData]); // 監聽這兩個變數
+
     const recentMealsForQuickAdd = useMemo(() => {
     if (!meals.length) return [] as MealEntry[];
 
@@ -2444,6 +2466,8 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
         setSelectedUnitFood(null);
         setSelectedFoodDbRow(null);
         setEditingMealId(null);
+        // 🟢 新增：一旦使用者手動打字，就視為放棄掃描的資料，停止自動連動
+    setScannedBaseData(null);
       }}
       placeholder="輸入關鍵字 (例: 雞蛋, 雞胸肉)..."
       name="foodSearchQuery"
