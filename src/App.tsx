@@ -4909,13 +4909,7 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
         }}
       />
 
-{/* 🟢 新增：掛載掃描器 Modal */}
-{showScanner && (
-  <BarcodeScanner 
-    onClose={() => setShowScanner(false)} 
-    onResult={handleScanResult} 
-  />
-)}
+
 
 </div>
 )}
@@ -4964,6 +4958,14 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
       儲存為常用組合
     </button>
   </div>
+)}
+
+{/* 🟢 新增：掛載掃描器 Modal */}
+{showScanner && (
+  <BarcodeScanner 
+    onClose={() => setShowScanner(false)} 
+    onResult={handleScanResult} 
+  />
 )}
 
       </div>
