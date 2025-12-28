@@ -4,6 +4,10 @@ import dayjs from 'dayjs';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { VisualPortionPicker } from './VisualPortionPicker';
 
+// 🟢 新增：引入掃描器元件與型別
+import BarcodeScanner from './components/BarcodeScanner';
+import { ScannedFood } from './services/foodApi';
+
 import femalePng from './assets/female.png'; 
 import malePng from './assets/male.png';
 
@@ -1354,6 +1358,38 @@ useEffect(() => {
     
     // 🆕 飲食輸入模式（快速搜尋 vs 手掌法）
     const [foodInputMode, setFoodInputMode] = useState<'search' | 'palm'>('search');
+
+    // 🟢 新增：控制掃描器開關
+const [showScanner, setShowScanner] = useState(false);
+
+// 🟢 新增：處理掃描結果的函式
+const handleScanResult = (food: ScannedFood) => {
+  // 1. 填入名稱
+  setFoodName(food.name);
+  
+  // 2. 設定為「其他類」模式，這樣才能手動帶入 P/C/F
+  setFallbackType('其他類');
+  
+  // 3. 預設份量：通常包裝食品以 1 份或 100g 為主
+  setFallbackServings('1');
+  
+  // 4. 設定「一份」的定義 (預設 100g，因為 API 通常回傳每 100g 數值)
+  setFallbackQty('100'); 
+  setFallbackUnitLabel('g');
+
+  // 5. 填入營養素 (轉為字串)
+  setFallbackProtPerServ(String(food.protein));
+  setFallbackCarbPerServ(String(food.carb));
+  setFallbackFatPerServ(String(food.fat));
+  
+  // 6. 清除其他搜尋狀態，避免衝突
+  setSelectedUnitFood(null);
+  setSelectedFoodDbRow(null);
+  
+  // 7. 關閉掃描器並提示
+  setShowScanner(false);
+  showToast('success', `已載入：${food.name}`);
+};
     
     const recentMealsForQuickAdd = useMemo(() => {
     if (!meals.length) return [] as MealEntry[];
@@ -2383,10 +2419,11 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
             {/* 🆕 快速搜尋模式 */}
             {foodInputMode === 'search' && (
             <div className="form-section">
-              {/* 貼上這一段新的搜尋框程式碼 */}
-
-  <div ref={searchTopRef} style={{ marginBottom: 0 }}>
-  <div style={{ position: 'relative' }}>
+             {/* 🟢 修改：將原本包搜尋框的 div 改為 Flex 佈局，放入掃描按鈕 */}
+    <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 0 }}>
+      
+      {/* 這是原本的搜尋框容器 (加了 flex: 1 讓它佔據剩餘空間) */}
+      <div ref={searchTopRef} style={{ flex: 1, position: 'relative' }}>
     {/* 左側搜尋 Icon */}
     <div style={{ 
       position: 'absolute', 
@@ -2461,6 +2498,28 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
       </button>
     )}
   </div>
+{/* 🟢 新增：掃描按鈕 */}
+      <button
+        type="button"
+        onClick={() => setShowScanner(true)}
+        style={{
+          height: 46, // 與 Input 高度差不多
+          width: 46,
+          borderRadius: '50%',
+          border: '1px solid #dde7e2',
+          background: '#fff',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          fontSize: '20px',
+          boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+          flexShrink: 0 // 防止被擠壓
+        }}
+      >
+        📸
+      </button>
+
 </div>
 {/* =========================================================
                 🔴 補回遺失區塊：已選中 Unit Map 食物 (顯示數量輸入按鈕)
@@ -4849,6 +4908,15 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
           if (val) setSelectedMetRow(null); // 手動輸入時取消列表選取
         }}
       />
+
+{/* 🟢 新增：掛載掃描器 Modal */}
+{showScanner && (
+  <BarcodeScanner 
+    onClose={() => setShowScanner(false)} 
+    onResult={handleScanResult} 
+  />
+)}
+
 </div>
 )}
 
