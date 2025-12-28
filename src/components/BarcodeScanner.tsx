@@ -1,7 +1,6 @@
 // src/components/BarcodeScanner.tsx
 import React, { useState } from 'react';
 import { useZxing } from 'react-zxing';
-import { BarcodeFormat } from '@zxing/library'; // 確保有安裝 @zxing/library (react-zxing 的依賴)
 import { fetchProductByBarcode, ScannedFood } from '../services/foodApi';
 
 interface Props {
@@ -10,52 +9,59 @@ interface Props {
 }
 
 const BarcodeScanner: React.FC<Props> = ({ onResult, onClose }) => {
-  const [status, setStatus] = useState<string>("請將條碼置於框線內，保持穩定...");
+  const [status, setStatus] = useState<string>("相機啟動中，請對準條碼...");
   const [isScanning, setIsScanning] = useState(true);
 
   const { ref } = useZxing({
-    // 關鍵修正 1：鎖定只掃描常見的食品條碼格式 (EAN-13, UPC)，大幅提升準確度
-    hints: new Map([
-      ['POSSIBLE_FORMATS', [BarcodeFormat.EAN_13, BarcodeFormat.UPC_A, BarcodeFormat.UPC_E]]
-    ]),
-    // 關鍵修正 2：強制使用高解析度與後鏡頭
+    // 🟢 修改 1：不設定 hints，讓它掃描所有類型的條碼 (QR Code 也會掃到，用來測試相機有沒有在工作)
+    
+    // 🟢 修改 2：簡化相機設定，使用預設值，提高相容性
     constraints: {
       video: {
-        facingMode: 'environment', // 強制後鏡頭
-        width: { min: 640, ideal: 1280, max: 1920 }, // 提高解析度
-        height: { min: 480, ideal: 720, max: 1080 },
-        // @ts-ignore: focusMode 某些瀏覽器支援但 TS 可能沒定義
-        focusMode: 'continuous' 
+        facingMode: 'environment' // 後鏡頭
       }
     },
-    timeBetweenDecodingAttempts: 300, // 每 0.3 秒解碼一次，避免手機過熱
+    
+    // 設定解碼間隔 (毫秒)，太快會耗電，太慢會覺得頓
+    timeBetweenDecodingAttempts: 300,
+
     onDecodeResult: async (result) => {
       if (!isScanning) return;
       
       const code = result.getText();
-      setIsScanning(false); // 暫停掃描
-      setStatus(`✨ 掃描成功！條碼：${code}`);
+      // 只要掃到任何東西 (包含 QR Code)，先顯示出來，確認功能正常
+      console.log("📸 掃到東西了！內容：", code);
+      
+      // 過濾：我們只處理數字 (商品條碼通常是純數字)
+      // 這樣可以避免掃到發票 QR Code 跳出錯誤
+      if (!/^\d+$/.test(code)) {
+        setStatus(`⚠️ 掃到非商品條碼 (${code})，請對準食品包裝...`);
+        return;
+      }
+
+      setIsScanning(false);
+      setStatus(`✨ 讀取成功！條碼：${code}`);
 
       try {
         const food = await fetchProductByBarcode(code);
         if (food) {
           setStatus(`✅ 找到商品：${food.name}`);
-          setTimeout(() => onResult(food), 500); // 延遲一下讓用戶看到成功訊息
+          setTimeout(() => onResult(food), 500);
         } else {
           setStatus(`❌ 資料庫無此商品 (${code})`);
-          // 2秒後重啟掃描
           setTimeout(() => {
             setIsScanning(true);
-            setStatus("請將條碼置於框線內...");
+            setStatus("請對準下一個商品...");
           }, 2000);
         }
       } catch (err) {
-        setStatus("網路查詢失敗，請稍後再試");
+        setStatus("網路錯誤，請重試");
         setTimeout(() => setIsScanning(true), 2000);
       }
     },
     onError: (err) => {
-        // 忽略雜訊錯誤
+      // 這裡會一直觸發是正常的 (代表每一幀畫面都沒掃到條碼)
+      // 如果完全沒反應，可以打開 F12 看這裡有沒有報錯
     }
   });
 
@@ -63,21 +69,20 @@ const BarcodeScanner: React.FC<Props> = ({ onResult, onClose }) => {
     <div style={styles.overlay} onClick={onClose}>
       <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div style={styles.header}>
-            <span style={styles.title}>掃描食物條碼</span>
+            <span style={styles.title}>掃描測試模式</span>
             <button onClick={onClose} style={styles.closeBtn}>✕</button>
         </div>
         
         <div style={styles.cameraContainer}>
             <video ref={ref} style={styles.video} />
-            {/* 掃描紅線：改成掃描框，視覺上比較好對準 */}
-            <div style={styles.scanBox}>
-               <div style={styles.scanLine} />
-            </div>
+            {/* 掃描框框 */}
+            <div style={styles.scanBox} />
+            <div style={styles.scanLine} />
         </div>
 
         <p style={styles.status}>{status}</p>
-        <p style={{fontSize: '12px', color: '#999', marginTop: '4px'}}>
-          💡 若掃描不到，請前後移動手機調整距離
+        <p style={{fontSize: '13px', color: '#666', marginTop: '8px'}}>
+           💡 測試技巧：請前後移動手機 (距離 15~30 公分)
         </p>
       </div>
     </div>
@@ -104,27 +109,22 @@ const styles: { [key: string]: React.CSSProperties } = {
     background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#999'
   },
   cameraContainer: {
-    position: 'relative', width: '100%', height: '300px', // 加高一點
+    position: 'relative', width: '100%', height: '300px',
     backgroundColor: '#000', borderRadius: '12px', overflow: 'hidden'
   },
   video: {
     width: '100%', height: '100%', objectFit: 'cover'
   },
   scanBox: {
-    position: 'absolute', top: '50%', left: '50%', 
-    transform: 'translate(-50%, -50%)',
-    width: '70%', height: '50%', 
-    border: '2px solid rgba(255,255,255,0.7)', 
-    borderRadius: '8px',
-    boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.5)' // 這會讓框框外變暗，凸顯掃描區
+    position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+    width: '70%', height: '40%', border: '2px solid rgba(255,255,255,0.8)', borderRadius: '8px'
   },
   scanLine: {
-    width: '100%', height: '2px', backgroundColor: 'red',
-    position: 'absolute', top: '50%',
-    boxShadow: '0 0 4px red'
+    position: 'absolute', top: '50%', left: '15%', right: '15%', height: '2px',
+    backgroundColor: 'red', boxShadow: '0 0 4px red'
   },
   status: {
-    marginTop: '15px', color: '#333', fontWeight: 'bold'
+    marginTop: '15px', color: '#333', fontWeight: 'bold', fontSize: '1.1rem'
   }
 };
 
