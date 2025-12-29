@@ -7,6 +7,7 @@ import { VisualPortionPicker } from './VisualPortionPicker';
 // 🟢 新增：引入掃描器元件與型別
 import BarcodeScanner from './components/BarcodeScanner';
 import { ScannedFood } from './services/foodApi';
+import { analyzeImage } from './services/aiService';
 
 import femalePng from './assets/female.png'; 
 import malePng from './assets/male.png';
@@ -528,7 +529,15 @@ function normalizeText(v: unknown): string {
 // - GitHub Pages：                           同樣是 '/ju-smile-app/'
 const APP_BASE_URL = import.meta.env.BASE_URL || '/';
 
-
+// 🟢 新增：將檔案轉為 Base64 DataURL
+function fileToDataURL(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 // 把呼叫傳進來的字串，轉成真正要拿去 fetch 的 URL
 function resolveCsvUrl(input: string): string {
@@ -621,6 +630,8 @@ const InstallGuideWidget: React.FC = () => {
   return (
     <>
       {/* 設定頁中的卡片 */}
+      
+
       <section className="card">
         <h2>安裝到手機主畫面</h2>
         <div className="form-section">
@@ -1142,31 +1153,38 @@ const COMMON_EXERCISES = [
       if (!el) return;
 
       let touchStartX = 0;
-      let touchEndX = 0;
+      let touchCurrentX = 0; // 改個名字比較清楚
 
       const handleTouchStart = (e: TouchEvent) => {
         touchStartX = e.touches[0].clientX;
-        touchEndX = e.touches[0].clientX;
+        touchCurrentX = touchStartX;
+        setRecordsWeekSwipeOffset(0); // 歸零動畫位移
       };
 
       const handleTouchMove = (e: TouchEvent) => {
-        touchEndX = e.touches[0].clientX;
+        touchCurrentX = e.touches[0].clientX;
+        // 🟢 新增：即時更新位移，讓使用者看到滑動效果 (跟首頁一樣)
+        setRecordsWeekSwipeOffset(touchCurrentX - touchStartX);
       };
 
       const handleTouchEnd = () => {
-        const diff = touchStartX - touchEndX;
+        const diff = touchStartX - touchCurrentX; // diff > 0 代表手指往左滑 (想看下一週)
         const threshold = 50;
 
         if (Math.abs(diff) > threshold) {
           if (diff > 0) {
             // 左滑 → 下一週
-            setWeekStart(dayjs(weekStart).add(7, 'day').format('YYYY-MM-DD'));
+            // 🟢 關鍵修正：使用 prev => ... 確保拿到最新的日期，解決閉包舊值問題
+            setWeekStart(prev => dayjs(prev).add(7, 'day').format('YYYY-MM-DD'));
           } else {
             // 右滑 → 上一週
-            setWeekStart(dayjs(weekStart).subtract(7, 'day').format('YYYY-MM-DD'));
+            setWeekStart(prev => dayjs(prev).subtract(7, 'day').format('YYYY-MM-DD'));
           }
         }
-    };
+        
+        // 放手後歸位
+        setRecordsWeekSwipeOffset(0);
+      };
 
       el.addEventListener('touchstart', handleTouchStart, { passive: true });
       el.addEventListener('touchmove', handleTouchMove, { passive: true });
@@ -1177,7 +1195,7 @@ const COMMON_EXERCISES = [
         el.removeEventListener('touchmove', handleTouchMove);
         el.removeEventListener('touchend', handleTouchEnd);
       };
-    }, []);
+    }, []); // 這裡維持空陣列是安全的，因為我們改用了 functional update
 
    const jumpToToday = () => {
         const today = dayjs().format('YYYY-MM-DD');
@@ -1218,6 +1236,93 @@ const COMMON_EXERCISES = [
       }
     };
 
+    // 🟢 新增：AI 掃描相關狀態
+  const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
+  const aiInputRef = useRef<HTMLInputElement>(null);
+  
+  // 🟢 新增：AI 結果確認視窗狀態
+  const [showAiModal, setShowAiModal] = useState(false);
+  const [aiResult, setAiResult] = useState<any>(null); // 暫存 AI 回傳的結果
+
+  // 🟢 新增：處理圖片選擇與 AI 分析
+  const handleAiImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const key = localStorage.getItem('JU_AI_KEY');
+    if (!key) {
+      showToast('warning', '請先至「我的 > 設定」輸入 AI 金鑰');
+      if (aiInputRef.current) aiInputRef.current.value = '';
+      return;
+    }
+
+    try {
+      setIsAiAnalyzing(true);
+      // 💡 UX 改善：使用 Loading Toast 告知使用者正在處理
+      showToast('info', '🤖 AI 正在分析食物圖片...');
+
+      const base64 = await fileToDataURL(file);
+      const result = await analyzeImage(base64, key);
+
+      // 💡 UX 改善：分析完畢後，不直接填入，而是存入 State 並開啟確認視窗
+      setAiResult({
+        ...result,
+        // 預設給一個 uuid，雖然加入時會產生新的，但這裡先備著
+        id: uuid(), 
+      });
+      setShowAiModal(true);
+      
+      // 注意：這裡不呼叫 showToast('success')，改在 Modal 出現後讓使用者看到結果
+
+    } catch (err: any) {
+      console.error('AI Error:', err);
+      showToast('error', err.message || 'AI 辨識失敗');
+      // 如果失敗，當然要立刻關閉遮罩
+      setIsAiAnalyzing(false);
+    } finally {
+      // 成功的情況：因為 setShowAiModal(true) 已經執行，
+      // React 會在同一次 render cycle 處理這兩個狀態改變。
+      // 但為了保險起見（避免閃爍），我們可以保留 isAiAnalyzing 為 true，
+      // 直到 Modal 出現後，我們不需要手動關閉它嗎？
+      
+      // 💡 修正邏輯：
+      // 在「成功」的路徑裡，我們其實不需要急著 setIsAiAnalyzing(false)。
+      // 我們可以在 setShowAiModal(true) 的同時， setIsAiAnalyzing(false)。
+      // 這樣 React 會批次處理，達成無縫切換。
+      
+      // 只需要確認 catch 裡有關閉它即可。
+      // 所以原本的 finally 寫法其實也是 OK 的（React 18 自動批次更新）。
+      // 這裡只需加上上面的 Overlay UI 即可解決感知問題。
+      
+      setIsAiAnalyzing(false);
+      if (aiInputRef.current) aiInputRef.current.value = '';
+    }
+  };
+
+  // 🟢 新增：使用者在 Modal 點擊「確認加入」後執行的動作
+  const confirmAiResult = (finalData: any) => {
+    // 建立新紀錄
+    const newEntry: MealEntry = {
+      id: uuid(),
+      date: selectedDate,
+      mealType: formMealType,
+      label: finalData.name,
+      kcal: Number(finalData.kcal) || 0,
+      protein: Number(finalData.protein) || 0,
+      carb: Number(finalData.carbs) || 0, // 注意 AI Service 回傳的 key 可能是 carbs
+      fat: Number(finalData.fat) || 0,
+      amountText: `約 ${finalData.estimatedWeight} g`,
+    };
+
+    setMeals((prev) => [...prev, newEntry]);
+    
+    // 清理狀態
+    setShowAiModal(false);
+    setAiResult(null);
+    
+    // 回饋
+    showToast('success', `已加入：${finalData.name}`);
+  };
 
   // 🟢 新增：用來暫存掃描到的 100g 原始資料，作為計算基準
 const [scannedBaseData, setScannedBaseData] = useState<ScannedFood | null>(null);
@@ -2469,7 +2574,7 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
         // 🟢 新增：一旦使用者手動打字，就視為放棄掃描的資料，停止自動連動
     setScannedBaseData(null);
       }}
-      placeholder="輸入關鍵字 (例: 雞蛋, 雞胸肉)..."
+      placeholder="輸入關鍵字 (例如: 雞蛋)"
       name="foodSearchQuery"
       autoComplete="off"
       autoCorrect="off"
@@ -2522,6 +2627,37 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
       </button>
     )}
   </div>
+  {/* 🟢 新增：AI 掃描按鈕 (放在相機按鈕旁邊) */}
+        <input 
+          type="file" 
+          accept="image/*" 
+          ref={aiInputRef} 
+          style={{ display: 'none' }} 
+          onChange={handleAiImageSelect} 
+        />
+        <button
+          type="button"
+          onClick={() => aiInputRef.current?.click()}
+          disabled={isAiAnalyzing}
+          style={{
+            height: 46,
+            width: 46,
+            borderRadius: '50%',
+            border: '1px solid #dde7e2',
+            background: isAiAnalyzing ? '#f3f4f6' : '#fff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: isAiAnalyzing ? 'wait' : 'pointer',
+            fontSize: '20px',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+            flexShrink: 0,
+            marginLeft: 0 // 視需要調整間距
+          }}
+        >
+          {isAiAnalyzing ? '⏳' : '✨'}
+        </button>
+
 {/* 🟢 新增：掃描按鈕 */}
       <button
         type="button"
@@ -4992,6 +5128,153 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
   />
 )}
 
+{/* 🟢 新增：AI 結果確認 Modal */}
+{showAiModal && aiResult && (
+  <div 
+    className="modal-backdrop"
+    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+    onClick={() => setShowAiModal(false)}
+  >
+    <div 
+      className="modal" 
+      onClick={(e) => e.stopPropagation()}
+      style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 360, padding: 20, boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}
+    >
+      <div style={{ textAlign: 'center', marginBottom: 16 }}>
+        <div style={{ fontSize: 40, marginBottom: 8 }}>✨</div>
+        <h3 style={{ margin: 0, color: '#333' }}>AI 辨識結果</h3>
+        <p style={{ fontSize: 13, color: '#666', margin: '4px 0 0' }}>請確認或修改數值，完成後加入紀錄</p>
+      </div>
+
+      <div className="form-section">
+        <label style={{ fontSize: 13, fontWeight: 600, color: '#555' }}>食物名稱</label>
+        <input 
+          type="text" 
+          value={aiResult.name} 
+          onChange={(e) => setAiResult({ ...aiResult, name: e.target.value })}
+          style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #ddd', marginBottom: 12, fontSize: 16 }}
+        />
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+          <div>
+            <label style={{ fontSize: 13, fontWeight: 600, color: '#555' }}>預估重量 (g)</label>
+            <input 
+              type="number" 
+              value={aiResult.estimatedWeight} 
+              onChange={(e) => setAiResult({ ...aiResult, estimatedWeight: e.target.value })}
+              style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 16 }}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: 13, fontWeight: 600, color: '#555' }}>總熱量 (kcal)</label>
+            <input 
+              type="number" 
+              value={aiResult.kcal} 
+              onChange={(e) => setAiResult({ ...aiResult, kcal: e.target.value })}
+              style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 16, fontWeight: 'bold', color: '#5c9c84' }}
+            />
+          </div>
+        </div>
+
+        <div style={{ background: '#f9fafb', padding: 12, borderRadius: 12, border: '1px solid #eee' }}>
+          <label style={{ fontSize: 13, fontWeight: 600, color: '#555', marginBottom: 8, display: 'block' }}>營養素 (g)</label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ flex: 1 }}>
+              <span style={{ fontSize: 12, color: '#d64545' }}>蛋白質</span>
+              <input 
+                type="number" 
+                value={aiResult.protein} 
+                onChange={(e) => setAiResult({ ...aiResult, protein: e.target.value })}
+                style={{ width: '100%', padding: '6px', borderRadius: 6, border: '1px solid #ddd', marginTop: 4 }}
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <span style={{ fontSize: 12, color: '#e68a3a' }}>碳水</span>
+              <input 
+                type="number" 
+                value={aiResult.carbs} 
+                onChange={(e) => setAiResult({ ...aiResult, carbs: e.target.value })}
+                style={{ width: '100%', padding: '6px', borderRadius: 6, border: '1px solid #ddd', marginTop: 4 }}
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <span style={{ fontSize: 12, color: '#f59e0b' }}>脂肪</span>
+              <input 
+                type="number" 
+                value={aiResult.fat} 
+                onChange={(e) => setAiResult({ ...aiResult, fat: e.target.value })}
+                style={{ width: '100%', padding: '6px', borderRadius: 6, border: '1px solid #ddd', marginTop: 4 }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+        <button 
+          onClick={() => setShowAiModal(false)}
+          style={{ flex: 1, padding: '12px', borderRadius: 12, border: 'none', background: '#f3f4f6', color: '#666', fontWeight: 600, cursor: 'pointer' }}
+        >
+          取消
+        </button>
+        <button 
+          onClick={() => confirmAiResult(aiResult)}
+          style={{ flex: 1, padding: '12px', borderRadius: 12, border: 'none', background: '#5c9c84', color: '#fff', fontWeight: 600, cursor: 'pointer' }}
+        >
+          確認加入
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* 🟢 新增：全螢幕載入遮罩 (Loading Overlay) */}
+{isAiAnalyzing && (
+  <div
+    style={{
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(255, 255, 255, 0.85)', // 白色半透明背景，看起來比較清爽
+      zIndex: 9999, // 確保蓋在最上面
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backdropFilter: 'blur(4px)', // 毛玻璃效果 (支援的手機看起來更有質感)
+    }}
+    onClick={(e) => e.stopPropagation()} // 防止誤觸底部
+  >
+    {/* 注入轉圈圈動畫 */}
+    <style>
+      {`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}
+    </style>
+    
+    {/* 轉圈圈圖示 */}
+    <div
+      style={{
+        width: 50,
+        height: 50,
+        border: '5px solid #e5e7eb',
+        borderTop: '5px solid #5c9c84', // 品牌色
+        borderRadius: '50%',
+        animation: 'spin 1s linear infinite',
+        marginBottom: 20,
+      }}
+    />
+    
+    <h3 style={{ margin: 0, color: '#333', fontSize: 18, fontWeight: 600 }}>
+      AI 正在分析食物...
+    </h3>
+    <p style={{ margin: '8px 0 0', color: '#666', fontSize: 14 }}>
+      請稍候，正在辨識營養成分
+    </p>
+  </div>
+)}
       </div>
     );
   };
@@ -6445,11 +6728,32 @@ useEffect(() => {
 
 type SettingsPageProps = {
   onOpenAbout: () => void;
-  onOpenNumericKeyboard: (target: string, currentValue: string) => void; // 新增
+  onOpenNumericKeyboard: (target: string, currentValue: string) => void; 
 };
 
 const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout, onOpenNumericKeyboard }) => {
   const { showToast } = React.useContext(ToastContext);
+
+  // 🟢 新增：AI Key 狀態管理
+  const [apiKey, setApiKey] = useState('');
+  const [showApiGuide, setShowApiGuide] = useState(false);
+  
+  // 載入儲存的 Key
+  useEffect(() => {
+    const savedKey = localStorage.getItem('JU_AI_KEY');
+    if (savedKey) setApiKey(savedKey);
+  }, []);
+
+  // 儲存 Key
+  const handleSaveApiKey = () => {
+    if (!apiKey.trim()) {
+      showToast('warning', 'API Key 不能為空');
+      return;
+    }
+    localStorage.setItem('JU_AI_KEY', apiKey.trim());
+    showToast('success', 'AI 金鑰已儲存');
+  };
+
   const [localSettings, setLocalSettings] = useState<Settings>(settings);
 
   const [showGuideModal, setShowGuideModal] = useState(false);
@@ -6659,7 +6963,7 @@ function saveNumberInput(value: string) {
       }}>
         {/* 左側：文字區 */}
         <div>
-          <h1 style={{ margin: 0, fontSize: '28px', color: '#1f2937' }}>我的設定</h1>
+          <h1 style={{ margin: 0, fontSize: '22px', color: '#1f2937' }}>我的設定</h1>
           <p style={{ margin: '4px 0 0', color: '#6b7280', fontSize: '14px' }}>
             打造專屬於你的健康計畫
           </p>
@@ -6677,6 +6981,44 @@ function saveNumberInput(value: string) {
           }} 
         />
       </div>
+      <section className="card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <h3 style={{ margin: 0, fontSize: '18px', display: 'flex', alignItems: 'center', gap: 6 }}>
+              🤖 AI 智慧辨識設定
+            </h3>
+            {/* 🆕 教學按鈕 */}
+            <button 
+              onClick={() => setShowApiGuide(true)}
+              style={{ fontSize: 13, color: '#5c9c84', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+            >
+              如何申請 Key?
+            </button>
+          </div>
+
+          <div className="form-section">
+            <label>Google Gemini API Key</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="請輸入您的 API Key"
+                style={{ flex: 1 }}
+              />
+              <button 
+                type="button" 
+                onClick={handleSaveApiKey}
+                className="primary"
+                style={{ width: 'auto', padding: '0 16px' }}
+              >
+                儲存
+              </button>
+            </div>
+            <p style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+              需申請 Key 才能使用照片辨識功能。
+            </p>
+          </div>
+      </section>
 
       {/* 第一組：核心計畫 */}
       <div className="settings-group-title">📅 減重與核心計畫</div>
@@ -6928,6 +7270,33 @@ function saveNumberInput(value: string) {
         </div>
       </div>
 
+      {/* 🟢 新增：API 申請教學 Modal */}
+      {showApiGuide && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div onClick={() => setShowApiGuide(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(2px)' }} />
+          <div style={{ position: 'relative', background: '#fff', borderRadius: 16, padding: 24, width: '100%', maxWidth: 340, maxHeight: '80vh', overflowY: 'auto', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
+            <h3 style={{ marginTop: 0, fontSize: 18, color: '#1f2937' }}>如何申請 API Key？</h3>
+            <p style={{ fontSize: 14, color: '#6b7280', lineHeight: 1.6 }}>為了精準辨識照片熱量，我們使用 Google 的 AI 技術。您可以免費申請測試額度：</p>
+            
+            <div style={{ marginTop: 16 }}>
+              <h4 style={{ fontSize: 15, margin: '0 0 8px 0', color: '#5c9c84' }}>申請步驟：</h4>
+              <ol style={{ paddingLeft: 20, margin: 0, fontSize: 14, color: '#444', lineHeight: 1.6 }}>
+                <li>前往 <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" style={{color: '#0369a1', fontWeight: 600}}>Google AI Studio</a></li>
+                <li>登入 Google 帳號</li>
+                <li>點擊按鈕 <b>"Create API Key"</b></li>
+                <li>[Name your key]任意輸入名稱</li>
+                <li>選擇Create project</li>
+                <li>點擊Create key</li>
+                <li>複製產生的 Key</li>
+                <li>回到此 App 貼上並儲存</li>
+              </ol>
+            </div>
+            
+            <button onClick={() => setShowApiGuide(false)} style={{ marginTop: 24, width: '100%', padding: '12px', background: '#1f2937', color: '#fff', border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 600 }}>我瞭解了</button>
+          </div>
+        </div>
+      )}
+
       {/* ================= MODALS 保持原樣 ================= */}
 
       {/* 編輯常用組合彈窗 */}
@@ -7050,9 +7419,10 @@ function saveNumberInput(value: string) {
         
         <h3 style={{ color: 'var(--mint-dark)', marginTop: 0, fontSize: 16 }}>🔍 快速搜尋模式</h3>
         <ul style={{ paddingLeft: 20, margin: '8px 0 20px' }}>
-          <li><b>常用組合</b>：搜尋框下方顯示，點擊 <b>+</b> 一鍵加入。</li>
-          <li><b>食物搜尋</b>：輸入名稱（如「雞胸肉」），選取結果並填入份量。</li>
-          <li><b>類別估算</b>：若無資料，切換「類別/估算模式」，選食物類型輸入份數。</li>
+          <li><b>✨ AI 智慧辨識</b>：點擊搜尋框旁的星星按鈕，拍照自動分析營養素。</li>
+          <li><b>📸 條碼掃描</b>：點擊相機按鈕，掃描包裝食品條碼。</li>
+          <li><b>🚀 快速加入</b>：搜尋框下方可切換「🕒 最近紀錄」或「⭐ 常用組合」，一鍵加入。</li>
+          <li><b>🔍 關鍵字搜尋</b>：輸入名稱（如「拿鐵」），搜尋歷史紀錄、資料庫或進行類別估算。</li>
         </ul>
 
         <h3 style={{ color: 'var(--mint-dark)', fontSize: 16, display: 'flex', alignItems: 'center' }}>
@@ -7119,115 +7489,126 @@ function saveNumberInput(value: string) {
 };
 
  // ======== Plan 頁 (最終完整版：含積極減重 + 大字體選單) ========
-  const PlanPage: React.FC = () => {
-    const { showToast } = React.useContext(ToastContext);
+const PlanPage: React.FC = () => {
+  const { showToast } = React.useContext(ToastContext);
 
-    // 1. 初始化 State
-    const [form, setForm] = useState(() => {
-      try {
-        return JSON.parse(localStorage.getItem('JU_PLAN_FORM') || '{}');
-      } catch {
-        return {};
+  // 1. 初始化 State
+  const [form, setForm] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('JU_PLAN_FORM') || '{}');
+    } catch {
+      return {};
+    }
+  });
+
+  const [gender, setGender] = useState<string>(form.gender || 'female');
+  const [birthDate, setBirthDate] = useState<string>(form.birthDate || '');
+  const [age, setAge] = useState<number>(Number(form.age) || 30);
+  const [height, setHeight] = useState<string>(form.height ? String(form.height) : '165');
+  const [weight, setWeight] = useState<string>(form.weight ? String(form.weight) : '60');
+  const [activity, setActivity] = useState<string>(form.activity || 'light');
+  const [selectedGoal, setSelectedGoal] = useState<number | null>(form.selectedGoal ? Number(form.selectedGoal) : null);
+
+  // 控制活動量選單開關
+  const [showActivityModal, setShowActivityModal] = useState(false);
+
+  // 活動量選項
+  const activityOptions = [
+    { value: 'sedentary', label: '😴 久坐', desc: '幾乎不運動 / 辦公室工作' },
+    { value: 'light',     label: '🚶 輕量活動', desc: '每週運動 1-3 天 / 輕鬆散步' },
+    { value: 'moderate',  label: '🏃 中等活動', desc: '每週運動 3-5 天 / 中強度運動' },
+    { value: 'active',    label: '🏋️ 活躍', desc: '每週運動 6-7 天 / 體力工作' },
+    { value: 'very',      label: '🔥 非常活躍', desc: '每天高強度訓練 / 職業運動員' },
+  ];
+  const currentActivityLabel = activityOptions.find(opt => opt.value === activity)?.label || '請選擇';
+
+  // 生日自動算年齡
+  useEffect(() => {
+    if (birthDate) {
+      const birth = new Date(birthDate);
+      const today = new Date();
+      let calculatedAge = today.getFullYear() - birth.getFullYear();
+      const m = today.getMonth() - birth.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+        calculatedAge--;
       }
-    });
+      setAge(calculatedAge);
+    }
+  }, [birthDate]);
 
-    const [gender, setGender] = useState<string>(form.gender || 'female');
-    const [birthDate, setBirthDate] = useState<string>(form.birthDate || '');
-    const [age, setAge] = useState<number>(Number(form.age) || 30);
-    const [height, setHeight] = useState<string>(form.height ? String(form.height) : '165');
-    const [weight, setWeight] = useState<string>(form.weight ? String(form.weight) : '60');
-    const [activity, setActivity] = useState<string>(form.activity || 'light');
-    const [selectedGoal, setSelectedGoal] = useState<number | null>(form.selectedGoal ? Number(form.selectedGoal) : null);
+  // 儲存
+  useEffect(() => {
+    const newForm = { gender, birthDate, age, height, weight, activity, selectedGoal };
+    localStorage.setItem('JU_PLAN_FORM', JSON.stringify(newForm));
+  }, [gender, birthDate, age, height, weight, activity, selectedGoal]);
 
-    // 控制活動量選單開關
-    const [showActivityModal, setShowActivityModal] = useState(false);
+  // 計算
+  const bmr = useMemo(() => {
+    const w = Number(weight) || 0;
+    const h = Number(height) || 0;
+    const a = Number(age) || 0;
+    if (!w || !h || !a) return 0;
+    return Math.round(
+      gender === 'male'
+        ? 10 * w + 6.25 * h - 5 * a + 5
+        : 10 * w + 6.25 * h - 5 * a - 161
+    );
+  }, [gender, weight, height, age]);
 
-    // 活動量選項
-    const activityOptions = [
-      { value: 'sedentary', label: '😴 久坐', desc: '幾乎不運動 / 辦公室工作' },
-      { value: 'light',     label: '🚶 輕量活動', desc: '每週運動 1-3 天 / 輕鬆散步' },
-      { value: 'moderate',  label: '🏃 中等活動', desc: '每週運動 3-5 天 / 中強度運動' },
-      { value: 'active',    label: '🏋️ 活躍', desc: '每週運動 6-7 天 / 體力工作' },
-      { value: 'very',      label: '🔥 非常活躍', desc: '每天高強度訓練 / 職業運動員' },
-    ];
-    const currentActivityLabel = activityOptions.find(opt => opt.value === activity)?.label || '請選擇';
+  const tdee = useMemo(() => {
+    if (!bmr || !activity) return 0;
+    const mult: Record<string, number> = {
+      sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725, very: 1.9,
+    };
+    return Math.round(bmr * (mult[activity] || 1.2));
+  }, [bmr, activity]);
 
-    // 生日自動算年齡
-    useEffect(() => {
-      if (birthDate) {
-        const birth = new Date(birthDate);
-        const today = new Date();
-        let calculatedAge = today.getFullYear() - birth.getFullYear();
-        const m = today.getMonth() - birth.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-          calculatedAge--;
-        }
-        setAge(calculatedAge);
-      }
-    }, [birthDate]);
-
-    // 儲存
-    useEffect(() => {
-      const newForm = { gender, birthDate, age, height, weight, activity, selectedGoal };
-      localStorage.setItem('JU_PLAN_FORM', JSON.stringify(newForm));
-    }, [gender, birthDate, age, height, weight, activity, selectedGoal]);
-
-    // 計算
-    const bmr = useMemo(() => {
-      const w = Number(weight) || 0;
-      const h = Number(height) || 0;
-      const a = Number(age) || 0;
-      if (!w || !h || !a) return 0;
-      return Math.round(
-        gender === 'male'
-          ? 10 * w + 6.25 * h - 5 * a + 5
-          : 10 * w + 6.25 * h - 5 * a - 161
-      );
-    }, [gender, weight, height, age]);
-
-    const tdee = useMemo(() => {
-      if (!bmr || !activity) return 0;
-      const mult: Record<string, number> = {
-        sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725, very: 1.9,
-      };
-      return Math.round(bmr * (mult[activity] || 1.2));
-    }, [bmr, activity]);
-
-    const GoalCard: React.FC<{ title: string; kcal: number; tip?: string; warn?: string; recommended?: boolean; }> =
-      ({ title, kcal, tip, warn, recommended }) => (
-        <div
-          className="card"
-          style={{
-            border: selectedGoal === kcal ? '2px solid #5c9c84' : '1px solid var(--line)',
-            background: recommended ? '#fafffc' : '#fff',
-            cursor: 'pointer',
-            marginBottom: 10,
-            padding: '12px 16px'
-          }}
-          onClick={() => setSelectedGoal(kcal)}
-        >
-          <div className="meal-header" style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
-            {selectedGoal === kcal && <span className="tag" style={{ marginRight: 8, background: '#5c9c84', color: '#fff', padding: '2px 8px', borderRadius: 12, fontSize: 12 }}>已選</span>}
-            <span className="meal-title" style={{ color: recommended ? 'var(--mint-dark)' : 'var(--text-main)', fontWeight: 600, fontSize: 16 }}>
-              {title}
-            </span>
-            {recommended && <span className="tag" style={{ marginLeft: 'auto', background: '#e6fffa', color: '#5c9c84', padding: '2px 8px', borderRadius: 12, fontSize: 12 }}>推薦</span>}
-          </div>
-          <div className="meal-body">
-            <div className="kcal" style={{ fontSize: 18, fontWeight: 700 }}>{Math.max(0, Math.round(kcal))} <span style={{fontSize:13, fontWeight:400}}>kcal</span></div>
-            {tip && <div className="tip" style={{ fontSize: 13, color: '#666' }}>{tip}</div>}
-            {warn && <div className="warning" style={{ color: '#d64545', fontSize: 12, marginTop: 4 }}>{warn}</div>}
-          </div>
+  const GoalCard: React.FC<{ title: string; kcal: number; tip?: string; warn?: string; recommended?: boolean; }> =
+    ({ title, kcal, tip, warn, recommended }) => (
+      <div
+        className="card"
+        style={{
+          border: selectedGoal === kcal ? '2px solid #5c9c84' : '1px solid var(--line)',
+          background: recommended ? '#fafffc' : '#fff',
+          cursor: 'pointer',
+          marginBottom: 10,
+          padding: '12px 16px'
+        }}
+        onClick={() => setSelectedGoal(kcal)}
+      >
+        <div className="meal-header" style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+          {selectedGoal === kcal && <span className="tag" style={{ marginRight: 8, background: '#5c9c84', color: '#fff', padding: '2px 8px', borderRadius: 12, fontSize: 12 }}>已選</span>}
+          <span className="meal-title" style={{ color: recommended ? 'var(--mint-dark)' : 'var(--text-main)', fontWeight: 600, fontSize: 16 }}>
+            {title}
+          </span>
+          {recommended && <span className="tag" style={{ marginLeft: 'auto', background: '#e6fffa', color: '#5c9c84', padding: '2px 8px', borderRadius: 12, fontSize: 12 }}>推薦</span>}
         </div>
-      );
-
-    return (
-      <div className="page page-plan" style={{ padding: '16px 16px 96px 16px', maxWidth: 600, margin: '0 auto' }}>
-        
-        <div style={{ marginBottom: 16 }}>
-          <h2 style={{ fontSize: 22, marginBottom: 4, color: 'var(--text-main)' }}>個人計畫 Plan</h2>
-          <p style={{ color: '#666', fontSize: 13, margin: 0 }}>設定身體數值，計算每日熱量需求</p>
+        <div className="meal-body">
+          <div className="kcal" style={{ fontSize: 18, fontWeight: 700 }}>{Math.max(0, Math.round(kcal))} <span style={{fontSize:13, fontWeight:400}}>kcal</span></div>
+          {tip && <div className="tip" style={{ fontSize: 13, color: '#666' }}>{tip}</div>}
+          {warn && <div className="warning" style={{ color: '#d64545', fontSize: 12, marginTop: 4 }}>{warn}</div>}
         </div>
+      </div>
+    );
+
+  return (
+    // 外層容器
+    <div className="page page-plan" style={{ paddingBottom: '96px', maxWidth: 600, margin: '0 auto', background: '#f5fbf8', minHeight: '100vh' }}>
+      
+      {/* 標題區塊 */}
+      <div style={{ 
+        padding: '12px 16px 20px', 
+        display: 'flex', 
+        flexDirection: 'column'
+      }}>
+        <h2 style={{ margin: 0, fontSize: '22px', color: '#1f2937' }}>個人計畫 Plan</h2>
+        <p style={{ margin: '4px 0 0', color: '#6b7280', fontSize: '14px' }}>
+          設定身體數值，計算每日熱量需求
+        </p>
+      </div>
+
+      {/* 內容包裝 */}
+      <div style={{ padding: '0 16px' }}>
 
         {/* 基本資料區塊 */}
         <section className="card" style={{ padding: 16, marginBottom: 16, border: '1px solid var(--line)', borderRadius: 16, background: '#fff' }}>
@@ -7317,8 +7698,6 @@ function saveNumberInput(value: string) {
             <GoalCard title="溫和減重" kcal={tdee ? tdee - 300 : 0} tip="每日赤字 -300 (月減 ~1.2kg)" recommended />
             <GoalCard title="標準減重" kcal={tdee ? tdee - 500 : 0} tip="每日赤字 -500 (月減 ~2kg)"
               warn={tdee && (tdee - 500) < bmr ? '低於 BMR，請評估是否過低' : undefined} />
-            
-            {/* 🟢 補回：積極減重選項 */}
             <GoalCard 
               title="積極減重" 
               kcal={tdee ? tdee - 1000 : 0} 
@@ -7359,37 +7738,39 @@ function saveNumberInput(value: string) {
           </div>
         </section>
 
-        {/* 底部滑出選單 (Action Sheet) */}
-        {showActivityModal && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 9999 }}>
-            <div onClick={() => setShowActivityModal(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }} />
-            <div style={{
-              position: 'absolute', bottom: 0, left: 0, right: 0, background: '#fff',
-              borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: '20px 16px 40px 16px', animation: 'slideUp 0.3s ease-out'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <h3 style={{ margin: 0, fontSize: 18 }}>選擇日常活動量</h3>
-                <button onClick={() => setShowActivityModal(false)} style={{ background: 'transparent', border: 'none', fontSize: 24, padding: 4, color: '#999' }}>✕</button>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {activityOptions.map((opt) => (
-                  <button key={opt.value} onClick={() => { setActivity(opt.value); setShowActivityModal(false); }}
-                    style={{
-                      padding: '16px', borderRadius: 12, border: activity === opt.value ? '2px solid #5c9c84' : '1px solid #eee',
-                      background: activity === opt.value ? '#f0fdf9' : '#fff', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 4
-                    }}
-                  >
-                    <div style={{ fontSize: 18, fontWeight: 600, color: '#1f2937' }}>{opt.label}</div>
-                    <div style={{ fontSize: 14, color: '#6b7280' }}>{opt.desc}</div>
-                  </button>
-                ))}
-              </div>
+      </div>
+
+      {/* 底部滑出選單 (Action Sheet) */}
+      {showActivityModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999 }}>
+          <div onClick={() => setShowActivityModal(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }} />
+          <div style={{
+            position: 'absolute', bottom: 0, left: 0, right: 0, background: '#fff',
+            borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: '20px 16px 40px 16px', animation: 'slideUp 0.3s ease-out'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <h3 style={{ margin: 0, fontSize: 18 }}>選擇日常活動量</h3>
+              <button onClick={() => setShowActivityModal(false)} style={{ background: 'transparent', border: 'none', fontSize: 24, padding: 4, color: '#999' }}>✕</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {activityOptions.map((opt) => (
+                <button key={opt.value} onClick={() => { setActivity(opt.value); setShowActivityModal(false); }}
+                  style={{
+                    padding: '16px', borderRadius: 12, border: activity === opt.value ? '2px solid #5c9c84' : '1px solid #eee',
+                    background: activity === opt.value ? '#f0fdf9' : '#fff', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 4
+                  }}
+                >
+                  <div style={{ fontSize: 18, fontWeight: 600, color: '#1f2937' }}>{opt.label}</div>
+                  <div style={{ fontSize: 14, color: '#6b7280' }}>{opt.desc}</div>
+                </button>
+              ))}
             </div>
           </div>
-        )}
-      </div>
-    );
-  };
+        </div>
+      )}
+    </div>
+  );
+};
 
   // ======== TrendsPage (趨勢分析頁面) ========
   const TrendsPage: React.FC = () => {
@@ -7779,48 +8160,29 @@ const day = validDays[validDays.length - 1];
      
         {/* 時間與指標選擇 */}
 {/* 時間與指標選擇 */}
-<section className="card">
-  {/* 時間範圍選擇：帶 Icon */}
-  <div style={{ marginBottom: 16 }}>
+<section className="card" style={{ padding: '12px 16px' }}> {/* 🟢 減少卡片內距 */}
+  
+  {/* 時間範圍：標題與按鈕距離縮小 */}
+  <div style={{ marginBottom: 12 }}> 
     <h3 style={{ 
-      fontSize: 15, 
+      fontSize: 14,       // 🟢 字體改小
       fontWeight: 600, 
-      marginBottom: 8, 
+      marginBottom: 6,    // 🟢 標題與按鈕距離縮小
       color: '#666',
-      display: 'flex',
-      alignItems: 'center',
-      gap: 6
+      display: 'flex', alignItems: 'center', gap: 6
     }}>
-      <svg 
-  width="20" 
-  height="20" 
-  viewBox="0 0 24 24" 
-  fill="none" 
-  stroke="#5c9c84"
-  strokeWidth="2" 
-  strokeLinecap="round" 
-  strokeLinejoin="round"
->
-  <circle cx="12" cy="12" r="10"></circle>
-  <polyline points="12 6 12 12 16 14"></polyline>
-</svg>
-時間範圍
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5c9c84" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <polyline points="12 6 12 12 16 14"></polyline>
+      </svg>
+      時間範圍
     </h3>
-    <div
-      style={{
-        display: 'flex',
-        gap: 8,
-        background: '#f3f4f6',
-        borderRadius: 999,
-        padding: 4,
-        overflow: 'hidden',
-      }}
-    >
+    <div style={{ display: 'flex', gap: 6, background: '#f3f4f6', borderRadius: 8, padding: 3 }}>
       {[
         { value: '7d', label: '7天' },
         { value: '30d', label: '30天' },
         { value: '90d', label: '90天' },
-        { value: '180d', label: '180天' },
+        { value: '180d', label: '半年' }, // 🟢 文字簡化一點點
         { value: '365d', label: '1年' },
       ].map((option) => (
         <button
@@ -7829,18 +8191,17 @@ const day = validDays[validDays.length - 1];
           onClick={() => setPeriod(option.value as any)}
           style={{
             flex: 1,
-            height: 36,
-            padding: '0 8px',
+            height: 30,             // 🟢 高度變矮 (原本36)
+            padding: '0',           // 🟢 移除左右padding，靠flex置中
             border: 'none',
-            borderRadius: 999,
+            borderRadius: 6,
             background: period === option.value ? '#fff' : 'transparent',
             color: period === option.value ? 'var(--mint-dark, #5c9c84)' : '#6b7280',
-            boxShadow: period === option.value ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
-            fontWeight: period === option.value ? 800 : 700,
-            fontSize: '13px',
+            boxShadow: period === option.value ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+            fontWeight: period === option.value ? 700 : 500,
+            fontSize: '12px',       // 🟢 字體變小
             cursor: 'pointer',
-            transition: 'all 0.18s ease',
-            whiteSpace: 'nowrap',
+            transition: 'all 0.15s ease',
           }}
         >
           {option.label}
@@ -7849,100 +8210,60 @@ const day = validDays[validDays.length - 1];
     </div>
   </div>
 
-  {/* 指標選擇：移除標題 */}
+  {/* 指標選擇：改成 3 欄，更集中 */}
   <div style={{ marginBottom: 0 }}>
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-      {/* 身體組成按鈕（佔滿整行） */}
+    <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 6, color: '#666' }}>
+      顯示指標
+    </h3>
+    <div style={{ 
+      display: 'grid', 
+      gridTemplateColumns: 'repeat(3, 1fr)', // 🟢 改成 3 欄 (原本 1fr 1fr)
+      gap: 6 // 🟢 間距縮小 (原本 8)
+    }}>
+      
+      {/* 身體組成：移除 gridColumn: '1 / -1'，讓它乖乖當第一格 */}
       <button
         onClick={() => setMetric('bodyComposition')}
         style={{
-          padding: '12px',
+          padding: '8px 4px', // 🟢 縮小內距
           borderRadius: 8,
-          border: metric === 'bodyComposition' ? '2px solid #5c9c84' : '1px solid var(--line)',
-          background: metric === 'bodyComposition' ? 'linear-gradient(135deg, #f0f8f4 0%, #fffaf6 100%)' : '#fff',
+          border: metric === 'bodyComposition' ? '1.5px solid #5c9c84' : '1px solid #e9ecef', // 邊框變細
+          background: metric === 'bodyComposition' ? '#f0f8f4' : '#fff',
           fontWeight: metric === 'bodyComposition' ? 700 : 400,
+          color: metric === 'bodyComposition' ? '#1f2937' : '#666',
           cursor: 'pointer',
-          gridColumn: '1 / -1',
-          fontSize: 'var(--font-md)',
+          fontSize: '13px', // 🟢 字體變小
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4
         }}
       >
-  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-    <img src={`${import.meta.env.BASE_URL}icons/analysis-icon.png`} alt="" style={{ width: 32, height: 32 }} />
-    <span>身體組成</span>
-  </div>
-</button>
+        <span>身體組成</span>
+      </button>
       
-      {/* 其他指標按鈕 */}
-      <button
-        onClick={() => setMetric('weight')}
-        style={{
-          padding: '12px',
-          borderRadius: 8,
-          border: metric === 'weight' ? '2px solid #5c9c84' : '1px solid var(--line)',
-          background: metric === 'weight' ? '#f0f8f4' : '#fff',
-          fontWeight: metric === 'weight' ? 700 : 400,
-          cursor: 'pointer',
-          fontSize: 'var(--font-md)',
-        }}
-      >
-        體重
-      </button>
-      <button
-        onClick={() => setMetric('bodyFat')}
-        style={{
-          padding: '12px',
-          borderRadius: 8,
-          border: metric === 'bodyFat' ? '2px solid #e68a3a' : '1px solid var(--line)',
-          background: metric === 'bodyFat' ? '#fffaf6' : '#fff',
-          fontWeight: metric === 'bodyFat' ? 700 : 400,
-          cursor: 'pointer',
-          fontSize: 'var(--font-md)',
-        }}
-      >
-        體脂率
-      </button>
-      <button
-        onClick={() => setMetric('skeletalMuscle')}
-        style={{
-          padding: '12px',
-          borderRadius: 8,
-          border: metric === 'skeletalMuscle' ? '2px solid #10b981' : '1px solid var(--line)',
-          background: metric === 'skeletalMuscle' ? '#f0fdf4' : '#fff',
-          fontWeight: metric === 'skeletalMuscle' ? 700 : 400,
-          cursor: 'pointer',
-          fontSize: 'var(--font-md)',
-        }}
-      >
-        骨骼肌率
-      </button>
-      <button
-        onClick={() => setMetric('calories')}
-        style={{
-          padding: '12px',
-          borderRadius: 8,
-          border: metric === 'calories' ? '2px solid #4a90e2' : '1px solid var(--line)',
-          background: metric === 'calories' ? '#f6fbff' : '#fff',
-          fontWeight: metric === 'calories' ? 700 : 400,
-          cursor: 'pointer',
-          fontSize: 'var(--font-md)',
-        }}
-      >
-        淨熱量
-      </button>
-      <button
-        onClick={() => setMetric('protein')}
-        style={{
-          padding: '12px',
-          borderRadius: 8,
-          border: metric === 'protein' ? '2px solid #d64545' : '1px solid var(--line)',
-          background: metric === 'protein' ? '#fff6f6' : '#fff',
-          fontWeight: metric === 'protein' ? 700 : 400,
-          cursor: 'pointer',
-          fontSize: 'var(--font-md)',
-        }}
-      >
-        蛋白質
-      </button>
+      {/* 其他按鈕：統一縮小樣式 */}
+      {[
+        { id: 'weight', label: '體重', color: '#5c9c84' },
+        { id: 'bodyFat', label: '體脂率', color: '#e68a3a' },
+        { id: 'skeletalMuscle', label: '骨骼肌', color: '#10b981' },
+        { id: 'calories', label: '淨熱量', color: '#4a90e2' },
+        { id: 'protein', label: '蛋白質', color: '#d64545' },
+      ].map(item => (
+        <button
+          key={item.id}
+          onClick={() => setMetric(item.id as any)}
+          style={{
+            padding: '8px 4px', // 🟢 縮小內距
+            borderRadius: 8,
+            border: metric === item.id ? `1.5px solid ${item.color}` : '1px solid #e9ecef',
+            background: metric === item.id ? `${item.color}15` : '#fff', // 加上透明度
+            fontWeight: metric === item.id ? 700 : 400,
+            color: metric === item.id ? '#1f2937' : '#666',
+            cursor: 'pointer',
+            fontSize: '13px', // 🟢 字體變小
+          }}
+        >
+          {item.label}
+        </button>
+      ))}
     </div>
   </div>
 </section>
