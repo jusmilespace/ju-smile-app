@@ -1239,6 +1239,9 @@ const COMMON_EXERCISES = [
     // 🟢 新增：AI 掃描相關狀態
   const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
   const aiInputRef = useRef<HTMLInputElement>(null);
+
+  // 🟢 [新增] 1. 新增標籤掃描用的 Ref
+  const labelInputRef = useRef<HTMLInputElement>(null);
   
   // 🟢 新增：AI 結果確認視窗狀態
   const [showAiModal, setShowAiModal] = useState(false);
@@ -1299,6 +1302,41 @@ const COMMON_EXERCISES = [
     }
   };
 
+  // 🟢 [新增] 2. 新增標籤掃描處理函式 (與 AI 食物辨識類似，但模式不同)
+  const handleLabelImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  const key = localStorage.getItem('JU_AI_KEY');
+  if (!key) {
+    showToast('warning', '請先至「我的 > 設定」輸入 AI 金鑰');
+    if (labelInputRef.current) labelInputRef.current.value = '';
+    return;
+  }
+
+  try {
+    setIsAiAnalyzing(true);
+    showToast('info', '📄 正在讀取營養標示...'); 
+
+    const base64 = await fileToDataURL(file);
+    
+    // 🆕 呼叫 OCR 模式,回傳「每份」格式
+    const result = await analyzeImage(base64, key, 'label'); 
+
+    // 🆕 存入 scannedServingData,觸發份數調整介面
+    setScannedServingData(result);
+    setServingCount(1); // 預設 1 份
+    showToast('success', `✅ 讀取成功:${result.name} (每份 ${result.servingSize}g)`);
+    
+  } catch (err: any) {
+    console.error('OCR Error:', err);
+    showToast('error', err.message || '辨識失敗');
+  } finally {
+    setIsAiAnalyzing(false);
+    if (labelInputRef.current) labelInputRef.current.value = '';
+  }
+};
+
   // 🟢 新增：使用者在 Modal 點擊「確認加入」後執行的動作
   const confirmAiResult = (finalData: any) => {
     // 建立新紀錄
@@ -1326,6 +1364,19 @@ const COMMON_EXERCISES = [
 
   // 🟢 新增：用來暫存掃描到的 100g 原始資料，作為計算基準
 const [scannedBaseData, setScannedBaseData] = useState<ScannedFood | null>(null);
+
+// OCR 掃描專用:暫存「每份」數據
+interface ServingBasedFood {
+  name: string;
+  servingSize: number;  // 每份重量(g)
+  kcal: number;         // 每份熱量
+  protein: number;      // 每份蛋白質
+  carb: number;         // 每份碳水
+  fat: number;          // 每份脂肪
+  found: boolean;
+}
+const [scannedServingData, setScannedServingData] = useState<ServingBasedFood | null>(null);
+const [servingCount, setServingCount] = useState<number>(1); // 使用者選擇的份數
 
 // 🆕 份量彈窗專用的 State
     const [showServingsModal, setShowServingsModal] = useState(false);
@@ -1470,27 +1521,31 @@ const [showScanner, setShowScanner] = useState(false);
 
 // 🟢 新增：處理掃描結果的函式
 // 修改這個函式
-const handleScanResult = (food: ScannedFood) => {
-  setFoodName(food.name);
-  
-  // 🟢 新增：將原始資料存起來
-  setScannedBaseData(food);
-
-  setFallbackType('其他類');
-  setFallbackServings('1');
-  
-  // 預設先填入 100g 的數值
-  setFallbackQty('100'); 
-  setFallbackUnitLabel('g');
-
-  setFallbackProtPerServ(String(food.protein));
-  setFallbackCarbPerServ(String(food.carb));
-  setFallbackFatPerServ(String(food.fat));
+const handleScanResult = (food: ServingBasedFood) => {
+  // 🆕 根據資料類型決定處理方式
+  if (food.dataType === 'serving') {
+    // ✅ 有「每份」資料 → 使用 OCR 的份數調整介面
+    setScannedServingData(food);
+    setServingCount(1);
+    showToast('success', `✅ ${food.name} (每份 ${food.servingSize}g)`);
+  } else {
+    // ⚠️ 只有「每 100g」資料 → 使用舊的重量調整方式
+    setFoodName(food.name);
+    setScannedBaseData(food);
+    setFallbackType('其他類');
+    setFallbackServings('1');
+    setFallbackQty('100'); 
+    setFallbackUnitLabel('g');
+    setFallbackProtPerServ(String(food.protein));
+    setFallbackCarbPerServ(String(food.carb));
+    setFallbackFatPerServ(String(food.fat));
+    showToast('success', `✅ ${food.name} (每 100g 資料)`);
+  }
   
   // 清除其他狀態
   setSelectedUnitFood(null);
   setSelectedFoodDbRow(null);
-  setEditingMealId(null); // 確保不是在編輯模式
+  setEditingMealId(null);
   
   setShowScanner(false);
   showToast('success', `已載入：${food.name}`);
@@ -2574,7 +2629,7 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
         // 🟢 新增：一旦使用者手動打字，就視為放棄掃描的資料，停止自動連動
     setScannedBaseData(null);
       }}
-      placeholder="輸入關鍵字 (例如: 雞蛋)"
+      placeholder="輸入關鍵字"
       name="foodSearchQuery"
       autoComplete="off"
       autoCorrect="off"
@@ -2635,6 +2690,14 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
           style={{ display: 'none' }} 
           onChange={handleAiImageSelect} 
         />
+        {/* 🟢 [新增] 隱藏的 Input 用於標籤掃描 */}
+  <input 
+    type="file" 
+    accept="image/*" 
+    ref={labelInputRef} 
+    style={{ display: 'none' }} 
+    onChange={handleLabelImageSelect} 
+  />
         <button
           type="button"
           onClick={() => aiInputRef.current?.click()}
@@ -2657,6 +2720,30 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
         >
           {isAiAnalyzing ? '⏳' : '✨'}
         </button>
+
+     {/* 🟢 [新增] 3. 營養標示 OCR 按鈕 (🧾) */}
+  <button
+    type="button"
+    onClick={() => labelInputRef.current?.click()} // 觸發 labelInput
+    disabled={isAiAnalyzing}
+    style={{
+      height: 46,
+      width: 46,
+      borderRadius: '50%',
+      border: '1px solid #dde7e2',
+      background: '#fff',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      cursor: isAiAnalyzing ? 'wait' : 'pointer',
+      fontSize: '20px',
+      boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+      flexShrink: 0,
+      marginLeft: 0
+    }}
+  >
+    🧾
+  </button>   
 
 {/* 🟢 新增：掃描按鈕 */}
       <button
@@ -5227,6 +5314,220 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
     </div>
   </div>
 )}
+
+{/* 🆕 OCR 掃描結果 - 份數調整介面 */}
+{scannedServingData && (
+  <div style={{
+    position: 'fixed',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 9999
+  }}>
+    <div style={{
+      backgroundColor: '#fff',
+      borderRadius: '16px',
+      padding: '24px',
+      maxWidth: '400px',
+      width: '90%',
+      maxHeight: '90vh',
+      overflowY: 'auto'
+    }}>
+      <h3 style={{ marginBottom: '16px', fontSize: '1.2rem', color: '#333' }}>
+        📄 營養標示掃描結果
+      </h3>
+      
+      {/* 🆕 品名編輯欄位 */}
+      <div style={{ marginBottom: '16px' }}>
+        <label style={{ 
+          display: 'block', 
+          marginBottom: '8px', 
+          fontSize: '0.9rem', 
+          color: '#666',
+          fontWeight: 'bold'
+        }}>
+          產品名稱:
+        </label>
+        <input 
+          type="text"
+          value={scannedServingData.name}
+          onChange={(e) => {
+            setScannedServingData({
+              ...scannedServingData,
+              name: e.target.value
+            });
+          }}
+          placeholder="例如:巧克力餅乾"
+          style={{
+            width: '100%',
+            padding: '10px',
+            fontSize: '1rem',
+            borderRadius: '8px',
+            border: '1px solid #ddd',
+            backgroundColor: '#f8f9fa'
+          }}
+        />
+        <p style={{ fontSize: '0.75rem', color: '#999', marginTop: '4px' }}>
+          💡 可以手動修改品名
+        </p>
+      </div>
+
+      <p style={{ 
+        color: '#666', 
+        marginBottom: '20px', 
+        fontSize: '0.9rem',
+        backgroundColor: '#f0f0f0',
+        padding: '8px 12px',
+        borderRadius: '6px'
+      }}>
+        <strong>每份重量:</strong> {scannedServingData.servingSize}g
+      </p>
+
+      {/* 份數調整 */}
+      <div style={{ marginBottom: '20px' }}>
+        <label style={{ 
+          display: 'block', 
+          marginBottom: '8px', 
+          fontWeight: 'bold',
+          color: '#333'
+        }}>
+          選擇份數:
+        </label>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <button 
+            onClick={() => setServingCount(Math.max(0.5, servingCount - 0.5))}
+            style={{
+              padding: '10px 18px',
+              fontSize: '1.3rem',
+              borderRadius: '8px',
+              border: '1px solid #ddd',
+              backgroundColor: '#f5f5f5',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            -
+          </button>
+          <input 
+            type="number" 
+            value={servingCount}
+            onChange={(e) => setServingCount(Math.max(0, Number(e.target.value)))}
+            step="0.5"
+            style={{
+              width: '80px',
+              padding: '10px',
+              fontSize: '1.1rem',
+              textAlign: 'center',
+              borderRadius: '8px',
+              border: '2px solid #5c9c84',
+              fontWeight: 'bold'
+            }}
+          />
+          <button 
+            onClick={() => setServingCount(servingCount + 0.5)}
+            style={{
+              padding: '10px 18px',
+              fontSize: '1.3rem',
+              borderRadius: '8px',
+              border: '1px solid #ddd',
+              backgroundColor: '#f5f5f5',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            +
+          </button>
+          <span style={{ marginLeft: '8px', color: '#666', fontSize: '0.9rem' }}>份</span>
+        </div>
+      </div>
+
+      {/* 營養素顯示 (自動計算) */}
+      <div style={{
+        backgroundColor: '#f8f9fa',
+        borderRadius: '8px',
+        padding: '16px',
+        marginBottom: '20px',
+        border: '1px solid #e0e0e0'
+      }}>
+        <p style={{ marginBottom: '8px', fontSize: '0.95rem' }}>
+          <strong>總重量:</strong> {(scannedServingData.servingSize * servingCount).toFixed(0)}g
+        </p>
+        <p style={{ marginBottom: '8px', fontSize: '0.95rem' }}>
+          <strong>熱量:</strong> {(scannedServingData.kcal * servingCount).toFixed(0)} kcal
+        </p>
+        <p style={{ marginBottom: '8px', fontSize: '0.95rem' }}>
+          <strong>蛋白質:</strong> {(scannedServingData.protein * servingCount).toFixed(1)}g
+        </p>
+        <p style={{ marginBottom: '8px', fontSize: '0.95rem' }}>
+          <strong>碳水:</strong> {(scannedServingData.carb * servingCount).toFixed(1)}g
+        </p>
+        <p style={{ fontSize: '0.95rem' }}>
+          <strong>脂肪:</strong> {(scannedServingData.fat * servingCount).toFixed(1)}g
+        </p>
+      </div>
+
+      {/* 按鈕 */}
+      <div style={{ display: 'flex', gap: '10px' }}>
+        <button 
+          onClick={() => {
+            // 🆕 確認加入邏輯
+            const finalName = scannedServingData.name.trim() || "掃描食品";
+            
+            const newEntry: MealEntry = {
+              id: uuid(),
+              date: selectedDate,
+              mealType: formMealType,
+              label: servingCount === 1 
+                ? finalName 
+                : `${finalName} (${servingCount}份)`,
+              kcal: Math.round(scannedServingData.kcal * servingCount),
+              protein: Number((scannedServingData.protein * servingCount).toFixed(1)),
+              carb: Number((scannedServingData.carb * servingCount).toFixed(1)),
+              fat: Number((scannedServingData.fat * servingCount).toFixed(1)),
+              amountText: `${(scannedServingData.servingSize * servingCount).toFixed(0)}g`,
+            };
+            
+            setMeals((prev) => [...prev, newEntry]);
+            setScannedServingData(null);
+            showToast('success', `✅ 已加入:${finalName}`);
+          }}
+          style={{
+            flex: 1,
+            padding: '14px',
+            backgroundColor: '#5c9c84',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '1rem',
+            fontWeight: 'bold',
+            cursor: 'pointer'
+          }}
+        >
+          ✓ 確認加入
+        </button>
+        <button 
+          onClick={() => setScannedServingData(null)}
+          style={{
+            flex: 1,
+            padding: '14px',
+            backgroundColor: '#f5f5f5',
+            color: '#333',
+            border: '1px solid #ddd',
+            borderRadius: '8px',
+            fontSize: '1rem',
+            cursor: 'pointer'
+          }}
+        >
+          ✕ 取消
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
 
 {/* 🟢 新增：全螢幕載入遮罩 (Loading Overlay) */}
 {isAiAnalyzing && (
