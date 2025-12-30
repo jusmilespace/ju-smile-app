@@ -35,6 +35,10 @@ import lowIntensityImg from './assets/low_intensity.png';
 import mediumIntensityImg from './assets/medium_intensity.png';
 import highIntensityImg from './assets/high_intensity.png';
 
+// 🆕 新增:掃描按鈕圖示
+import barcodeIcon from './assets/barcode.png';
+import nutritionIcon from './assets/nutrition.png';
+
 const ICON_MAP: { [key: string]: string } = {
   protein: proteinImg,
   veggie: veggieImg,
@@ -2723,49 +2727,65 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
 
      {/* 🟢 [新增] 3. 營養標示 OCR 按鈕 (🧾) */}
   <button
-    type="button"
-    onClick={() => labelInputRef.current?.click()} // 觸發 labelInput
-    disabled={isAiAnalyzing}
-    style={{
-      height: 46,
-      width: 46,
-      borderRadius: '50%',
-      border: '1px solid #dde7e2',
-      background: '#fff',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      cursor: isAiAnalyzing ? 'wait' : 'pointer',
-      fontSize: '20px',
-      boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-      flexShrink: 0,
-      marginLeft: 0
-    }}
-  >
-    🧾
-  </button>   
+  type="button"
+  onClick={() => labelInputRef.current?.click()}
+  disabled={isAiAnalyzing}
+  style={{
+    height: 46,
+    width: 46,
+    borderRadius: '50%',
+    border: '1px solid #dde7e2',
+    background: '#fff',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: isAiAnalyzing ? 'wait' : 'pointer',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+    flexShrink: 0,
+    marginLeft: 0,
+    padding: 0
+  }}
+>
+  <img 
+    src={nutritionIcon} 
+    alt="營養標示掃描" 
+    style={{ 
+      width: '30px', 
+      height: '30px',
+      objectFit: 'contain'
+    }} 
+  />
+</button> 
 
 {/* 🟢 新增：掃描按鈕 */}
       <button
-        type="button"
-        onClick={() => setShowScanner(true)}
-        style={{
-          height: 46, // 與 Input 高度差不多
-          width: 46,
-          borderRadius: '50%',
-          border: '1px solid #dde7e2',
-          background: '#fff',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          fontSize: '20px',
-          boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-          flexShrink: 0 // 防止被擠壓
-        }}
-      >
-        📸
-      </button>
+  type="button"
+  onClick={() => setShowScanner(true)}
+  style={{
+    height: 46,
+    width: 46,
+    borderRadius: '50%',
+    border: '1px solid #dde7e2',
+    background: '#fff',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+    flexShrink: 0,
+    padding: 0
+  }}
+>
+  <img 
+    src={barcodeIcon} 
+    alt="條碼掃描" 
+    style={{ 
+      width: '30px', 
+      height: '30px',
+      objectFit: 'contain'
+    }} 
+  />
+</button>
 
 </div>
 {/* =========================================================
