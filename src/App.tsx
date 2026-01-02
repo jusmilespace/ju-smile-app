@@ -2643,133 +2643,176 @@ useEffect(() => {
   </h3>
 </div>
 
-{/* 📸 掃描辨識區塊 */}
-<div style={{
-  background: '#fff',
-  borderRadius: 16,
-  padding: 16,
-  marginBottom: 12,
-  boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-}}>
-  <h3 style={{
-    margin: '0 0 12px 0',
-    fontSize: 14,
-    color: 'var(--text-sub, #6b7785)',
-    fontWeight: 600,
-    display: 'flex',
-    alignItems: 'center',
-    gap: 6
-  }}>
-    📸 掃描辨識
-  </h3>
+{/* 📸 掃描辨識區塊 (整合式卡片設計 - 修正版) */}
+<div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
   
-  <div style={{
-    display: 'flex',
-    gap: 10,
-    marginBottom: 10
+  {/* 1. AI 辨識卡片 (左) */}
+  <div style={{ 
+    flex: 1, 
+    display: 'flex', 
+    flexDirection: 'column', 
+    background: '#fff', 
+    borderRadius: 16, 
+    boxShadow: '0 2px 8px rgba(0,0,0,0.06)', 
+    border: '1px solid #f0f0f0', 
+    overflow: 'hidden' 
   }}>
-    {/* AI 掃描 */}
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-      <button
-        type="button"
-        onClick={() => aiInputRef.current?.click()}
-        disabled={isAiAnalyzing}
-        style={{
-          height: 56,
-          width: '100%',
-          borderRadius: 12,
-          border: '1px solid var(--border-soft, #dde7e2)',
-          background: '#fff',
-          fontSize: 28,
-          cursor: isAiAnalyzing ? 'wait' : 'pointer',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}
-      >
-        {isAiAnalyzing ? '⏳' : '✨'}
-      </button>
-      <span style={{ fontSize: 11, color: 'var(--text-sub, #6b7785)' }}>AI辨識</span>
-    </div>
+    {/* 上半部：拍照 (主按鈕) */}
+    <button
+      type="button"
+      onClick={() => aiInputRef.current?.click()}
+      disabled={isAiAnalyzing}
+      style={{
+        flex: 1,
+        border: 'none',
+        background: '#fff',
+        padding: '16px 0 12px 0',
+        cursor: isAiAnalyzing ? 'wait' : 'pointer',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 6,
+        transition: 'background 0.2s'
+      }}
+      onMouseDown={(e) => e.currentTarget.style.background = '#f9fafb'}
+      onMouseUp={(e) => e.currentTarget.style.background = '#fff'}
+    >
+      <div style={{ fontSize: 28 }}>{isAiAnalyzing ? '⏳' : '✨'}</div>
+      <span style={{ fontSize: 13, fontWeight: 700, color: '#374151' }}>AI 辨識</span>
+    </button>
     
-    {/* 營養標示 */}
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-      <button
-        type="button"
-        onClick={() => labelInputRef.current?.click()}
-        disabled={isAiAnalyzing}
-        style={{
-          height: 56,
-          width: '100%',
-          borderRadius: 12,
-          border: '1px solid var(--border-soft, #dde7e2)',
-          background: '#fff',
-          cursor: isAiAnalyzing ? 'wait' : 'pointer',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: 0
-        }}
-      >
-        <img 
-          src={nutritionIcon} 
-          alt="營養標示" 
-          style={{ 
-            width: '32px', 
-            height: '32px',
-            objectFit: 'contain'
-          }} 
-        />
-      </button>
-      <span style={{ fontSize: 11, color: 'var(--text-sub, #6b7785)' }}>營養標示</span>
-    </div>
-    
-    {/* 條碼 */}
-<div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-  <button
-    type="button"
-    onClick={() => setShowScanner(true)}
-    style={{
-      height: 56,
-      width: '100%',
-      borderRadius: 12,
-      border: '1px solid var(--border-soft, #dde7e2)',
-      background: '#fff',
-      cursor: 'pointer',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: 0
-    }}
-  >
-    <img 
-      src={barcodeIcon} 
-      alt="條碼掃描" 
-      style={{ 
-        width: '32px', 
-        height: '32px',
-        objectFit: 'contain'
-      }} 
-    />
-  </button>
-  <span style={{ fontSize: 11, color: 'var(--text-sub, #6b7785)' }}>條碼</span>
-</div>
+    {/* 分隔線 */}
+    <div style={{ height: 1, background: '#f3f4f6' }} />
+
+    {/* 下半部：相簿 (次按鈕) */}
+    <button
+      type="button"
+      onClick={() => aiInputRefGallery.current?.click()}
+      disabled={isAiAnalyzing}
+      style={{
+        padding: '10px 0',
+        border: 'none',
+        background: '#fcfcfc',
+        color: '#6b7280',
+        fontSize: 12,
+        fontWeight: 500,
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4
+      }}
+    >
+      {/* 內建 SVG 相簿圖示，不需額外 import */}
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+        <polyline points="21 15 16 10 5 21"></polyline>
+      </svg>
+      相簿
+    </button>
   </div>
-  
-  <p style={{
-    margin: 0,
-    fontSize: 10,
-    color: '#999',
-    textAlign: 'center'
+
+  {/* 2. 營養標示卡片 (中) */}
+  <div style={{ 
+    flex: 1, 
+    display: 'flex', 
+    flexDirection: 'column', 
+    background: '#fff', 
+    borderRadius: 16, 
+    boxShadow: '0 2px 8px rgba(0,0,0,0.06)', 
+    border: '1px solid #f0f0f0', 
+    overflow: 'hidden' 
   }}>
-    💡 點擊後可選擇拍照或從相簿選擇
-  </p>
+    <button
+      type="button"
+      onClick={() => labelInputRef.current?.click()}
+      disabled={isAiAnalyzing}
+      style={{
+        flex: 1,
+        border: 'none',
+        background: '#fff',
+        padding: '16px 0 12px 0',
+        cursor: isAiAnalyzing ? 'wait' : 'pointer',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 6
+      }}
+      onMouseDown={(e) => e.currentTarget.style.background = '#f9fafb'}
+      onMouseUp={(e) => e.currentTarget.style.background = '#fff'}
+    >
+      {/* 使用你原本的 nutritionIcon 變數 */}
+      <img src={nutritionIcon} alt="營養標示" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+      <span style={{ fontSize: 13, fontWeight: 700, color: '#374151' }}>營養標示</span>
+    </button>
+
+    <div style={{ height: 1, background: '#f3f4f6' }} />
+
+    <button
+      type="button"
+      onClick={() => labelInputRefGallery.current?.click()}
+      disabled={isAiAnalyzing}
+      style={{
+        padding: '10px 0',
+        border: 'none',
+        background: '#fcfcfc',
+        color: '#6b7280',
+        fontSize: 12,
+        fontWeight: 500,
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4
+      }}
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+        <polyline points="21 15 16 10 5 21"></polyline>
+      </svg>
+      相簿
+    </button>
+  </div>
+
+  {/* 3. 條碼掃描 (右 - 單一按鈕) */}
+  <div style={{ 
+    width: '80px', // 稍微窄一點
+    display: 'flex', 
+    flexDirection: 'column', 
+    background: '#fff', 
+    borderRadius: 16, 
+    boxShadow: '0 2px 8px rgba(0,0,0,0.06)', 
+    border: '1px solid #f0f0f0', 
+    overflow: 'hidden' 
+  }}>
+     <button
+      type="button"
+      onClick={() => setShowScanner(true)}
+      style={{
+        flex: 1,
+        border: 'none',
+        background: '#fff',
+        padding: '0',
+        cursor: 'pointer',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6
+      }}
+      onMouseDown={(e) => e.currentTarget.style.background = '#f9fafb'}
+      onMouseUp={(e) => e.currentTarget.style.background = '#fff'}
+    >
+      {/* 使用你原本的 barcodeIcon 變數 */}
+      <img src={barcodeIcon} alt="條碼" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+      <span style={{ fontSize: 13, fontWeight: 700, color: '#374151' }}>條碼</span>
+    </button>
+  </div>
+
 </div>
 
-            
 
             {/* 🔍 搜尋食物資料庫 */}
             <details open style={{
