@@ -1133,6 +1133,8 @@ const COMMON_EXERCISES = [
 }) => {
   const { showToast } = React.useContext(ToastContext);
 
+
+
      // 👇 [新增] 用於控制「快速加入」區塊的顯示分頁 ('history' 或 'combo')
     const [quickAddTab, setQuickAddTab] = useState<'history' | 'combo'>('history');
 
@@ -1246,6 +1248,8 @@ const COMMON_EXERCISES = [
 
   // 🟢 [新增] 1. 新增標籤掃描用的 Ref
   const labelInputRef = useRef<HTMLInputElement>(null);
+  const aiInputRefGallery = useRef<HTMLInputElement>(null);
+const labelInputRefGallery = useRef<HTMLInputElement>(null);
   
   // 🟢 新增：AI 結果確認視窗狀態
   const [showAiModal, setShowAiModal] = useState(false);
@@ -2498,7 +2502,10 @@ useEffect(() => {
         <div className="subtabs">
   <button
     className={`tab-btn-large ${recordTab === 'food' ? 'active' : ''}`} // 👈 套用
-    onClick={() => setRecordTab('food')}
+    onClick={() => {
+  setRecordTab('food');
+  setFoodInputMode('search');
+}}
   >
     飲食
   </button>
@@ -2569,86 +2576,226 @@ useEffect(() => {
                 })}
               </div>
             </div>
-            
 
-            {/* 🆕 輸入模式切換 */}
-            <div
+            {/* 🖐️ 手掌法全屏模式 */}
+{foodInputMode === 'palm' && (
+  <VisualPortionPicker
+    mealType={formMealType}
+    onConfirm={(data) => {
+      const newMeal: MealEntry = {
+        id: uuid(),
+        date: selectedDate,
+        mealType: formMealType,
+        label: data.foodName,
+        kcal: data.kcal,
+        protein: data.protein,
+        carb: data.carbs,
+        fat: data.fat,
+        amountText: data.amountText,
+        counts: data.counts,
+      };
+      setMeals((prev) => [...prev, newMeal]);
+      showToast('success', `已加入 ${data.foodName}`);
+      setFoodInputMode('search');
+    }}
+    onCancel={() => setFoodInputMode('search')}
+  />
+)}
+
+{/* 只有在非手掌法模式時才顯示卡片 */}
+{foodInputMode !== 'palm' && (
+  <>
+              
+
+          {/* 🖐️ 手掌法區塊 */}
+<div 
+  onClick={() => setFoodInputMode('palm')}
   style={{
+    background: 'linear-gradient(135deg, var(--mint, #97d0ba) 0%, var(--mint-dark, #5c9c84) 100%)',
+    borderRadius: 12,
+    padding: '14px 16px',
+    marginBottom: 12,
+    boxShadow: '0 4px 12px rgba(92, 156, 132, 0.3)',
+    cursor: 'pointer',
     display: 'flex',
-    gap: 8,
-    background: '#f3f4f6',
-    borderRadius: 999,
-    padding: 4,
-    marginBottom: 16,
-    overflow: 'hidden',
-    height: 44,
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12
   }}
 >
-  <button
-    type="button"
-    onClick={() => setFoodInputMode('search')}
-    style={{
-      flex: 1,
-      height: 36,
-      padding: '0 10px',
-      border: 'none',
-      borderRadius: 999,
-      background: foodInputMode === 'search' ? '#fff' : 'transparent',
-      color: foodInputMode === 'search' ? 'var(--mint-dark, #5c9c84)' : '#6b7280',
-      boxShadow: foodInputMode === 'search' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
-fontWeight: foodInputMode === 'search' ? 800 : 700,
-      fontSize: 'var(--font-md)',
-      cursor: 'pointer',
-      transition: 'all 0.18s ease',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      lineHeight: 1,
-      whiteSpace: 'nowrap',
-      minWidth: 0,
-    }}
-  >
-    🔍&nbsp;快速搜尋
-  </button>
-
-  <button
-    type="button"
-    onClick={() => setFoodInputMode('palm')}
-    style={{
-      flex: 1,
-      height: 36,
-      padding: '0 10px',
-      border: 'none',
-      borderRadius: 999,
-      background: foodInputMode === 'palm' ? '#fff' : 'transparent',
-      color: foodInputMode === 'palm' ? 'var(--mint-dark, #5c9c84)' : '#6b7280',
-      boxShadow: foodInputMode === 'palm' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
-      fontWeight: foodInputMode === 'palm' ? 800 : 700,
-      fontSize: 'var(--font-md)',
-      cursor: 'pointer',
-      transition: 'all 0.18s ease',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      lineHeight: 1,
-      whiteSpace: 'nowrap',
-      minWidth: 0,
-    }}
-  >
-   <img 
+  <img 
     src={palmImg} 
     alt="hand" 
-    style={{ width: 24, height: 24, marginRight: 6, objectFit: 'contain' }} 
+    style={{ 
+      width: 32, 
+      height: 32, 
+      objectFit: 'contain',
+      filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
+    }} 
   />
-  手掌法
-</button>
+  <h3 style={{
+    margin: 0,
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: 700
+  }}>
+    手掌法快速估算
+  </h3>
+</div>
+
+{/* 📸 掃描辨識區塊 */}
+<div style={{
+  background: '#fff',
+  borderRadius: 16,
+  padding: 16,
+  marginBottom: 12,
+  boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+}}>
+  <h3 style={{
+    margin: '0 0 12px 0',
+    fontSize: 14,
+    color: 'var(--text-sub, #6b7785)',
+    fontWeight: 600,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6
+  }}>
+    📸 掃描辨識
+  </h3>
+  
+  <div style={{
+    display: 'flex',
+    gap: 10,
+    marginBottom: 10
+  }}>
+    {/* AI 掃描 */}
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+      <button
+        type="button"
+        onClick={() => aiInputRef.current?.click()}
+        disabled={isAiAnalyzing}
+        style={{
+          height: 56,
+          width: '100%',
+          borderRadius: 12,
+          border: '1px solid var(--border-soft, #dde7e2)',
+          background: '#fff',
+          fontSize: 28,
+          cursor: isAiAnalyzing ? 'wait' : 'pointer',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        {isAiAnalyzing ? '⏳' : '✨'}
+      </button>
+      <span style={{ fontSize: 11, color: 'var(--text-sub, #6b7785)' }}>AI辨識</span>
+    </div>
+    
+    {/* 營養標示 */}
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+      <button
+        type="button"
+        onClick={() => labelInputRef.current?.click()}
+        disabled={isAiAnalyzing}
+        style={{
+          height: 56,
+          width: '100%',
+          borderRadius: 12,
+          border: '1px solid var(--border-soft, #dde7e2)',
+          background: '#fff',
+          cursor: isAiAnalyzing ? 'wait' : 'pointer',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 0
+        }}
+      >
+        <img 
+          src={nutritionIcon} 
+          alt="營養標示" 
+          style={{ 
+            width: '32px', 
+            height: '32px',
+            objectFit: 'contain'
+          }} 
+        />
+      </button>
+      <span style={{ fontSize: 11, color: 'var(--text-sub, #6b7785)' }}>營養標示</span>
+    </div>
+    
+    {/* 條碼 */}
+<div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+  <button
+    type="button"
+    onClick={() => setShowScanner(true)}
+    style={{
+      height: 56,
+      width: '100%',
+      borderRadius: 12,
+      border: '1px solid var(--border-soft, #dde7e2)',
+      background: '#fff',
+      cursor: 'pointer',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 0
+    }}
+  >
+    <img 
+      src={barcodeIcon} 
+      alt="條碼掃描" 
+      style={{ 
+        width: '32px', 
+        height: '32px',
+        objectFit: 'contain'
+      }} 
+    />
+  </button>
+  <span style={{ fontSize: 11, color: 'var(--text-sub, #6b7785)' }}>條碼</span>
+</div>
+  </div>
+  
+  <p style={{
+    margin: 0,
+    fontSize: 10,
+    color: '#999',
+    textAlign: 'center'
+  }}>
+    💡 點擊後可選擇拍照或從相簿選擇
+  </p>
 </div>
 
             
 
-            {/* 🆕 快速搜尋模式 */}
-            {foodInputMode === 'search' && (
+            {/* 🔍 搜尋食物資料庫 */}
+            <details open style={{
+              background: '#fff',
+              borderRadius: 16,
+              padding: 16,
+              marginBottom: 12,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+            }}>
+              <summary style={{
+                fontSize: 14,
+                color: 'var(--text-sub, #6b7785)',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                listStyle: 'none',
+                userSelect: 'none',
+                marginBottom: 12
+              }}>
+                <span>🔍 搜尋食物資料庫</span>
+                <span style={{ marginLeft: 'auto', fontSize: 12, color: '#999' }}>▼</span>
+              </summary>
+
+            
             <div className="form-section">
              {/* 🟢 修改：將原本包搜尋框的 div 改為 Flex 佈局，放入掃描按鈕 */}
     <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 0 }}>
@@ -2731,16 +2878,28 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
       </button>
     )}
   </div>
-  {/* 🟢 新增：AI 掃描按鈕 (放在相機按鈕旁邊) */}
-        <input 
-          type="file" 
-          accept="image/*" 
-          capture="environment"
-          ref={aiInputRef} 
-          style={{ display: 'none' }} 
-          onChange={handleAiImageSelect} 
-        />
-       {/* 🟢 [新增] 隱藏的 Input 用於標籤掃描 */}
+
+{/* 隱藏的 file input 元素 */}
+{/* AI 食物掃描 - 拍照 */}
+<input 
+  type="file" 
+  accept="image/*"
+  capture="environment"
+  ref={aiInputRef} 
+  style={{ display: 'none' }} 
+  onChange={handleAiImageSelect} 
+/>
+
+{/* AI 食物掃描 - 相簿 */}
+<input 
+  type="file" 
+  accept="image/*"
+  ref={aiInputRefGallery} 
+  style={{ display: 'none' }} 
+  onChange={handleAiImageSelect} 
+/>
+
+{/* 營養標示掃描 - 拍照 */}
 <input 
   type="file"
   accept="image/*"
@@ -2749,90 +2908,16 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
   onChange={handleLabelImageSelect}
   style={{ display: 'none' }}
 />
-<button
-  type="button"
-  onClick={() => aiInputRef.current?.click()}
-  disabled={isAiAnalyzing}
-  style={{
-    height: 46,
-    width: 46,
-    borderRadius: '50%',
-    border: '1px solid #dde7e2',
-    background: isAiAnalyzing ? '#f3f4f6' : '#fff',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: isAiAnalyzing ? 'wait' : 'pointer',
-    fontSize: '20px',
-    boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-    flexShrink: 0,
-    marginLeft: 0
-  }}
->
-  {isAiAnalyzing ? '⏳' : '✨'}
-</button>
 
-     {/* 🟢 [新增] 3. 營養標示 OCR 按鈕 (🧾) */}
-  <button
-  type="button"
-  onClick={() => labelInputRef.current?.click()}
-  disabled={isAiAnalyzing}
-  style={{
-    height: 46,
-    width: 46,
-    borderRadius: '50%',
-    border: '1px solid #dde7e2',
-    background: '#fff',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: isAiAnalyzing ? 'wait' : 'pointer',
-    boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-    flexShrink: 0,
-    marginLeft: 0,
-    padding: 0
-  }}
->
-  <img 
-    src={nutritionIcon} 
-    alt="營養標示掃描" 
-    style={{ 
-      width: '30px', 
-      height: '30px',
-      objectFit: 'contain'
-    }} 
-  />
-</button> 
+{/* 營養標示掃描 - 相簿 */}
+<input 
+  type="file"
+  accept="image/*"
+  ref={labelInputRefGallery}
+  onChange={handleLabelImageSelect}
+  style={{ display: 'none' }}
+/>
 
-{/* 🟢 新增：掃描按鈕 */}
-      <button
-  type="button"
-  onClick={() => setShowScanner(true)}
-  style={{
-    height: 46,
-    width: 46,
-    borderRadius: '50%',
-    border: '1px solid #dde7e2',
-    background: '#fff',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-    flexShrink: 0,
-    padding: 0
-  }}
->
-  <img 
-    src={barcodeIcon} 
-    alt="條碼掃描" 
-    style={{ 
-      width: '30px', 
-      height: '30px',
-      objectFit: 'contain'
-    }} 
-  />
-</button>
 
 </div>
 {/* =========================================================
@@ -3382,6 +3467,26 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
                   </div>
                 </div>
 
+                {/* ⚡ 快速加入區塊 */}
+<div style={{
+  background: '#fff',
+  borderRadius: 16,
+  padding: 16,
+  marginBottom: 12,
+  boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+}}>
+  <h3 style={{
+    margin: '0 0 12px 0',
+    fontSize: 14,
+    color: 'var(--text-sub, #6b7785)',
+    fontWeight: 600,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6
+  }}>
+    ⚡ 快速加入
+  </h3>
+
                 <button
                   type="button"
                   className="primary small"
@@ -3404,6 +3509,7 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
                 >
                   快速加入
                 </button>
+                </div> {/* 關閉 ⚡ 快速加入區塊 */}
               </div>
             ))}
             {/* 分隔線 */}
@@ -4739,32 +4845,12 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
                 </button>
               )}
             </div>
-            )}
+            </details> {/* 關閉 🔍 搜尋食物資料庫 */}
             {/* 🆕 手掌法模式結束 */}
             {/* 🆕 手掌法輸入模式 */}
-            {foodInputMode === 'palm' && (
-              <VisualPortionPicker
-                mealType={formMealType}
-                onConfirm={(data) => {
-                  const newMeal: MealEntry = {
-                    id: uuid(),
-                    date: selectedDate,
-                    mealType: formMealType,
-                    label: data.foodName,
-                    kcal: data.kcal,
-                    protein: data.protein,
-                    carb: data.carbs,
-                    fat: data.fat,
-                    amountText: data.amountText,
-                    counts: data.counts,
-                  };
-                  setMeals((prev) => [...prev, newMeal]);
-                  showToast('success', `已加入 ${data.foodName}`);
-                  setFoodInputMode('search');
-                }}
-                onCancel={() => setFoodInputMode('search')}
-              />
-            )}
+            </>
+)}
+          
 
            <div className="list-section">
   <div className="card-header" style={{ borderBottom: 'none', paddingBottom: 0 }}>
@@ -5983,6 +6069,7 @@ const INTENSITY_OPTIONS = [
 
   const App: React.FC = () => {
   const [tab, setTab] = useState<Tab>('today');
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false); // 🆕 控制搜尋欄收合
   const [showUpdateBar, setShowUpdateBar] = useState(false);
   // 👇 [新增] 1. 這裡新增兩行，專門記住「紀錄頁」選的日期與週曆起點
   // 這樣就算 RecordsPage 重整，資料還是存在 App 這一層，不會消失
