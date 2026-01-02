@@ -29,19 +29,26 @@ export const analyzeImage = async (
 
 請以繁體中文回答,回傳一個 JSON 物件,包含以下欄位:
 - name: 食物名稱(簡短明確,例如:「煎雞胸肉」、「白飯」、「番茄炒蛋」)
-- estimatedWeight: 估計總重量(公克,數字,請依照圖片中的份量合理估計)
-- kcal: 預估總熱量(數字,根據估計重量計算)
-- protein: 預估蛋白質總克數(數字)
-- carbs: 預估碳水化合物總克數(數字)
-- fat: 預估脂肪總克數(數字)
+- servingCount: 份數(數字,可以是小數,例如:1、1.5、2。參考標準:一個拳頭大的飯=1份、一個手掌大的肉=1份)
+- servingSize: 每份標準重量(公克,數字,例如:飯類150g/份、肉類100g/份、蔬菜70g/份)
+- portionReference: 份量參考物(從以下選擇:'fist'=拳頭大小、'palm'=手掌大小、'thumb'=拇指大小、'none'=無明確參考)
+- confidence: 估計信心度(從以下選擇:'high'=有明確大小參考或標準餐點、'medium'=一般食物、'low'=無參考物或特殊食物)
+- kcal: 每份熱量(數字)
+- protein: 每份蛋白質(g,數字)
+- carbs: 每份碳水化合物(g,數字)
+- fat: 每份脂肪(g,數字)
 - type: 食物分類(從以下選擇其一: '全穀雜糧類','豆魚蛋肉類','乳品類','蔬菜類','水果類','油脂與堅果種子類','其他')
 
 重要提醒:
-1. 請合理分配蛋白質、碳水、脂肪的比例,三者的熱量加總應該接近總熱量
-2. 如果是外食或看起來有調味/油炸,請將額外的油脂熱量計入脂肪欄位
-3. 提供保守但合理的估計值
-4. 不要回傳 markdown 格式,只要純 JSON
-5. 數值必須是數字,不要包含單位文字`;
+1. 優先估計「份數」而非精確重量,例如:「看起來是1.5份的炒飯」
+2. 請合理分配蛋白質、碳水、脂肪的比例
+3. 如果圖片中有手、餐具、或其他參考物,信心度應該較高
+4. 如果是標準便當、杯裝飲料等常見餐點,信心度應該是 high
+5. 不要回傳 markdown 格式,只要純 JSON
+
+範例格式:
+- 一碗白飯: {"name":"白飯","servingCount":1,"servingSize":150,"portionReference":"fist","confidence":"high","kcal":225,"protein":4,"carbs":50,"fat":0.5,"type":"全穀雜糧類"}
+- 一塊雞胸肉: {"name":"煎雞胸肉","servingCount":1,"servingSize":100,"portionReference":"palm","confidence":"medium","kcal":165,"protein":31,"carbs":0,"fat":3.6,"type":"豆魚蛋肉類"}`;
 
   // 2. 定義「營養標示 OCR」的 Prompt
   const labelPrompt = `你是一個營養標示讀取助手。請分析這張圖片中的「營養標示(Nutrition Facts)」表格及包裝上的產品資訊。
@@ -134,16 +141,29 @@ export const analyzeImage = async (
     };
   }
   
-  // 🟢 食物辨識模式:保持原樣
-  return {
-    name: result.name || "未知食物",
-    estimatedWeight: Number(result.estimatedWeight) || 0,
-    kcal: Number(result.kcal) || 0,
-    protein: Number(result.protein) || 0,
-    carbs: Number(result.carbs) || 0,
-    fat: Number(result.fat) || 0,
-    type: result.type || "其他"
-  };
+  // 🟢 食物辨識模式:回傳份數格式
+  // 🟢 食物辨識模式:回傳份數格式
+const parsedData = {
+  name: result.name || "未知食物",
+  servingCount: Number(result.servingCount) || 1,
+  servingSize: Number(result.servingSize) || 100,
+  portionReference: result.portionReference || 'none',
+  confidence: result.confidence || 'medium',
+  kcal: Number(result.kcal) || 0,
+  protein: Number(result.protein) || 0,
+  carbs: Number(result.carbs) || 0,
+  fat: Number(result.fat) || 0,
+  type: result.type || "其他"
+};
+
+// 🆕 如果所有營養素都是 0,代表辨識失敗,設定信心度為 low
+if (parsedData.kcal === 0 && parsedData.protein === 0 && 
+    parsedData.carbs === 0 && parsedData.fat === 0) {
+  parsedData.confidence = 'low';
+  parsedData.name = parsedData.name === "未知食物" ? "未知食物" : parsedData.name + " (辨識不完整)";
+}
+
+return parsedData;
 } catch (e) {
   console.error("JSON Parse Error:", jsonString);
   throw new Error("AI 回傳格式錯誤,請重試");

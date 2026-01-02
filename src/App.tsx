@@ -1249,7 +1249,16 @@ const COMMON_EXERCISES = [
   
   // 🟢 新增：AI 結果確認視窗狀態
   const [showAiModal, setShowAiModal] = useState(false);
-  const [aiResult, setAiResult] = useState<any>(null); // 暫存 AI 回傳的結果
+const [aiResult, setAiResult] = useState<any>(null); // 暫存 AI 回傳的結果
+
+// 🆕 新增:儲存 AI 辨識的「每份」基準營養素
+const [aiBaseNutrition, setAiBaseNutrition] = useState<{
+  kcalPerServing: number;
+  proteinPerServing: number;
+  carbsPerServing: number;
+  fatPerServing: number;
+  servingSize: number;
+} | null>(null);
 
   // 🟢 新增：處理圖片選擇與 AI 分析
   const handleAiImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1273,11 +1282,23 @@ const COMMON_EXERCISES = [
 
       // 💡 UX 改善：分析完畢後，不直接填入，而是存入 State 並開啟確認視窗
       setAiResult({
-        ...result,
-        // 預設給一個 uuid，雖然加入時會產生新的，但這裡先備著
-        id: uuid(), 
-      });
-      setShowAiModal(true);
+  ...result,
+  id: uuid(),
+  actualRatio: 1.0  // 🆕 預設吃了全部
+});
+
+// 🆕 儲存「每份」的基準營養素
+setAiBaseNutrition({
+  kcalPerServing: result.kcal || 0,
+  proteinPerServing: result.protein || 0,
+  carbsPerServing: result.carbs || 0,
+  fatPerServing: result.fat || 0,
+  servingSize: result.servingSize || 100
+});
+
+console.log('AI 回傳資料:', result);
+
+setShowAiModal(true);
       
       // 注意：這裡不呼叫 showToast('success')，改在 Modal 出現後讓使用者看到結果
 
@@ -1343,28 +1364,50 @@ const COMMON_EXERCISES = [
 
   // 🟢 新增：使用者在 Modal 點擊「確認加入」後執行的動作
   const confirmAiResult = (finalData: any) => {
-    // 建立新紀錄
-    const newEntry: MealEntry = {
-      id: uuid(),
-      date: selectedDate,
-      mealType: formMealType,
-      label: finalData.name,
-      kcal: Number(finalData.kcal) || 0,
-      protein: Number(finalData.protein) || 0,
-      carb: Number(finalData.carbs) || 0, // 注意 AI Service 回傳的 key 可能是 carbs
-      fat: Number(finalData.fat) || 0,
-      amountText: `約 ${finalData.estimatedWeight} g`,
-    };
-
-    setMeals((prev) => [...prev, newEntry]);
-    
-    // 清理狀態
-    setShowAiModal(false);
-    setAiResult(null);
-    
-    // 回饋
-    showToast('success', `已加入：${finalData.name}`);
+  const ratio = finalData.actualRatio || 1;
+  const actualWeight = Math.round((finalData.servingSize || 100) * ratio);
+  const ratioPercent = ratio * 100;
+  
+  // 🆕 即時計算營養素
+  const kcal = Math.round((aiBaseNutrition?.kcalPerServing || 0) * ratio);
+  const protein = Number(((aiBaseNutrition?.proteinPerServing || 0) * ratio).toFixed(1));
+  const carbs = Number(((aiBaseNutrition?.carbsPerServing || 0) * ratio).toFixed(1));
+  const fat = Number(((aiBaseNutrition?.fatPerServing || 0) * ratio).toFixed(1));
+  
+  // 根據比例顯示不同的文字
+  let amountText = '';
+  if (ratioPercent === 100) {
+    amountText = `${actualWeight}g`;
+  } else if (ratioPercent === 75) {
+    amountText = `大部分 (${actualWeight}g)`;
+  } else if (ratioPercent === 50) {
+    amountText = `一半 (${actualWeight}g)`;
+  } else if (ratioPercent === 25) {
+    amountText = `一些 (${actualWeight}g)`;
+  } else {
+    amountText = `${actualWeight}g (${ratioPercent.toFixed(0)}%)`;
+  }
+  
+  const newEntry: MealEntry = {
+    id: uuid(),
+    date: selectedDate,
+    mealType: formMealType,
+    label: finalData.name,
+    kcal: kcal,
+    protein: protein,
+    carb: carbs,
+    fat: fat,
+    amountText: amountText,
   };
+
+  setMeals((prev) => [...prev, newEntry]);
+  
+  setShowAiModal(false);
+  setAiResult(null);
+  setAiBaseNutrition(null); // 🆕 清理基準營養素
+  
+  showToast('success', `已加入:${finalData.name}`);
+};
 
   // 🟢 新增：用來暫存掃描到的 100g 原始資料，作為計算基準
 const [scannedBaseData, setScannedBaseData] = useState<ScannedFood | null>(null);
@@ -1576,6 +1619,8 @@ useEffect(() => {
     }
   }
 }, [fallbackQty, scannedBaseData]); // 監聽這兩個變數
+
+
 
     const recentMealsForQuickAdd = useMemo(() => {
     if (!meals.length) return [] as MealEntry[];
@@ -2690,40 +2735,42 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
         <input 
           type="file" 
           accept="image/*" 
+          capture="environment"
           ref={aiInputRef} 
           style={{ display: 'none' }} 
           onChange={handleAiImageSelect} 
         />
-        {/* 🟢 [新增] 隱藏的 Input 用於標籤掃描 */}
-  <input 
-    type="file" 
-    accept="image/*" 
-    ref={labelInputRef} 
-    style={{ display: 'none' }} 
-    onChange={handleLabelImageSelect} 
-  />
-        <button
-          type="button"
-          onClick={() => aiInputRef.current?.click()}
-          disabled={isAiAnalyzing}
-          style={{
-            height: 46,
-            width: 46,
-            borderRadius: '50%',
-            border: '1px solid #dde7e2',
-            background: isAiAnalyzing ? '#f3f4f6' : '#fff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: isAiAnalyzing ? 'wait' : 'pointer',
-            fontSize: '20px',
-            boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
-            flexShrink: 0,
-            marginLeft: 0 // 視需要調整間距
-          }}
-        >
-          {isAiAnalyzing ? '⏳' : '✨'}
-        </button>
+       {/* 🟢 [新增] 隱藏的 Input 用於標籤掃描 */}
+<input 
+  type="file"
+  accept="image/*"
+  capture="environment"
+  ref={labelInputRef}
+  onChange={handleLabelImageSelect}
+  style={{ display: 'none' }}
+/>
+<button
+  type="button"
+  onClick={() => aiInputRef.current?.click()}
+  disabled={isAiAnalyzing}
+  style={{
+    height: 46,
+    width: 46,
+    borderRadius: '50%',
+    border: '1px solid #dde7e2',
+    background: isAiAnalyzing ? '#f3f4f6' : '#fff',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: isAiAnalyzing ? 'wait' : 'pointer',
+    fontSize: '20px',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+    flexShrink: 0,
+    marginLeft: 0
+  }}
+>
+  {isAiAnalyzing ? '⏳' : '✨'}
+</button>
 
      {/* 🟢 [新增] 3. 營養標示 OCR 按鈕 (🧾) */}
   <button
@@ -5227,6 +5274,83 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
   </div>
 )}
 
+{/* 🆕 儲存為常用組合 Modal */}
+{showSaveComboModal && (
+  <div 
+    className="modal-backdrop"
+    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+    onClick={() => setShowSaveComboModal(false)}
+  >
+    <div 
+      className="modal"
+      onClick={(e) => e.stopPropagation()}
+      style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 400, padding: 24, boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}
+    >
+      <h3 style={{ margin: '0 0 16px 0', color: '#333', fontSize: 18 }}>儲存為常用組合</h3>
+      
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ fontSize: 14, fontWeight: 600, color: '#555', marginBottom: 8, display: 'block' }}>
+          組合名稱
+        </label>
+        <input 
+          type="text"
+          value={comboNameInput}
+          onChange={(e) => setComboNameInput(e.target.value)}
+          placeholder="例如：早餐組合"
+          style={{ 
+            width: '100%', 
+            padding: '12px', 
+            borderRadius: 8, 
+            border: '1px solid #ddd', 
+            fontSize: 16,
+            boxSizing: 'border-box'
+          }}
+        />
+      </div>
+
+      <div style={{ fontSize: 13, color: '#666', marginBottom: 20, padding: 12, background: '#f8f9fa', borderRadius: 8 }}>
+        已選擇 {selectedMealIds.length} 項食物
+      </div>
+
+      <div style={{ display: 'flex', gap: 12 }}>
+        <button 
+          onClick={() => setShowSaveComboModal(false)}
+          style={{ 
+            flex: 1, 
+            padding: '12px', 
+            background: '#e9ecef', 
+            color: '#333', 
+            border: 'none', 
+            borderRadius: 8, 
+            fontWeight: 600,
+            cursor: 'pointer'
+          }}
+        >
+          取消
+        </button>
+        <button 
+          onClick={handleSaveCombo}
+          disabled={!comboNameInput.trim()}
+          style={{ 
+            flex: 1, 
+            padding: '12px', 
+            background: comboNameInput.trim() ? 'var(--mint-green, #97d0ba)' : '#ddd', 
+            color: '#fff', 
+            border: 'none', 
+            borderRadius: 8, 
+            fontWeight: 600,
+            cursor: comboNameInput.trim() ? 'pointer' : 'not-allowed',
+            opacity: comboNameInput.trim() ? 1 : 0.5
+          }}
+        >
+          儲存
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
 {/* 🟢 新增：掛載掃描器 Modal */}
 {showScanner && (
   <BarcodeScanner 
@@ -5245,76 +5369,325 @@ fontWeight: foodInputMode === 'search' ? 800 : 700,
     <div 
       className="modal" 
       onClick={(e) => e.stopPropagation()}
-      style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 360, padding: 20, boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}
+      style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 400, padding: 20, boxShadow: '0 10px 25px rgba(0,0,0,0.2)', maxHeight: '90vh', overflowY: 'auto' }}
     >
       <div style={{ textAlign: 'center', marginBottom: 16 }}>
         <div style={{ fontSize: 40, marginBottom: 8 }}>✨</div>
         <h3 style={{ margin: 0, color: '#333' }}>AI 辨識結果</h3>
-        <p style={{ fontSize: 13, color: '#666', margin: '4px 0 0' }}>請確認或修改數值，完成後加入紀錄</p>
+        
+        {/* 🆕 信心度指示器 */}
+        {aiResult.confidence && (
+          <div style={{ 
+            marginTop: 12, 
+            padding: '8px 16px', 
+            borderRadius: 8, 
+            backgroundColor: 
+              aiResult.confidence === 'high' ? '#d4edda' : 
+              aiResult.confidence === 'medium' ? '#fff3cd' : '#f8d7da',
+            border: `1px solid ${
+              aiResult.confidence === 'high' ? '#c3e6cb' : 
+              aiResult.confidence === 'medium' ? '#ffeaa7' : '#f5c6cb'
+            }`
+          }}>
+            <p style={{ 
+              margin: 0, 
+              fontSize: 13, 
+              color: 
+                aiResult.confidence === 'high' ? '#155724' : 
+                aiResult.confidence === 'medium' ? '#856404' : '#721c24',
+              fontWeight: 600
+            }}>
+              {aiResult.confidence === 'high' && '✓ 估計準確度:高'}
+              {aiResult.confidence === 'medium' && '⚠ 估計準確度:中等，建議調整'}
+              {aiResult.confidence === 'low' && '⚠ 估計準確度:低，請手動修正'}
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="form-section">
-        <label style={{ fontSize: 13, fontWeight: 600, color: '#555' }}>食物名稱</label>
+        {/* 食物名稱 */}
+        <label style={{ fontSize: 13, fontWeight: 600, color: '#555', marginBottom: 8, display: 'block' }}>食物名稱</label>
         <input 
           type="text" 
           value={aiResult.name} 
           onChange={(e) => setAiResult({ ...aiResult, name: e.target.value })}
-          style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #ddd', marginBottom: 12, fontSize: 16 }}
+          style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #ddd', marginBottom: 16, fontSize: 16 }}
         />
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-          <div>
-            <label style={{ fontSize: 13, fontWeight: 600, color: '#555' }}>預估重量 (g)</label>
-            <input 
-              type="number" 
-              value={aiResult.estimatedWeight} 
-              onChange={(e) => setAiResult({ ...aiResult, estimatedWeight: e.target.value })}
-              style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 16 }}
+        {/* 🆕 份量參考圖示 */}
+        {aiResult.portionReference && aiResult.portionReference !== 'none' && (
+          <div style={{ 
+            backgroundColor: '#f8f9fa', 
+            padding: 12, 
+            borderRadius: 8, 
+            marginBottom: 16,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12
+          }}>
+            <img 
+              src={
+                aiResult.portionReference === 'fist' ? fistImg :
+                aiResult.portionReference === 'palm' ? palmImg :
+                aiResult.portionReference === 'thumb' ? thumbImg :
+                palmImg
+              }
+              alt="份量參考"
+              style={{ width: 48, height: 48, objectFit: 'contain' }}
             />
+            <div style={{ flex: 1 }}>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#333' }}>
+                份量參考:
+                {aiResult.portionReference === 'fist' && ' 拳頭大小'}
+                {aiResult.portionReference === 'palm' && ' 手掌大小'}
+                {aiResult.portionReference === 'thumb' && ' 拇指大小'}
+              </p>
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: '#666' }}>
+                約 {aiResult.servingSize || 100}g/份
+              </p>
+            </div>
           </div>
-          <div>
-            <label style={{ fontSize: 13, fontWeight: 600, color: '#555' }}>總熱量 (kcal)</label>
-            <input 
-              type="number" 
-              value={aiResult.kcal} 
-              onChange={(e) => setAiResult({ ...aiResult, kcal: e.target.value })}
-              style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #ddd', fontSize: 16, fontWeight: 'bold', color: '#5c9c84' }}
-            />
-          </div>
-        </div>
+        )}
 
-        <div style={{ background: '#f9fafb', padding: 12, borderRadius: 12, border: '1px solid #eee' }}>
-          <label style={{ fontSize: 13, fontWeight: 600, color: '#555', marginBottom: 8, display: 'block' }}>營養素 (g)</label>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <div style={{ flex: 1 }}>
-              <span style={{ fontSize: 12, color: '#d64545' }}>蛋白質</span>
-              <input 
-                type="number" 
-                value={aiResult.protein} 
-                onChange={(e) => setAiResult({ ...aiResult, protein: e.target.value })}
-                style={{ width: '100%', padding: '6px', borderRadius: 6, border: '1px solid #ddd', marginTop: 4 }}
-              />
-            </div>
-            <div style={{ flex: 1 }}>
-              <span style={{ fontSize: 12, color: '#e68a3a' }}>碳水</span>
-              <input 
-                type="number" 
-                value={aiResult.carbs} 
-                onChange={(e) => setAiResult({ ...aiResult, carbs: e.target.value })}
-                style={{ width: '100%', padding: '6px', borderRadius: 6, border: '1px solid #ddd', marginTop: 4 }}
-              />
-            </div>
-            <div style={{ flex: 1 }}>
-              <span style={{ fontSize: 12, color: '#f59e0b' }}>脂肪</span>
-              <input 
-                type="number" 
-                value={aiResult.fat} 
-                onChange={(e) => setAiResult({ ...aiResult, fat: e.target.value })}
-                style={{ width: '100%', padding: '6px', borderRadius: 6, border: '1px solid #ddd', marginTop: 4 }}
-              />
-            </div>
+        {/* 🆕 實際攝取量調整 */}
+<div style={{ marginBottom: 16 }}>
+  <label style={{ fontSize: 13, fontWeight: 600, color: '#555', marginBottom: 8, display: 'block' }}>
+    我實際吃了多少?
+  </label>
+  
+  {/* 快速選擇按鈕 */}
+  <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+    <button 
+  onClick={() => setAiResult({
+    ...aiResult, 
+    actualRatio: 1.0,
+    customWeight: Math.round((aiResult.servingSize || 100) * 1.0)
+  })}
+      style={{
+        flex: 1,
+        minWidth: '70px',
+        padding: '10px 12px',
+        fontSize: '0.9rem',
+        borderRadius: 8,
+        border: (aiResult.actualRatio || 1) === 1.0 ? '2px solid #5c9c84' : '1px solid #ddd',
+        backgroundColor: (aiResult.actualRatio || 1) === 1.0 ? '#f0f8f5' : '#fff',
+        color: (aiResult.actualRatio || 1) === 1.0 ? '#5c9c84' : '#666',
+        cursor: 'pointer',
+        fontWeight: (aiResult.actualRatio || 1) === 1.0 ? 'bold' : 'normal'
+      }}
+    >
+      全部 100%
+    </button>
+    <button 
+    onClick={() => setAiResult({
+      ...aiResult, 
+      actualRatio: 0.75,
+      customWeight: Math.round((aiResult.servingSize || 100) * 0.75)
+    })}
+      style={{
+        flex: 1,
+        minWidth: '70px',
+        padding: '10px 12px',
+        fontSize: '0.9rem',
+        borderRadius: 8,
+        border: (aiResult.actualRatio || 1) === 0.75 ? '2px solid #5c9c84' : '1px solid #ddd',
+        backgroundColor: (aiResult.actualRatio || 1) === 0.75 ? '#f0f8f5' : '#fff',
+        color: (aiResult.actualRatio || 1) === 0.75 ? '#5c9c84' : '#666',
+        cursor: 'pointer',
+        fontWeight: (aiResult.actualRatio || 1) === 0.75 ? 'bold' : 'normal'
+      }}
+    >
+      大部分 75%
+    </button>
+    <button 
+    onClick={() => setAiResult({
+      ...aiResult, 
+      actualRatio: 0.5,
+      customWeight: Math.round((aiResult.servingSize || 100) * 0.5)
+    })}
+      style={{
+        flex: 1,
+        minWidth: '70px',
+        padding: '10px 12px',
+        fontSize: '0.9rem',
+        borderRadius: 8,
+        border: (aiResult.actualRatio || 1) === 0.5 ? '2px solid #5c9c84' : '1px solid #ddd',
+        backgroundColor: (aiResult.actualRatio || 1) === 0.5 ? '#f0f8f5' : '#fff',
+        color: (aiResult.actualRatio || 1) === 0.5 ? '#5c9c84' : '#666',
+        cursor: 'pointer',
+        fontWeight: (aiResult.actualRatio || 1) === 0.5 ? 'bold' : 'normal'
+      }}
+    >
+      一半 50%
+    </button>
+    <button 
+    onClick={() => setAiResult({
+      ...aiResult, 
+      actualRatio: 0.25,
+      customWeight: Math.round((aiResult.servingSize || 100) * 0.25)
+    })}
+      style={{
+        flex: 1,
+        minWidth: '70px',
+        padding: '10px 12px',
+        fontSize: '0.9rem',
+        borderRadius: 8,
+        border: (aiResult.actualRatio || 1) === 0.25 ? '2px solid #5c9c84' : '1px solid #ddd',
+        backgroundColor: (aiResult.actualRatio || 1) === 0.25 ? '#f0f8f5' : '#fff',
+        color: (aiResult.actualRatio || 1) === 0.25 ? '#5c9c84' : '#666',
+        cursor: 'pointer',
+        fontWeight: (aiResult.actualRatio || 1) === 0.25 ? 'bold' : 'normal'
+      }}
+    >
+      一些 25%
+    </button>
+  </div>
+  
+  {/* 精確調整重量 */}
+<div style={{ 
+  display: 'flex', 
+  gap: 10, 
+  alignItems: 'center',
+  backgroundColor: '#f8f9fa',
+  padding: '12px',
+  borderRadius: 8,
+  marginBottom: 8
+}}>
+  <span style={{ fontSize: 13, color: '#666', flexShrink: 0 }}>或輸入實際重量:</span>
+  <input 
+    type="text"
+    inputMode="numeric"
+    value={aiResult.customWeight !== undefined 
+      ? aiResult.customWeight 
+      : Math.round((aiResult.servingSize || 100) * (aiResult.actualRatio || 1))
+    }
+    onChange={(e) => {
+      const val = e.target.value;
+      // 允許空字串和數字
+      if (val === '' || /^\d+$/.test(val)) {
+        const actualWeight = val === '' ? 0 : Number(val);
+        const ratio = actualWeight / (aiResult.servingSize || 100);
+        setAiResult({
+          ...aiResult,
+          customWeight: val === '' ? '' : actualWeight, // 儲存使用者輸入的值
+          actualRatio: Math.max(0, Math.min(2, ratio))
+        });
+      }
+    }}
+    onBlur={() => {
+      // 失去焦點時,如果是空字串,補回預設值
+      if (aiResult.customWeight === '' || aiResult.customWeight === undefined) {
+        setAiResult({
+          ...aiResult,
+          customWeight: Math.round((aiResult.servingSize || 100) * (aiResult.actualRatio || 1))
+        });
+      }
+    }}
+    style={{ 
+      width: '100px',
+      padding: '8px',
+      fontSize: 16,
+      fontWeight: 'bold',
+      textAlign: 'center',
+      borderRadius: 6,
+      border: '1px solid #ddd',
+      color: '#333',
+      backgroundColor: '#fff'
+    }}
+  />
+  <span style={{ fontSize: 14, color: '#666' }}>g</span>
+</div>
+  
+  <p style={{ fontSize: 11, color: '#999', margin: 0, textAlign: 'center' }}>
+    💡 AI 估算總重: {aiResult.servingSize || 100}g
+  </p>
+</div>
+
+        {/* 總熱量顯示 (即時計算) */}
+{(() => {
+  const ratio = aiResult.actualRatio || 1;
+  const kcal = Math.round((aiBaseNutrition?.kcalPerServing || 0) * ratio);
+  return (
+    <div style={{ 
+      backgroundColor: '#f0f8f5', 
+      padding: 16, 
+      borderRadius: 12, 
+      marginBottom: 16,
+      border: '2px solid #5c9c84'
+    }}>
+      <label style={{ fontSize: 13, fontWeight: 600, color: '#555', display: 'block', marginBottom: 8 }}>
+        總熱量
+      </label>
+      <div style={{ fontSize: 28, fontWeight: 'bold', color: '#5c9c84', textAlign: 'center' }}>
+        {kcal} <span style={{ fontSize: 16 }}>kcal</span>
+      </div>
+    </div>
+  );
+})()}
+
+{/* 營養素顯示 (即時計算) */}
+{(() => {
+  const ratio = aiResult.actualRatio || 1;
+  const protein = Number(((aiBaseNutrition?.proteinPerServing || 0) * ratio).toFixed(1));
+  const carbs = Number(((aiBaseNutrition?.carbsPerServing || 0) * ratio).toFixed(1));
+  const fat = Number(((aiBaseNutrition?.fatPerServing || 0) * ratio).toFixed(1));
+  
+  return (
+    <div style={{ background: '#f9fafb', padding: 12, borderRadius: 12, border: '1px solid #eee' }}>
+      <label style={{ fontSize: 13, fontWeight: 600, color: '#555', marginBottom: 8, display: 'block' }}>
+        營養素 (g)
+        <span style={{ fontSize: 11, color: '#999', fontWeight: 'normal', marginLeft: 8 }}>
+          💡 調整重量會自動計算
+        </span>
+      </label>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ flex: 1, textAlign: 'center' }}>
+          <span style={{ fontSize: 12, color: '#d64545', display: 'block', marginBottom: 4 }}>蛋白質</span>
+          <div style={{ 
+            padding: '8px', 
+            borderRadius: 6, 
+            backgroundColor: '#fff',
+            border: '1px solid #e0e0e0',
+            fontSize: 16,
+            fontWeight: 'bold',
+            color: '#d64545'
+          }}>
+            {protein}
           </div>
         </div>
+        <div style={{ flex: 1, textAlign: 'center' }}>
+          <span style={{ fontSize: 12, color: '#e68a3a', display: 'block', marginBottom: 4 }}>碳水</span>
+          <div style={{ 
+            padding: '8px', 
+            borderRadius: 6, 
+            backgroundColor: '#fff',
+            border: '1px solid #e0e0e0',
+            fontSize: 16,
+            fontWeight: 'bold',
+            color: '#e68a3a'
+          }}>
+            {carbs}
+          </div>
+        </div>
+        <div style={{ flex: 1, textAlign: 'center' }}>
+          <span style={{ fontSize: 12, color: '#f59e0b', display: 'block', marginBottom: 4 }}>脂肪</span>
+          <div style={{ 
+            padding: '8px', 
+            borderRadius: 6, 
+            backgroundColor: '#fff',
+            border: '1px solid #e0e0e0',
+            fontSize: 16,
+            fontWeight: 'bold',
+            color: '#f59e0b'
+          }}>
+            {fat}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+})()}
       </div>
 
       <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
