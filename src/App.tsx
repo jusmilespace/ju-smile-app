@@ -493,7 +493,7 @@ const CSV_DEFAULT_URLS = {
 } as const;
 
 // 🔹 App 版本（之後要改版本號可以只改這裡）
-const APP_VERSION = '0.1.0';
+const APP_VERSION = '1.0.1';
 
 function loadJSON<T>(key: string, fallback: T): T {
   try {
@@ -7966,6 +7966,30 @@ function saveNumberInput(value: string) {
     <div className="settings-value"><span className="chevron">›</span></div>
   </div>
 </div>
+
+{/* --- 新增：醫療聲明與資料來源 (解決 Guideline 1.4.1) --- */}
+ <div className="settings-group-title">⚖️ 資料來源與免責聲明</div>
+      <div className="settings-list-card" style={{ display: 'block', padding: '16px 20px' }}>
+        <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 8px 0', lineHeight: 1.5 }}>
+          本應用程式之營養資訊與手掌估算數據，參考自：
+        </p>
+        <ul style={{ paddingLeft: '20px', margin: '8px 0', fontSize: '14px', color: '#6b7280', lineHeight: 1.6 }}>
+          <li style={{ marginBottom: 4 }}>
+            <a href="https://consumer.fda.gov.tw/Food/TFND.aspx?nodeID=178" target="_blank" rel="noopener noreferrer" style={{ color: '#5c9c84', textDecoration: 'underline' }}>
+              TFDA 台灣食品成分資料庫
+            </a>
+          </li>
+          <li>
+            <a href="https://www.hpa.gov.tw/Pages/EBook.aspx?nodeid=1208" target="_blank" rel="noopener noreferrer" style={{ color: '#5c9c84', textDecoration: 'underline' }}>
+              國健署 - 食物代換表 (2019)
+            </a>
+          </li>
+        </ul>
+        <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #eee', fontSize: '13px', color: '#9ca3af', lineHeight: 1.5 }}>
+          <strong style={{ color: '#d64545' }}>⚠️ 注意：</strong>本應用程式提供之數據僅供參考，不應視為醫療建議。在做出任何醫療決定前，請務必諮詢專業醫療人員。
+        </div>
+      </div>
+  
 
       {/* 第四組：備份與還原 */}
       <div className="settings-group-title">☁️ 備份與還原</div>
