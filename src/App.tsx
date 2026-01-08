@@ -146,7 +146,7 @@ const NumberPadModal: React.FC<NumberPadModalProps> = ({
       <div
         style={{
           width: '100%', maxWidth: 420, background: '#f0f2f5',
-          borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: '24px 20px',
+          borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: '24px 20px calc(60px + env(safe-area-inset-bottom)) 20px',
           boxShadow: '0 -4px 20px rgba(0,0,0,0.15)',
           animation: 'slideIn 0.2s ease-out',
           pointerEvents: 'auto' /* 🟢 恢復內容區塊的點擊感應 */
@@ -1425,6 +1425,7 @@ interface ServingBasedFood {
   carb: number;         // 每份碳水
   fat: number;          // 每份脂肪
   found: boolean;
+  dataType?: 'serving' | '100g';
 }
 const [scannedServingData, setScannedServingData] = useState<ServingBasedFood | null>(null);
 const [servingCount, setServingCount] = useState<number>(1); // 使用者選擇的份數
@@ -1582,7 +1583,10 @@ const handleScanResult = (food: ServingBasedFood) => {
   } else {
     // ⚠️ 只有「每 100g」資料 → 使用舊的重量調整方式
     setFoodName(food.name);
-    setScannedBaseData(food);
+    
+    // 🟢 修正：使用 'as any' 避免型別衝突，確保能存入 state
+    setScannedBaseData(food as any);
+    
     setFallbackType('其他類');
     setFallbackServings('1');
     setFallbackQty('100'); 
@@ -1599,7 +1603,7 @@ const handleScanResult = (food: ServingBasedFood) => {
   setEditingMealId(null);
   
   setShowScanner(false);
-  showToast('success', `已載入：${food.name}`);
+  // showToast('success', `已載入：${food.name}`); // 這行可以註解掉，避免重複跳 Toast
 };
     
 // 🟢 新增：當「重量」改變時，如果是掃描的食物，自動依比例計算營養素
@@ -2319,7 +2323,14 @@ useEffect(() => {
         style={{ paddingBottom: '90px' }}
       >
       {/* 🗓️ 記錄頁 - 月份標題 + 週曆 */}
-      <header className="top-bar">
+      <header 
+  className="top-bar"
+  style={{ 
+    paddingTop: 'env(safe-area-inset-top)',
+    height: 'auto',
+    minHeight: '60px' 
+  }}
+>
   <div
     className="date-text"
     style={{
@@ -3349,7 +3360,7 @@ useEffect(() => {
               {m.kcal} kcal
             </div>
 <div style={{ fontSize: 'var(--font-xs)', color: '#666', marginTop: 4 }}>
-              P: {round1(m.protein || 0)}g · C: {round1(m.carbs || 0)}g · F: {round1(m.fats || 0)}g
+              P: {round1(m.protein || 0)}g · C: {round1(m.carb || 0)}g · F: {round1(m.fat || 0)}g
             </div>
 
             <button
@@ -3389,8 +3400,8 @@ useEffect(() => {
         {combos.map((combo) => {
           const totalKcal = combo.items.reduce((sum, item) => sum + item.kcal, 0);
           const totalProtein = combo.items.reduce((sum, item) => sum + (item.protein || 0), 0);
-          const totalCarbs = combo.items.reduce((sum, item) => sum + (item.carbs || 0), 0);
-          const totalFats = combo.items.reduce((sum, item) => sum + (item.fats || 0), 0);
+          const totalCarbs = combo.items.reduce((sum, item) => sum + (item.carb || 0), 0);
+const totalFats = combo.items.reduce((sum, item) => sum + (item.fat || 0), 0);
           
           return (
             <div 
@@ -3425,7 +3436,7 @@ useEffect(() => {
                     }}>
                       <div style={{ fontWeight: 600 }}>{item.label}</div>
                       <div style={{ color: '#6b7280', marginTop: 2 }}>
-                        {item.kcal} kcal · P: {round1(item.protein || 0)}g · C: {round1(item.carbs || 0)}g · F: {round1(item.fats || 0)}g
+                        {item.kcal} kcal · P: {round1(item.protein || 0)}g · C: {round1(item.carb || 0)}g · F: {round1(item.fat || 0)}g
                       </div>
                     </div>
                   ))}
@@ -3763,8 +3774,7 @@ useEffect(() => {
 )}
 
 {/* === B：Food_DB 結果優化 (精準資料) === */}
-{foodSearchResults.unitMatches.length === 0 &&
-  foodSearchResults.foodMatches.length > 0 && (
+{foodSearchResults.foodMatches.length > 0 && (
     <>
       <div className="result-title" style={{ fontSize: 13, color: '#888', marginBottom: 8, paddingLeft: 4 }}>
         精準資料庫 (每100g)
@@ -6507,108 +6517,6 @@ const [srcMet, setSrcMet] = useState<string>(
 
   // ======== UI 元件 ========
 
-  const MacroRing: React.FC<{
-    label: string;
-    current?: number;
-    target?: number;
-    unit: string;
-  }> = ({ label, current, target, unit }) => {
-    const safeCurrent = current ?? 0;
-    const safeTarget = target && target > 0 ? target : 0;
-
-    // 真實比例（可能 > 1）
-    const rawRatio =
-      safeTarget > 0 ? safeCurrent / safeTarget : 0;
-
-    // 真實百分比（可能 > 100，用來顯示在字上）
-    const rawPercent =
-      safeTarget > 0 ? Math.round(rawRatio * 100) : 0;
-
-    // 圓環實際填滿的百分比（最多 100）
-    const ringPercent =
-      safeTarget > 0 ? Math.min(100, rawPercent) : 0;
-
-    const displayCurrent = round1(safeCurrent);
-    const displayTarget =
-      safeTarget > 0 ? round1(safeTarget) : undefined;
-
-    return (
-      <div className="ring-card">
-        <div
-          className="ring"
-          aria-label={label}
-          style={{ ['--p' as any]: ringPercent }}
-        >
-          <div className="ring-center">
-            {/* 中間顯示真實百分比，可以超過 100% */}
-            <div className="ring-value">{rawPercent}%</div>
-          </div>
-        </div>
-        <div className="ring-label">{label}</div>
-        <div className="ring-sub">
-          {displayCurrent}
-          {unit}
-          {displayTarget != null ? `/${displayTarget}${unit}` : ''}
-        </div>
-      </div>
-    );
-  };
-
-  const BodyRing: React.FC<{
-    label: string;
-    start?: number;
-    current?: number;
-    target?: number;
-    unit: string;
-    onClick?: () => void;
-  }> = ({ label, start, current, target, unit, onClick }) => {
-    const s =
-      start != null && !isNaN(start)
-        ? Number(start)
-        : current != null && !isNaN(current)
-          ? Number(current)
-          : undefined;
-    const c =
-      current != null && !isNaN(current) ? Number(current) : undefined;
-    const t =
-      target != null && !isNaN(target) ? Number(target) : undefined;
-
-    let percent = 0;
-
-    // 目標為「往下減」：(起始值 - 當前值) / (起始值 - 目標值)
-    if (s != null && c != null && t != null && s !== t) {
-      const raw = (s - c) / (s - t);
-      percent = Math.round(Math.max(0, Math.min(1, raw)) * 100);
-    }
-
-    const displayCurrent = round1(c ?? 0);
-    const displayTarget = t != null ? round1(t) : undefined;
-
-    return (
-      <div
-        className="ring-card body-ring"
-        onClick={onClick}
-        style={onClick ? { cursor: 'pointer' } : undefined}
-      >
-        <div
-          className="ring"
-          aria-label={label}
-          style={{ ['--p' as any]: percent }}
-        >
-          <div className="ring-center">
-            <div className="ring-value">{percent}%</div>
-          </div>
-        </div>
-        <div className="ring-label">{label}</div>
-        <div className="ring-sub">
-          {displayCurrent}
-          {unit}
-          {displayTarget != null ? ` → ${displayTarget}${unit}` : ''}
-        </div>
-      </div>
-    );
-  };
-
   // 優化樣式：更緊湊，移除按鈕改為整張卡片可點擊
     const MealCard: React.FC<{
     title: '早餐' | '午餐' | '晚餐' | '點心';
@@ -6988,7 +6896,14 @@ useEffect(() => {
 
     return (
       <div className="page page-today" style={{ paddingBottom: '90px' }}>
-        <header className="top-bar">
+        <header 
+  className="top-bar"
+  style={{ 
+    paddingTop: 'env(safe-area-inset-top)',
+    height: 'auto',
+    minHeight: '60px' 
+  }}
+>
   <div className="date-text" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
     
     {/* 1. 月份標題 + 幽靈 Date Input + 今天按鈕 */}
@@ -7782,8 +7697,8 @@ function saveNumberInput(value: string) {
       <div style={{ 
         padding: '12px 16px 20px', 
         display: 'flex',           // 彈性排版
-        alignItems: 'center'       // 垂直置中
-        // 🔴 已移除 justifyContent: 'space-between'，Logo 不會再跑到最右邊了
+        alignItems: 'center' ,      // 垂直置中
+        paddingTop: 'calc(12px + env(safe-area-inset-top))'
       }}>
         {/* 左側：文字區 */}
         <div>
@@ -8302,6 +8217,67 @@ function saveNumberInput(value: string) {
 
       </div>
       
+            {/* 🆕 資料來源說明 - Apple 審查要求 */}
+      <div style={{ 
+        marginTop: 16,
+        padding: 12, 
+        background: '#f0f8ff', 
+        borderRadius: 8,
+        border: '1px solid #d0e8ff'
+      }}>
+        <h4 style={{ 
+          fontSize: 14, 
+          marginBottom: 8,
+          color: '#333',
+          fontWeight: 600
+        }}>
+          📚 手掌估算法資料來源
+        </h4>
+        <p style={{ 
+          fontSize: 13, 
+          lineHeight: 1.5, 
+          color: '#555',
+          marginBottom: 10
+        }}>
+          本估算法參考以下官方飲食指南：
+        </p>
+        <div style={{ fontSize: 13 }}>
+          <a 
+            href="https://www.hpa.gov.tw/Pages/EBook.aspx?nodeid=3821" 
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ 
+              color: '#007AFF', 
+              textDecoration: 'none',
+              display: 'block',
+              marginBottom: 6
+            }}
+          >
+            🔗 衛生福利部國民健康署「我的餐盤」手冊
+          </a>
+          <a 
+            href="https://en.wikipedia.org/wiki/MyPlate" 
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ 
+              color: '#007AFF', 
+              textDecoration: 'none',
+              display: 'block'
+            }}
+          >
+            🔗 USDA MyPlate 飲食指南 (Wikipedia)
+          </a>
+        </div>
+        <p style={{ 
+          fontSize: 12, 
+          color: '#888',
+          marginTop: 10,
+          fontStyle: 'italic'
+        }}>
+          * 手掌估算法為便利性工具，實際營養需求請諮詢專業營養師
+        </p>
+      </div>
+      
       <button className="primary" onClick={() => setShowGuideModal(false)} style={{ marginTop: 20, width: '100%', padding: '12px', borderRadius: 12 }}>
         我知道了
       </button>
@@ -8423,7 +8399,8 @@ const PlanPage: React.FC = () => {
       <div style={{ 
         padding: '12px 16px 20px', 
         display: 'flex', 
-        flexDirection: 'column'
+        flexDirection: 'column',
+        paddingTop: 'calc(12px + env(safe-area-inset-top))'
       }}>
         <h2 style={{ margin: 0, fontSize: '22px', color: '#1f2937' }}>個人計畫 Plan</h2>
         <p style={{ margin: '4px 0 0', color: '#6b7280', fontSize: '14px' }}>
@@ -8612,32 +8589,41 @@ const chartData = useMemo(() => {
   if (period === '7d') {
   // 7天：顯示最近 7 天內有記錄的日期
   for (let i = 6; i >= 0; i--) {
-    const currentDate = today.subtract(i, 'day');
-    const dateStr = currentDate.format('YYYY-MM-DD');
-    const day = days.find(d => d.date === dateStr);
-    
-    // 🔧 如果當天沒有體重數據，跳過
-    if (!day || (day.weight == null && day.bodyFat == null && day.skeletalMuscle == null)) {
-      continue;
-    }
-    
-    const dayMeals = meals.filter(m => m.date === dateStr);
-    const dayExercises = exercises.filter(e => e.date === dateStr);
+  const currentDate = today.subtract(i, 'day');
+  const dateStr = currentDate.format('YYYY-MM-DD');
+  const day = days.find(d => d.date === dateStr);
+  
+  const dayMeals = meals.filter(m => m.date === dateStr);  // ✅ 先宣告
+  
+  // 檢查是否有身體數據或飲食紀錄
+  const hasBodyData = day && (day.weight != null || day.bodyFat != null || day.skeletalMuscle != null);
+  const hasMealData = dayMeals.length > 0;  // ✅ 現在可以使用了
+  
+  // 如果既沒有身體數據，也沒有飲食紀錄，跳過
+  if (!hasBodyData && !hasMealData) {
+    continue;
+  }
+  
+  const dayExercises = exercises.filter(e => e.date === dateStr);
 
     const totalKcal = dayMeals.reduce((sum, m) => sum + (m.kcal || 0), 0);
     const burnedKcal = dayExercises.reduce((sum, e) => sum + (e.kcal || 0), 0);
     const netKcal = totalKcal - burnedKcal;
     const totalProtein = dayMeals.reduce((sum, m) => sum + (m.protein || 0), 0);
+const totalCarb = dayMeals.reduce((sum, m) => sum + (m.carb || 0), 0);
+const totalFat = dayMeals.reduce((sum, m) => sum + (m.fat || 0), 0);
 
-    data.push({
-      date: currentDate.format('MM/DD'),
-      fullDate: dateStr,
-      weight: day.weight ?? null,
-      bodyFat: day.bodyFat ?? null,
-      skeletalMuscle: day.skeletalMuscle ?? null,
-      calories: totalKcal > 0 ? netKcal : null,
-      protein: totalProtein > 0 ? totalProtein : null,
-    });
+data.push({
+  date: currentDate.format('MM/DD'),
+  fullDate: dateStr,
+  weight: day?.weight ?? null,       
+  bodyFat: day?.bodyFat ?? null,     
+  skeletalMuscle: day?.skeletalMuscle ?? null,  
+  calories: totalKcal > 0 ? netKcal : null,
+  protein: totalProtein > 0 ? totalProtein : null,
+  carb: totalCarb > 0 ? totalCarb : null,
+  fat: totalFat > 0 ? totalFat : null,
+});
   }
   } else if (period === '30d') {
   for (let i = 4; i >= 0; i--) {
@@ -8655,9 +8641,9 @@ const chartData = useMemo(() => {
     const day = validDays[validDays.length - 1];
     
     // 🔧 如果該週沒有數據，跳過
-    if (!day) continue;
-    
-    const dateStr = day.date;
+    const weekMeals = meals.filter(m => m.date >= weekStart && m.date <= weekEnd);
+if (!day && weekMeals.length === 0) continue;
+const dateStr = day?.date || weekStart;
     const dayMeals = meals.filter(m => m.date === dateStr);
     const dayExercises = exercises.filter(e => e.date === dateStr);
 
@@ -8665,16 +8651,20 @@ const chartData = useMemo(() => {
     const burnedKcal = dayExercises.reduce((sum, e) => sum + (e.kcal || 0), 0);
     const netKcal = totalKcal - burnedKcal;
     const totalProtein = dayMeals.reduce((sum, m) => sum + (m.protein || 0), 0);
+const totalCarb = dayMeals.reduce((sum, m) => sum + (m.carb || 0), 0);
+const totalFat = dayMeals.reduce((sum, m) => sum + (m.fat || 0), 0);
 
-    data.push({
-      date: targetDate.format('MM/DD'),
-      fullDate: dateStr,
-      weight: day.weight ?? null,
-      bodyFat: day.bodyFat ?? null,
-      skeletalMuscle: day.skeletalMuscle ?? null,
-      calories: totalKcal > 0 ? netKcal : null,
-      protein: totalProtein > 0 ? totalProtein : null,
-    });
+data.push({
+  date: targetDate.format('MM/DD'),
+  fullDate: dateStr,
+  weight: day?.weight ?? null,
+  bodyFat: day?.bodyFat ?? null,
+  skeletalMuscle: day?.skeletalMuscle ?? null,
+  calories: totalKcal > 0 ? netKcal : null,
+  protein: totalProtein > 0 ? totalProtein : null,
+  carb: totalCarb > 0 ? totalCarb : null,
+  fat: totalFat > 0 ? totalFat : null,
+});
   }
   } else if (period === '90d') {
   // 90天：每週一個點（最多 13 個點）- 取該週第一筆有效數據
@@ -8693,9 +8683,9 @@ const chartData = useMemo(() => {
 const day = validDays[validDays.length - 1];
     
     // 🔧 如果該週沒有數據，跳過
-    if (!day) continue;
-    
-    const dateStr = day.date;
+    const weekMeals = meals.filter(m => m.date >= weekStart && m.date <= weekEnd);
+if (!day && weekMeals.length === 0) continue;
+const dateStr = day?.date || weekStart;
     const dayMeals = meals.filter(m => m.date === dateStr);
     const dayExercises = exercises.filter(e => e.date === dateStr);
 
@@ -8703,16 +8693,20 @@ const day = validDays[validDays.length - 1];
     const burnedKcal = dayExercises.reduce((sum, e) => sum + (e.kcal || 0), 0);
     const netKcal = totalKcal - burnedKcal;
     const totalProtein = dayMeals.reduce((sum, m) => sum + (m.protein || 0), 0);
+const totalCarb = dayMeals.reduce((sum, m) => sum + (m.carb || 0), 0);
+const totalFat = dayMeals.reduce((sum, m) => sum + (m.fat || 0), 0);
 
-    data.push({
-      date: targetDate.format('MM/DD'),
-      fullDate: dateStr,
-      weight: day.weight ?? null,
-      bodyFat: day.bodyFat ?? null,
-      skeletalMuscle: day.skeletalMuscle ?? null,
-      calories: totalKcal > 0 ? netKcal : null,
-      protein: totalProtein > 0 ? totalProtein : null,
-    });
+data.push({
+  date: targetDate.format('MM/DD'),
+  fullDate: dateStr,
+  weight: day?.weight ?? null,
+  bodyFat: day?.bodyFat ?? null,
+  skeletalMuscle: day?.skeletalMuscle ?? null,
+  calories: totalKcal > 0 ? netKcal : null,
+  protein: totalProtein > 0 ? totalProtein : null,
+  carb: totalCarb > 0 ? totalCarb : null,
+  fat: totalFat > 0 ? totalFat : null,
+});
   }
   } else if (period === '180d') {
   // 180天：每月一個點（最多 6 個點）- 取該月第一筆有效數據
@@ -8731,9 +8725,9 @@ const day = validDays[validDays.length - 1];
 const day = validDays[validDays.length - 1];
     
     // 🔧 如果該月沒有數據，跳過不加入圖表
-    if (!day) continue;
-    
-    const dateStr = day.date;
+const monthMeals = meals.filter(m => m.date >= monthStart && m.date <= monthEnd);
+if (!day && monthMeals.length === 0) continue;
+const dateStr = day?.date || monthStart;
     const dayMeals = meals.filter(m => m.date === dateStr);
     const dayExercises = exercises.filter(e => e.date === dateStr);
 
@@ -8741,16 +8735,20 @@ const day = validDays[validDays.length - 1];
     const burnedKcal = dayExercises.reduce((sum, e) => sum + (e.kcal || 0), 0);
     const netKcal = totalKcal - burnedKcal;
     const totalProtein = dayMeals.reduce((sum, m) => sum + (m.protein || 0), 0);
+const totalCarb = dayMeals.reduce((sum, m) => sum + (m.carb || 0), 0);
+const totalFat = dayMeals.reduce((sum, m) => sum + (m.fat || 0), 0);
 
-    data.push({
-      date: targetMonth.format('M月'),
-      fullDate: dateStr,
-      weight: day.weight ?? null,
-      bodyFat: day.bodyFat ?? null,
-      skeletalMuscle: day.skeletalMuscle ?? null,
-      calories: totalKcal > 0 ? netKcal : null,
-      protein: totalProtein > 0 ? totalProtein : null,
-    });
+data.push({
+  date: targetMonth.format('M月'),
+  fullDate: dateStr,
+  weight: day?.weight ?? null,
+  bodyFat: day?.bodyFat ?? null,
+  skeletalMuscle: day?.skeletalMuscle ?? null,
+  calories: totalKcal > 0 ? netKcal : null,
+  protein: totalProtein > 0 ? totalProtein : null,
+  carb: totalCarb > 0 ? totalCarb : null,
+  fat: totalFat > 0 ? totalFat : null,
+});
   }
   } else if (period === '365d') {
   // 365天：每月一個點（最多 12 個點）- 取該月第一筆有效數據
@@ -8769,9 +8767,9 @@ const day = validDays[validDays.length - 1];
 const day = validDays[validDays.length - 1];
     
     // 🔧 如果該月沒有數據，跳過不加入圖表
-    if (!day) continue;
-    
-    const dateStr = day.date;
+const monthMeals = meals.filter(m => m.date >= monthStart && m.date <= monthEnd);
+if (!day && monthMeals.length === 0) continue;
+const dateStr = day?.date || monthStart;
     const dayMeals = meals.filter(m => m.date === dateStr);
     const dayExercises = exercises.filter(e => e.date === dateStr);
 
@@ -8779,16 +8777,20 @@ const day = validDays[validDays.length - 1];
     const burnedKcal = dayExercises.reduce((sum, e) => sum + (e.kcal || 0), 0);
     const netKcal = totalKcal - burnedKcal;
     const totalProtein = dayMeals.reduce((sum, m) => sum + (m.protein || 0), 0);
+const totalCarb = dayMeals.reduce((sum, m) => sum + (m.carb || 0), 0);
+const totalFat = dayMeals.reduce((sum, m) => sum + (m.fat || 0), 0);
 
-    data.push({
-      date: targetMonth.format('M月'),
-      fullDate: dateStr,
-      weight: day.weight ?? null,
-      bodyFat: day.bodyFat ?? null,
-      skeletalMuscle: day.skeletalMuscle ?? null,
-      calories: totalKcal > 0 ? netKcal : null,
-      protein: totalProtein > 0 ? totalProtein : null,
-    });
+data.push({
+  date: targetMonth.format('M月'),
+  fullDate: dateStr,
+  weight: day?.weight ?? null,
+  bodyFat: day?.bodyFat ?? null,
+  skeletalMuscle: day?.skeletalMuscle ?? null,
+  calories: totalKcal > 0 ? netKcal : null,
+  protein: totalProtein > 0 ? totalProtein : null,
+  carb: totalCarb > 0 ? totalCarb : null,
+  fat: totalFat > 0 ? totalFat : null,
+});
   }
   }
 
@@ -8808,7 +8810,7 @@ const day = validDays[validDays.length - 1];
     // 數據洞察計算
     const insights = useMemo(() => {
       // 🆕 身體組成模式不顯示洞察
-      if (metric === 'bodyComposition') return null;
+      if (metric === 'bodyComposition' || metric === 'nutrition') return null;
 
       const validData = chartData.filter(d => d[metric] != null);
       if (validData.length < 2) return null;
@@ -8870,14 +8872,14 @@ const day = validDays[validDays.length - 1];
         } else {
           suggestion = '熱量攝取在目標範圍內,繼續保持！';
         }
-      } else if (metric === 'protein') {
-        const goal = settings.proteinGoal || 0;
-        if (avg >= goal) {
-          suggestion = '蛋白質攝取充足,有助於肌肉維持！💪';
-        } else {
-          suggestion = '蛋白質攝取不足,建議增加豆魚蛋肉類攝取。';
-        }
-      }
+      } else if (metric === 'nutrition') {
+  const goal = settings.proteinGoal || 0;
+  if (avg >= goal) {
+    suggestion = '三大營養素攝取均衡,繼續保持健康飲食！💪';
+  } else {
+    suggestion = '建議注意蛋白質攝取,並保持營養素均衡。';
+  }
+}
 
       return {
         firstValue: firstValue.toFixed(1),
@@ -8898,13 +8900,13 @@ const day = validDays[validDays.length - 1];
       bodyFat: { label: '體脂率', unit: '%', color: '#e68a3a', yAxisDomain: [10, 40] },
       skeletalMuscle: { label: '骨骼肌率', unit: '%', color: '#10b981', yAxisDomain: [20, 40] }, // 🆕
       calories: { label: '淨熱量', unit: 'kcal', color: '#4a90e2', yAxisDomain: [0, 3000] },
-      protein: { label: '蛋白質', unit: 'g', color: '#d64545', yAxisDomain: [0, 150] },
+nutrition: { label: '三大營養素', unit: 'g', color: '#5c9c84' }, // 合併圖表
     };
 
     const config = metricConfig[metric];
 
     return (
-  <div className="page" style={{ padding: 16, paddingBottom: '96px' }}>
+  <div className="page" style={{ padding: 16, paddingBottom: '96px', paddingTop: 'calc(16px + env(safe-area-inset-top))' }}>
     {/* 新的標題區塊：包含圖片 Icon 與樣式 */}
     {/* 標題區塊：使用 Flexbox 強制並排 */}
 <div style={{ 
@@ -9069,7 +9071,7 @@ const day = validDays[validDays.length - 1];
         { id: 'bodyFat', label: '體脂率', color: '#e68a3a' },
         { id: 'skeletalMuscle', label: '骨骼肌', color: '#10b981' },
         { id: 'calories', label: '淨熱量', color: '#4a90e2' },
-        { id: 'protein', label: '蛋白質', color: '#d64545' },
+        { id: 'nutrition', label: '三大營養素', color: '#5c9c84' },
       ].map(item => (
         <button
           key={item.id}
@@ -9214,7 +9216,89 @@ const day = validDays[validDays.length - 1];
                     />
                   </LineChart>
                 </ResponsiveContainer>
-              ) : (
+              ) : metric === 'nutrition' ? (
+  
+  // 📊 情境 A2：三大營養素合併圖表
+  <ResponsiveContainer width="100%" height="100%">
+    <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>  // ✅ 加入 data
+      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />  // ✅ 加入網格
+      
+      <XAxis   // ✅ 加入 X 軸
+        dataKey="date" 
+        axisLine={false}
+        tickLine={false}
+        tick={{ fill: '#9ca3af', fontSize: 11 }}
+        interval="preserveStartEnd"
+        angle={-45}
+        textAnchor="end"
+        height={60}
+        dy={10}
+      />
+      
+      <YAxis  // ✅ 加入 Y 軸
+        domain={['auto', 'auto']}
+        axisLine={false}
+        tickLine={false}
+        tick={{ fill: '#9ca3af', fontSize: 11 }}
+        width={45}
+      />
+      
+      <Tooltip  // ✅ 加入提示框
+        cursor={{ stroke: '#9ca3af', strokeWidth: 1, strokeDasharray: '4 4' }}
+        contentStyle={{
+          backgroundColor: '#fff',
+          borderRadius: '12px',
+          border: 'none',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+          padding: '12px'
+        }}
+        formatter={(value: any, name: string) => {
+          if (name === '蛋白質') return [`${Number(value).toFixed(1)} g`, name];
+          if (name === '碳水化合物') return [`${Number(value).toFixed(1)} g`, name];
+          if (name === '脂肪') return [`${Number(value).toFixed(1)} g`, name];
+          return [value, name];
+        }}
+      />
+      
+      <Legend verticalAlign="top" iconType="circle" height={36}/>  // ✅ 加入圖例
+      
+      {/* 線條 A: 蛋白質 (綠色 - 與首頁進度條一致) */}
+      <Line
+        type="monotone"
+        dataKey="protein"
+        name="蛋白質"
+        stroke="#5c9c84"
+        strokeWidth={3}
+        dot={{ r: 3, fill: '#5c9c84', stroke: '#fff', strokeWidth: 2 }}
+        activeDot={{ r: 6, fill: '#5c9c84', strokeWidth: 0 }}
+        connectNulls
+      />
+      {/* 線條 B: 碳水化合物 (橘色 - 與首頁進度條一致) */}
+      <Line
+        type="monotone"
+        dataKey="carb"
+        name="碳水化合物"
+        stroke="#ffbe76"
+        strokeWidth={2}
+        strokeDasharray="5 5"
+        dot={{ r: 3, fill: '#ffbe76', stroke: '#fff', strokeWidth: 1 }}
+        activeDot={{ r: 5 }}
+        connectNulls
+      />
+      {/* 線條 C: 脂肪 (紅色 - 與首頁進度條一致) */}
+      <Line
+        type="monotone"
+        dataKey="fat"
+        name="脂肪"
+        stroke="#ff7979"
+        strokeWidth={2}
+        dot={{ r: 3, fill: '#ff7979', stroke: '#fff', strokeWidth: 1 }}
+        activeDot={{ r: 5 }}
+        connectNulls
+      />
+    </LineChart>
+  </ResponsiveContainer>
+) : (
                 
                 // 📊 情境 B：單一指標圖表
                 <ResponsiveContainer width="100%" height="100%">
@@ -9288,105 +9372,99 @@ return (
   <ToastContext.Provider value={{ showToast }}>
     <ToastStyles />
     
-    {/* 🆕 數字鍵盤動畫 - 由下往上滑入 */}
+    {/* 動畫樣式保持不變 */}
     <style>{`
-  /* 由下往上滑入 */
-  @keyframes slideIn {
-    from {
-      transform: translateY(100%);
-    }
-    to {
-      transform: translateY(0);
-    }
-  }
-  
-  @keyframes slideInFromRight {
-    from {
-      transform: translateY(100%);
-    }
-    to {
-      transform: translateY(0);
-    }
-  }
-  
-  @keyframes slideInUp {
-    from {
-      transform: translateY(100%);
-    }
-    to {
-      transform: translateY(0);
-    }
-  }
-  
-  /* 滑出動畫（如果需要） */
-  @keyframes slideOut {
-    from {
-      transform: translateY(0);
-    }
-    to {
-      transform: translateY(100%);
-    }
-  }
-  
-  .modal-backdrop > div {
-    animation: slideInFromRight 0.3s ease-out;
-    border-radius: 24px 24px 0 0;
-  }
-`}</style>
+      @keyframes slideIn { from { transform: translateY(100%); } to { transform: translateY(0); } }
+      @keyframes slideInFromRight { from { transform: translateY(100%); } to { transform: translateY(0); } }
+      @keyframes slideInUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+      @keyframes slideOut { from { transform: translateY(0); } to { transform: translateY(100%); } }
+      .modal-backdrop > div { animation: slideInFromRight 0.3s ease-out; border-radius: 24px 24px 0 0; }
+    `}</style>
     
-    <div className="app">
+    {/* 1️⃣ 最外層：鎖定螢幕，禁止整體彈性捲動 */}
+    <div className="app" style={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      height: '100%', 
+      width: '100%', 
+      overflow: 'hidden',
+      backgroundColor: 'var(--bg)' 
+    }}>
+      
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
-      {tab === 'today' && (
-        <TodayPage onAddExercise={goToExerciseRecord} />
-      )}
+      {/* 2️⃣ 中間內容區：設定 flex: 1 與 overflow-y: auto，只有這裡會捲動 */}
+      <main style={{
+        flex: 1,
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        position: 'relative',
+        WebkitOverflowScrolling: 'touch', // 讓 iOS 滑動順暢
+        paddingBottom: '20px' // 底部給一點緩衝空間
+      }}>
+        
+        {tab === 'today' && (
+          <TodayPage onAddExercise={goToExerciseRecord} />
+        )}
 
-      {/* 👇 [修改] 傳入完整的資料 Props */}
-      {tab === 'records' && (
-        <RecordsPage
-          recordTab={recordTab}
-          setRecordTab={setRecordTab}
-          defaultMealType={recordDefaultMealType}
-          foodMealType={currentFoodMealType}
-          setFoodMealType={setCurrentFoodMealType}
-          selectedDate={recordsDate}
-          setSelectedDate={setRecordsDate}
-          weekStart={recordsWeekStart}
-          setWeekStart={setRecordsWeekStart}
-          exForm={exerciseFormState}
-          onUpdateExForm={handleUpdateExForm}
-          // 👇 補上這些資料傳遞
-          meals={meals}
-          setMeals={setMeals}
-          exercises={exercises}
-          setExercises={setExercises}
-          combos={combos}
-          setCombos={setCombos}
-          days={days}
-          todayLocal={todayLocal}
-          typeTable={typeTable}
-          unitMap={unitMap}
-          foodDb={foodDb}
-          exerciseMet={exerciseMet}
-        />
-      )}
+        {/* 👇 完整保留你原本的 RecordsPage 資料傳遞 */}
+        {tab === 'records' && (
+          <RecordsPage
+            recordTab={recordTab}
+            setRecordTab={setRecordTab}
+            defaultMealType={recordDefaultMealType}
+            foodMealType={currentFoodMealType}
+            setFoodMealType={setCurrentFoodMealType}
+            selectedDate={recordsDate}
+            setSelectedDate={setRecordsDate}
+            weekStart={recordsWeekStart}
+            setWeekStart={setRecordsWeekStart}
+            exForm={exerciseFormState}
+            onUpdateExForm={handleUpdateExForm}
+            meals={meals}
+            setMeals={setMeals}
+            exercises={exercises}
+            setExercises={setExercises}
+            combos={combos}
+            setCombos={setCombos}
+            days={days}
+            todayLocal={todayLocal}
+            typeTable={typeTable}
+            unitMap={unitMap}
+            foodDb={foodDb}
+            exerciseMet={exerciseMet}
+          />
+        )}
 
-      {tab === 'trends' && (
-        <TrendsPage />
-      )}
+        {tab === 'trends' && (
+          <TrendsPage />
+        )}
 
-      {tab === 'settings' && (
-        <div style={{ height: '100%', overflowY: 'auto', background: '#f7faf9' }}>
+        {tab === 'settings' && (
+          <div style={{ height: '100%', overflowY: 'visible' }}>
+            <SettingsPage 
+               settings={settings} 
+               setSettings={setSettings} 
+               onOpenAbout={() => setTab('about')} 
+            />
+          </div>
+        )}
 
-          {/* 原本的設定頁面元件 */}
-          <SettingsPage onOpenAbout={() => setTab('about')} />
-        </div>
-      )}
+        {tab === 'plan' && <PlanPage />}
+        
+        {tab === 'about' && <AboutPage onBack={() => setTab('settings')} />}
+      
+      </main>
 
-      {tab === 'plan' && <PlanPage />}
-      {tab === 'about' && <AboutPage onBack={() => setTab('settings')} />}
-
-      <nav className="bottom-nav">
+      {/* 3️⃣ 底部導航：移出 main 之外，加上安全區設定 */}
+      <nav className="bottom-nav" style={{
+        flexShrink: 0, // 確保不會被壓縮
+        paddingBottom: '10px',
+        paddingTop: '8px',
+        zIndex: 50,
+        backgroundColor: '#fff',
+        borderTop: '1px solid #eee'
+      }}>
         <button
           className={tab === 'today' ? 'active' : ''}
           onClick={() => setTab('today')}
@@ -9396,7 +9474,12 @@ return (
         </button>
         <button
           className={tab === 'records' ? 'active' : ''}
-          onClick={() => setTab('records')}
+          onClick={() => {
+            // 點擊底部「紀錄」按鈕時，自動帶入今天日期，提升 UX
+            setRecordsDate(todayLocal);
+            setRecordsWeekStart(dayjs(todayLocal).startOf('week').format('YYYY-MM-DD'));
+            setTab('records');
+          }}
         >
           <div className="nav-icon">📋</div>
           <div className="nav-label">記錄</div>
@@ -9424,37 +9507,44 @@ return (
         </button>
       </nav>
 
+      {/* 更新提示列：加上 z-index 確保在最上層 */}
       {showUpdateBar && (
         <div
           style={{
-            position: 'fixed',
-            left: 0,
-            right: 0,
-            bottom: 0,
-            padding: '8px 12px',
-            background: '#222',
+            position: 'absolute', // 改為 absolute，疊在最上面
+            bottom: 'calc(80px + env(safe-area-inset-bottom))', // 顯示在導航列上方
+            left: 12,
+            right: 12,
+            borderRadius: 8,
+            padding: '12px',
+            background: 'rgba(34, 34, 34, 0.95)',
             color: '#fff',
             fontSize: 13,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: 8,
-            zIndex: 50,
+            zIndex: 100,
+            backdropFilter: 'blur(4px)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
           }}
         >
-          <span>發現新版本！點擊更新以取得最新功能。</span>
+          <span>發現新版本！</span>
           <button
             type="button"
             onClick={handleReloadForUpdate}
             style={{
               borderRadius: 999,
               border: 'none',
-              padding: '6px 10px',
-              fontSize: 15,
+              padding: '6px 12px',
+              fontSize: 13,
+              fontWeight: 600,
               cursor: 'pointer',
+              background: '#fff',
+              color: '#000'
             }}
           >
-            立即更新
+            更新
           </button>
         </div>
       )}
