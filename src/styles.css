@@ -2111,22 +2111,25 @@ body {
 }
 
 .update-toast {
-  position: fixed;
-  top: 0;  /* 🔧 改到頂部，確保不被遮擋 */
+  position: fixed !important;
+  top: 0 !important;  /* 🔧 強制在頂部 */
+  bottom: auto !important;  /* 🔧 明確取消 bottom */
   left: 0;
   right: 0;
-  background: linear-gradient(135deg, var(--mint-dark) 0%, var(--mint) 100%);  /* 使用品牌色 */
+  background: linear-gradient(135deg, var(--mint-dark) 0%, var(--mint) 100%);
   color: #fff;
   padding: 12px 16px;
-  padding-top: calc(12px + var(--sat));  /* 🔧 適應瀏海區域 */
+  padding-top: calc(12px + var(--sat));
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  z-index: 9999;
+  z-index: 9999 !important;  /* 🔧 確保在最上層 */
   font-size: 14px;
-  animation: slideDown 0.4s ease-out;  /* 🔧 改為向下滑入 */
+  animation: slideDown 0.4s ease-out;
 }
+
+
 
 .update-toast button {
   background-color: #fff;
