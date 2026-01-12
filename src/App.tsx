@@ -6177,14 +6177,23 @@ const INTENSITY_OPTIONS = [
   );
 
 
-// 🔔 監聽 Service Worker 是否有安裝新版本
+// After（加上 Capacitor 環境判斷）
+// 🔔 監聽 Service Worker 是否有安裝新版本（只在 Web 版運作）
 useEffect(() => {
+  // 🔧 判斷是否為 Capacitor 原生 App
+  const isNativeApp = (window as any).Capacitor?.isNativePlatform?.();
+  
+  if (isNativeApp) {
+    console.log('📱 原生 App 環境，不啟用 Service Worker 更新提示');
+    return; // 直接結束，不執行後續邏輯
+  }
+
   if (!('serviceWorker' in navigator)) {
     console.warn('⚠️ 此瀏覽器不支援 Service Worker');
     return;
   }
 
-// 1. 註冊與監聽新版本發現
+  // 1. 註冊與監聽新版本發現（只在 Web 版執行）
   navigator.serviceWorker.getRegistration().then((reg) => {
     if (!reg) return;
 
@@ -6219,14 +6228,14 @@ useEffect(() => {
 
   // 👇 [重要] 2. 監聽「控制權變更」事件
   // 當 handleReloadForUpdate 送出 SKIP_WAITING 後，瀏覽器會切換 SW，這時觸發此事件 -> 自動重整
-    let refreshing = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!refreshing) {
-        refreshing = true;
-        console.log('🔄 控制權已變更，正在重整頁面...');
-        window.location.reload();
-      }
-    });
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) {
+      refreshing = true;
+      console.log('🔄 控制權已變更，正在重整頁面...');
+      window.location.reload();
+    }
+  });
 
 }, []);
 
