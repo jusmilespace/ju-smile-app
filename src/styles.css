@@ -2110,39 +2110,44 @@ body {
   }
 }
 
-/* PWA 更新提示框樣式 - 修正版 */
 .update-toast {
-  position: fixed;         /* 鎖定在螢幕視窗，不受其他元素影響 */
-  /* 90px 是預留給底部導航的高度，var(--sab) 是 iPhone 底部黑條的安全距離 */
-  bottom: calc(90px + var(--sab)); 
-  left: 20px;
-  right: 20px;
-  background-color: #222;  /* 深色背景 */
+  position: fixed;
+  top: 0;  /* 🔧 改到頂部，確保不被遮擋 */
+  left: 0;
+  right: 0;
+  background: linear-gradient(135deg, var(--mint-dark) 0%, var(--mint) 100%);  /* 使用品牌色 */
   color: #fff;
-  padding: 12px 20px;
-  border-radius: 99px;     /* 圓角 */
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  padding: 12px 16px;
+  padding-top: calc(12px + var(--sat));  /* 🔧 適應瀏海區域 */
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  z-index: 9999;           /* 確保在最上層，蓋過所有東西 */
-  font-size: 15px;
-  animation: slideUp 0.3s ease-out;
+  z-index: 9999;
+  font-size: 14px;
+  animation: slideDown 0.4s ease-out;  /* 🔧 改為向下滑入 */
 }
 
 .update-toast button {
   background-color: #fff;
-  color: #000;
+  color: var(--mint-dark);
   border: none;
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-weight: bold;
+  padding: 6px 14px;
+  border-radius: 16px;
+  font-weight: 600;
   font-size: 13px;
   cursor: pointer;
   margin-left: 10px;
+  flex-shrink: 0;  /* 防止按鈕被壓縮 */
 }
 
-@keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+@keyframes slideDown {
+  from { 
+    transform: translateY(-100%); 
+    opacity: 0; 
+  }
+  to { 
+    transform: translateY(0); 
+    opacity: 1; 
+  }
 }
