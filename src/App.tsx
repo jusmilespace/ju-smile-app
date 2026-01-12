@@ -493,7 +493,7 @@ const CSV_DEFAULT_URLS = {
 } as const;
 
 // 🔹 App 版本（之後要改版本號可以只改這裡）
-const APP_VERSION = '1.0.1';
+const APP_VERSION = '1.0.3';
 
 function loadJSON<T>(key: string, fallback: T): T {
   try {
@@ -920,7 +920,9 @@ const AboutPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             目前版本：<b>Ju Smile App v{APP_VERSION}</b>
           </p>
           <ul style={{ paddingLeft: 20, marginBottom: 0, fontSize: 'var(--font-xs)' }}>
-            <li>v0.1.0：初始版本，提供體重 / 飲食 / 運動紀錄與 JSON 匯出 / 匯入功能。</li>
+            <li>v1.0.3：修正更新提示被導航列擋住的問題，提升介面穩定性。</li>
+  <li>v1.0.2：修正上架語言設定為繁中。</li>
+            <li>v1.0.1：初始版本，提供體重 / 飲食 / 運動紀錄與 JSON 匯出 / 匯入功能。</li>
             {/* 未來可以在這裡往下加 v0.1.1, v0.2.0 ... */}
           </ul>
         </div>
@@ -9535,8 +9537,8 @@ return (
       {showUpdateBar && (
         <div
           style={{
-            position: 'absolute', // 改為 absolute，疊在最上面
-            bottom: 'calc(80px + env(safe-area-inset-bottom))', // 顯示在導航列上方
+            position: 'fixed', // 🔧 改為 fixed，確保固定在螢幕上
+            bottom: 'calc(70px + env(safe-area-inset-bottom))', // 🔧 調整位置，顯示在導航列上方
             left: 12,
             right: 12,
             borderRadius: 8,
@@ -9548,7 +9550,7 @@ return (
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: 8,
-            zIndex: 100,
+            zIndex: 9999, // 🔧 大幅提高 z-index，確保在所有元素之上
             backdropFilter: 'blur(4px)',
             boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
           }}
