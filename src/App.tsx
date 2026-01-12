@@ -9484,13 +9484,57 @@ return (
 
       {/* 3️⃣ 底部導航：移出 main 之外，加上安全區設定 */}
       <nav className="bottom-nav" style={{
-        flexShrink: 0, // 確保不會被壓縮
-        paddingBottom: '10px',
-        paddingTop: '8px',
-        zIndex: 50,
-        backgroundColor: '#fff',
-        borderTop: '1px solid #eee'
-      }}>
+  flexShrink: 0,
+  paddingBottom: '10px',
+  paddingTop: '8px',
+  zIndex: 50,
+  backgroundColor: '#fff',
+  borderTop: '1px solid #eee',
+  position: 'relative' // 🔧 新增：讓內部的 absolute 元素以此為基準
+}}>
+
+        {/* 🔧 更新提示：顯示在導航列內部的最上方 */}
+  {showUpdateBar && (
+    <div
+      style={{
+        position: 'absolute',
+        top: '-56px', // 🔧 改為顯示在導航列上方
+        left: 12,
+        right: 12,
+        borderRadius: 8,
+        padding: '12px',
+        background: 'rgba(34, 34, 34, 0.95)',
+        color: '#fff',
+        fontSize: 13,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 8,
+        zIndex: 1, // 🔧 在導航列內部，只需要比導航按鈕高
+        backdropFilter: 'blur(4px)',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+      }}
+    >
+      <span>發現新版本！</span>
+      <button
+        type="button"
+        onClick={handleReloadForUpdate}
+        style={{
+          borderRadius: 999,
+          border: 'none',
+          padding: '6px 12px',
+          fontSize: 13,
+          fontWeight: 600,
+          cursor: 'pointer',
+          background: '#fff',
+          color: '#000'
+        }}
+      >
+        更新
+      </button>
+    </div>
+  )}
+
         <button
           className={tab === 'today' ? 'active' : ''}
           onClick={() => setTab('today')}
@@ -9532,48 +9576,6 @@ return (
           <div className="nav-label">Plan</div>
         </button>
       </nav>
-
-      {/* 更新提示列：加上 z-index 確保在最上層 */}
-      {showUpdateBar && (
-        <div
-          style={{
-            position: 'fixed', // 🔧 改為 fixed，確保固定在螢幕上
-            bottom: 'calc(70px + env(safe-area-inset-bottom))', // 🔧 調整位置，顯示在導航列上方
-            left: 12,
-            right: 12,
-            borderRadius: 8,
-            padding: '12px',
-            background: 'rgba(34, 34, 34, 0.95)',
-            color: '#fff',
-            fontSize: 13,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 8,
-            zIndex: 9999, // 🔧 大幅提高 z-index，確保在所有元素之上
-            backdropFilter: 'blur(4px)',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-          }}
-        >
-          <span>發現新版本！</span>
-          <button
-            type="button"
-            onClick={handleReloadForUpdate}
-            style={{
-              borderRadius: 999,
-              border: 'none',
-              padding: '6px 12px',
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-              background: '#fff',
-              color: '#000'
-            }}
-          >
-            更新
-          </button>
-        </div>
-      )}
     </div>
   </ToastContext.Provider>
 );
