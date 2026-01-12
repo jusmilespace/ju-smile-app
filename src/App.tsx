@@ -9502,7 +9502,7 @@ return (
         boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
       }}
     >
-      <span>發現新版本！</span>
+      <span>系統已優化，點擊以套用最新功能！</span>
       <button
         type="button"
         onClick={handleReloadForUpdate}
