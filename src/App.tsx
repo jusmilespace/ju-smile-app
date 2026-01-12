@@ -9494,11 +9494,7 @@ return (
       <nav className="bottom-nav" style={{
   flexShrink: 0,
   paddingBottom: '10px',
-  paddingTop: '8px',
-  zIndex: 50,
-  backgroundColor: '#fff',
-  borderTop: '1px solid #eee',
-  position: 'relative' // 🔧 新增：讓內部的 absolute 元素以此為基準
+  paddingTop: '8px'
 }}>
 
   
