@@ -9482,45 +9482,13 @@ return (
       
       </main>
       {showUpdateBar && (
-    <div
-      style={{
-        position: 'absolute',
-        top: '-56px', // 🔧 改為顯示在導航列上方
-        left: 12,
-        right: 12,
-        borderRadius: 8,
-        padding: '12px',
-        background: 'rgba(34, 34, 34, 0.95)',
-        color: '#fff',
-        fontSize: 13,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 8,
-        zIndex: 1, // 🔧 在導航列內部，只需要比導航按鈕高
-        backdropFilter: 'blur(4px)',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-      }}
-    >
-      <span>系統已優化，點擊以套用最新功能！</span>
-      <button
-        type="button"
-        onClick={handleReloadForUpdate}
-        style={{
-          borderRadius: 999,
-          border: 'none',
-          padding: '6px 12px',
-          fontSize: 13,
-          fontWeight: 600,
-          cursor: 'pointer',
-          background: '#fff',
-          color: '#000'
-        }}
-      >
-        更新
-      </button>
-    </div>
-  )}
+        <div className="update-toast">
+          <span>系統已優化，點擊以套用最新功能</span>
+          <button onClick={handleReloadForUpdate}>
+            更新
+          </button>
+        </div>
+      )}
 
       {/* 3️⃣ 底部導航：移出 main 之外，加上安全區設定 */}
       <nav className="bottom-nav" style={{

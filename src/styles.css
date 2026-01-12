@@ -2110,21 +2110,23 @@ body {
   }
 }
 
-/* PWA 更新提示框樣式 */
+/* PWA 更新提示框樣式 - 修正版 */
 .update-toast {
-  position: fixed; /* 改用 fixed，相對於螢幕視窗定位，而不是相對於 nav */
-  bottom: calc(90px + var(--sab)); /* 自動避開導航列高度 */
+  position: fixed;         /* 鎖定在螢幕視窗，不受其他元素影響 */
+  /* 90px 是預留給底部導航的高度，var(--sab) 是 iPhone 底部黑條的安全距離 */
+  bottom: calc(90px + var(--sab)); 
   left: 20px;
   right: 20px;
-  background-color: #222;
+  background-color: #222;  /* 深色背景 */
   color: #fff;
   padding: 12px 20px;
-  border-radius: 99px;
+  border-radius: 99px;     /* 圓角 */
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  z-index: 9999; /* 確保在最上層 */
+  z-index: 9999;           /* 確保在最上層，蓋過所有東西 */
+  font-size: 15px;
   animation: slideUp 0.3s ease-out;
 }
 
@@ -2138,4 +2140,9 @@ body {
   font-size: 13px;
   cursor: pointer;
   margin-left: 10px;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
