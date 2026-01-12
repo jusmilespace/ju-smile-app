@@ -2109,3 +2109,33 @@ body {
     grid-template-columns: repeat(4, 1fr);
   }
 }
+
+/* PWA 更新提示框樣式 */
+.update-toast {
+  position: fixed; /* 改用 fixed，相對於螢幕視窗定位，而不是相對於 nav */
+  bottom: calc(90px + var(--sab)); /* 自動避開導航列高度 */
+  left: 20px;
+  right: 20px;
+  background-color: #222;
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 99px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 9999; /* 確保在最上層 */
+  animation: slideUp 0.3s ease-out;
+}
+
+.update-toast button {
+  background-color: #fff;
+  color: #000;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 13px;
+  cursor: pointer;
+  margin-left: 10px;
+}

@@ -9481,20 +9481,7 @@ return (
         {tab === 'about' && <AboutPage onBack={() => setTab('settings')} />}
       
       </main>
-
-      {/* 3️⃣ 底部導航：移出 main 之外，加上安全區設定 */}
-      <nav className="bottom-nav" style={{
-  flexShrink: 0,
-  paddingBottom: '10px',
-  paddingTop: '8px',
-  zIndex: 50,
-  backgroundColor: '#fff',
-  borderTop: '1px solid #eee',
-  position: 'relative' // 🔧 新增：讓內部的 absolute 元素以此為基準
-}}>
-
-        {/* 🔧 更新提示：顯示在導航列內部的最上方 */}
-  {showUpdateBar && (
+      {showUpdateBar && (
     <div
       style={{
         position: 'absolute',
@@ -9534,6 +9521,19 @@ return (
       </button>
     </div>
   )}
+
+      {/* 3️⃣ 底部導航：移出 main 之外，加上安全區設定 */}
+      <nav className="bottom-nav" style={{
+  flexShrink: 0,
+  paddingBottom: '10px',
+  paddingTop: '8px',
+  zIndex: 50,
+  backgroundColor: '#fff',
+  borderTop: '1px solid #eee',
+  position: 'relative' // 🔧 新增：讓內部的 absolute 元素以此為基準
+}}>
+
+  
 
         <button
           className={tab === 'today' ? 'active' : ''}
