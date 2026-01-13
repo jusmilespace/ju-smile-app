@@ -1,3 +1,11 @@
+/* 讓整個 App 的內容往內縮，避開瀏海和底線 */
+body {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  
+  /* 確保背景色延伸到滿版 */
+  min-height: 100vh;
+}
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -87,4 +95,26 @@ button:focus-visible {
     transform: translateX(400px);
     opacity: 0;
   }
+}
+
+/* --- iOS 瀏海修正專區 --- */
+
+/* 1. 針對所有常見的導覽列 class 名稱設定 */
+/* 請根據你實際的 class 名稱，如果下面沒有涵蓋到，請自己加進去 */
+.navbar, .header, header, nav, .app-bar, .toolbar {
+  /* 增加頂部內距，讓內容避開瀏海 */
+  padding-top: env(safe-area-inset-top) !important;
+  
+  /* 確保高度自動調整 (有些導覽列寫死 height: 60px 會導致內容被切掉) */
+  height: auto !important;
+  min-height: env(safe-area-inset-top) !important;
+  
+  /* 確保背景色延伸 */
+  background-clip: padding-box;
+}
+
+/* 2. 如果你的導覽列是用 Fixed 固定在頂端的，需要往下推 Body */
+/* 這樣原本的第一塊內容才不會被變高的導覽列擋住 */
+body {
+  padding-top: env(safe-area-inset-top);
 }
