@@ -654,58 +654,38 @@ const InstallGuideWidget: React.FC = () => {
       </section>
 
       {/* 第一次開啟時的小提醒 bar */}
-      {showHint && (
-        <div
-          style={{
-            position: 'fixed',
-            left: 0,
-            right: 0,
-            bottom: 0,
-            padding: '8px 12px',
-            background: '#333',
-            color: '#fff',
-            fontSize: 'var(--font-xs)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 8,
-            zIndex: 30,
-          }}
-        >
-          <span>提示：可以把 Ju Smile App 安裝到手機主畫面，使用更方便。</span>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button
-              type="button"
-              onClick={openModal}
-              style={{
-                borderRadius: 999,
-                border: 'none',
-                padding: '4px 8px',
-                fontSize: 'var(--font-sm)',
-                cursor: 'pointer',
-              }}
-            >
-              看教學
-            </button>
-            <button
-              type="button"
-              onClick={handleNeverShow}
-              style={{
-                borderRadius: 999,
-                border: 'none',
-                padding: '4px 8px',
-                fontSize: 15,
-                background: 'transparent',
-                color: '#fff',
-                textDecoration: 'underline',
-                cursor: 'pointer',
-              }}
-            >
-              不再顯示
-            </button>
-          </div>
-        </div>
-      )}
+     {showHint && (
+  <div className="install-prompt-toast">
+    <div className="install-content">
+      {/* 加個小圖示更生動 */}
+      <span className="install-icon">📲</span> 
+      <div className="install-text">
+        <div className="install-title">安裝小撇步</div>
+        <div className="install-desc">加到手機主畫面，使用更流暢！</div>
+      </div>
+    </div>
+    
+    <div style={{ display: 'flex', alignItems: 'center' }}>
+      <button 
+        type="button" 
+        onClick={openModal} 
+        className="install-btn"
+      >
+        看教學
+      </button>
+      
+      {/* 將「不再顯示」改成一個簡單的 X 關閉按鈕，節省空間且更美觀 */}
+      <button
+        type="button"
+        onClick={handleNeverShow}
+        className="install-close"
+        aria-label="不再顯示"
+      >
+        ✕
+      </button>
+    </div>
+  </div>
+)}
 
       {/* 安裝教學 Modal */}
       {open && (

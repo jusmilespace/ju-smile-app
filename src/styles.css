@@ -2154,3 +2154,77 @@ body {
     opacity: 1; 
   }
 }
+
+.install-prompt-toast {
+  position: fixed;
+  /* 距離底部：導航列高度(約60-70px) + 安全區域 + 間距 */
+  bottom: calc(70px + var(--sab)); 
+  left: 16px;
+  right: 16px;
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  border: 1px solid var(--mint);
+  z-index: 9999; /* 確保在最上層 */
+  /* 增加一個滑入動畫讓體驗更好 */
+  animation: slideUp 0.3s ease-out;
+}
+
+.install-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.install-icon {
+  font-size: 24px;
+}
+
+.install-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.install-title {
+  font-weight: bold;
+  font-size: 15px;
+  color: var(--text-main);
+  margin-bottom: 2px;
+}
+
+.install-desc {
+  font-size: 13px;
+  color: var(--text-sub);
+}
+
+.install-btn {
+  background-color: var(--mint-dark);
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: bold;
+  margin-left: 8px;
+  cursor: pointer;
+}
+
+.install-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #999;
+  padding: 4px;
+  margin-left: 4px;
+  cursor: pointer;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
