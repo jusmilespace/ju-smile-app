@@ -567,9 +567,19 @@ function resolveCsvUrl(input: string): string {
 
 async function fetchCsv<T = any>(url: string): Promise<T[]> {
   const finalUrl = resolveCsvUrl(url);
+  
+  // 💡 加上時間戳記，強迫瀏覽器認為這是全新的請求，無視快取
+  const cacheBusterUrl = `${finalUrl}?t=${new Date().getTime()}`;
 
   try {
-    const res = await fetch(finalUrl, { cache: 'no-cache' });
+    const res = await fetch(cacheBusterUrl, { 
+      cache: 'no-store', // 強制不存快取
+      headers: {
+        'Pragma': 'no-cache',
+        'Cache-Control': 'no-cache'
+      }
+    });
+    
     if (!res.ok) {
       throw new Error(`無法下載: ${finalUrl} (HTTP ${res.status})`);
     }
