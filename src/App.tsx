@@ -551,16 +551,19 @@ function resolveCsvUrl(input: string): string {
   }
 
   // 這裡處理像 "data/Food_DB.csv" 或 "/data/Food_DB.csv" 這種
-  const base = APP_BASE_URL.replace(/\/+$/, ''); // 去掉結尾多餘斜線
-  const path = input.replace(/^\/+/, '');        // 去掉開頭多餘斜線
+  // 1. 去掉 base 尾部斜線
+  const base = APP_BASE_URL.endsWith('/') 
+    ? APP_BASE_URL.slice(0, -1) 
+    : APP_BASE_URL;
+  // 2. 去掉 input 開頭斜線
+  const cleanInput = input.startsWith('/') ? input.slice(1) : input;
 
-  // 如果 input 本身已經是 "/ju-smile-app/xxx"，就不要重複加
-  if (('/' + path).startsWith(base + '/')) {
-    return '/' + path;
-  }
-
-  return `${base}/${path}`;
+  // 3. 組合結果：/ju-smile-app/ + data/Food_DB.csv
+  // 結果會是： /ju-smile-app/data/Food_DB.csv (正確！)
+  return `${base}/${cleanInput}`;
 }
+
+
 
 async function fetchCsv<T = any>(url: string): Promise<T[]> {
   const finalUrl = resolveCsvUrl(url);
