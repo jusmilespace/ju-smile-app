@@ -3,6 +3,9 @@ import Papa from 'papaparse';
 import dayjs from 'dayjs';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { VisualPortionPicker } from './VisualPortionPicker';
+import { generateShareImage } from './services/generateShareImage';
+import { Capacitor } from '@capacitor/core';
+import { Share } from '@capacitor/share';
 
 // 🟢 新增：引入掃描器元件與型別
 import BarcodeScanner from './components/BarcodeScanner';
@@ -8606,7 +8609,8 @@ const PlanPage: React.FC = () => {
     const [period, setPeriod] = useState<'7d' | '30d' | '90d' | '180d' | '365d'>('7d');
     const [metric, setMetric] = useState<'bodyComposition' | 'weight' | 'bodyFat' | 'skeletalMuscle' | 'calories' | 'protein'>('bodyComposition');
 
-
+// 🆕 加入分享圖生成狀態
+  const [isGenerating, setIsGenerating] = useState(false);
 
     // 準備圖表數據
     // 準備圖表數據
@@ -8933,58 +8937,171 @@ nutrition: { label: '三大營養素', unit: 'g', color: '#5c9c84' }, // 合併�
 
     const config = metricConfig[metric];
 
+  // 🆕 生成並分享圖片
+  const handleShareImage = async () => {
+    try {
+      setIsGenerating(true);
+      showToast('正在生成分享圖...', 'info');
+
+      // 生成圖片
+      const imageData = await generateShareImage({
+        period,
+        metric,
+        chartData,
+      });
+
+      // 檢查是否為原生 App
+      if (Capacitor.isNativePlatform()) {
+        // 原生 App：使用 Capacitor Share API
+        await Share.share({
+          title: 'Ju Smile 數據分析',
+          text: `我的${getPeriodLabel(period)}${getMetricLabel(metric)}趨勢`,
+          url: imageData,
+          dialogTitle: '分享到...',
+        });
+      } else {
+        // Web：下載圖片
+        const link = document.createElement('a');
+        link.href = imageData;
+        link.download = `ju_smile_${metric}_${period}_${new Date().getTime()}.png`;
+        link.click();
+      }
+
+      showToast('分享圖生成成功！', 'success');
+    } catch (error) {
+      console.error('生成分享圖失敗:', error);
+      showToast('生成失敗，請稍後再試', 'error');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // 🆕 工具函數
+  const getPeriodLabel = (p: string) => {
+    const map: Record<string, string> = {
+      '7d': '近 7 天',
+      '30d': '近 30 天',
+      '90d': '近 90 天',
+      '180d': '近半年',
+      '365d': '近一年'
+    };
+    return map[p] || '';
+  };
+
+  const getMetricLabel = (m: string) => {
+    const map: Record<string, string> = {
+      bodyComposition: '身體組成',
+      weight: '體重',
+      bodyFat: '體脂率',
+      skeletalMuscle: '骨骼肌率',
+      calories: '熱量',
+      protein: '蛋白質'
+    };
+    return map[m] || '';
+  };
+
+
     return (
   <div className="page" style={{ padding: 16, paddingBottom: '96px', paddingTop: 'calc(16px + env(safe-area-inset-top))' }}>
     {/* 新的標題區塊：包含圖片 Icon 與樣式 */}
     {/* 標題區塊：使用 Flexbox 強制並排 */}
+
 <div style={{ 
-  display: 'flex',          // 👈 關鍵：讓內容左右並排
-  alignItems: 'center',     // 垂直置中對齊
-  marginBottom: 16,         // 與下方內容保持距離
-  paddingBottom: 12,        // 標題區塊內留白
-  borderBottom: '1px solid #e9ecef' // 加一條淡淡的底線增加質感
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between', // 🆕 改成 space-between
+  marginBottom: 16,
+  paddingBottom: 12,
+  borderBottom: '1px solid #e9ecef'
 }}>
   
-  {/* 左側：SVG 圖示 (白色圓底 + 陰影) */}
-  <div style={{
-    width: 40,
-    height: 40,
-    borderRadius: '50%',
-    background: '#fff',
-    display: 'flex',           // 讓 SVG 在圓圈內置中
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-    marginRight: 12            // 👈 圖示與文字的間距
-  }}>
-    {/* 直接內嵌 SVG，保證不會 404 */}
-    <svg 
-      width="24" 
-      height="24" 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="#5c9c84"         // 使用品牌 Mint 色
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round"
-    >
-      <line x1="18" y1="20" x2="18" y2="10"></line>
-      <line x1="12" y1="20" x2="12" y2="4"></line>
-      <line x1="6" y1="20" x2="6" y2="14"></line>
-    </svg>
+  {/* 左側：圖示 + 標題 */}
+  <div style={{ display: 'flex', alignItems: 'center' }}>
+    <div style={{
+      width: 40,
+      height: 40,
+      borderRadius: '50%',
+      background: '#fff',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+      marginRight: 12
+    }}>
+      <svg 
+        width="24" 
+        height="24" 
+        viewBox="0 0 24 24" 
+        fill="none" 
+        stroke="#5c9c84"
+        strokeWidth="2" 
+        strokeLinecap="round" 
+        strokeLinejoin="round"
+      >
+        <line x1="18" y1="20" x2="18" y2="10"></line>
+        <line x1="12" y1="20" x2="12" y2="4"></line>
+        <line x1="6" y1="20" x2="6" y2="14"></line>
+      </svg>
+    </div>
+    
+    <h1 style={{ 
+      fontSize: 22, 
+      margin: 0,
+      color: '#333',
+      fontWeight: 700
+    }}>
+      數據趨勢分析
+    </h1>
   </div>
 
-  {/* 右側：標題文字 */}
-  <h1 style={{ 
-    fontSize: 22, 
-    margin: 0,                // 移除預設邊距，避免跑版
-    color: '#333',
-    fontWeight: 700
-  }}>
-    數據趨勢分析
-  </h1>
-
+  {/* 🆕 右側：分享按鈕 */}
+  <button
+    onClick={handleShareImage}
+    disabled={isGenerating || chartData.length < 2}
+    style={{
+      padding: '10px 18px',
+      background: isGenerating ? '#e9ecef' : 'linear-gradient(135deg, #97d0ba 0%, #5c9c84 100%)',
+      color: '#fff',
+      border: 'none',
+      borderRadius: 12,
+      fontSize: 14,
+      fontWeight: 600,
+      cursor: isGenerating ? 'not-allowed' : 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 6,
+      boxShadow: isGenerating ? 'none' : '0 4px 12px rgba(92, 156, 132, 0.3)',
+      opacity: isGenerating ? 0.6 : 1,
+      transition: 'all 0.2s ease'
+    }}
+  >
+    {isGenerating ? (
+      <>
+        <span style={{ 
+          display: 'inline-block',
+          width: 14,
+          height: 14,
+          border: '2px solid #fff',
+          borderTopColor: 'transparent',
+          borderRadius: '50%',
+          animation: 'spin 0.6s linear infinite'
+        }}></span>
+        生成中...
+      </>
+    ) : (
+      <>
+        📸 生成分享圖
+      </>
+    )}
+  </button>
 </div>
+
+{/* 🆕 加入旋轉動畫 */}
+<style>{`
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+`}</style>
 
         {/* 數據洞察卡片（身體組成模式不顯示） */}
         {insights && metric !== 'bodyComposition' && (
