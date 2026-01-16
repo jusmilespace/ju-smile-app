@@ -56,25 +56,25 @@ export async function generateShareImage(options: ShareImageOptions): Promise<st
         src="${logoImage}" 
         alt="Ju Smile Logo" 
         style="
-          width: 80px; 
-          height: 80px; 
+          width: 100px; 
+          height: 100px; 
           object-fit: contain;
           margin: 0 auto 20px;
           display: block;
-          border-radius: 18px;
+          border-radius: 22px;
           filter: drop-shadow(0 8px 20px rgba(92, 156, 132, 0.3));
         "
         crossorigin="anonymous"
       />
       <h1 style="
-        font-size: 36px;
+        font-size: 60px;
         font-weight: 800;
-        margin: 0 0 8px 0;
+        margin: 0 0 12px 0;
         color: #1f2937;
         letter-spacing: -0.5px;
       ">Ju Smile</h1>
       <p style="
-        font-size: 18px;
+        font-size: 30px;
         color: #6b7280;
         margin: 0;
         font-weight: 500;
@@ -86,34 +86,34 @@ export async function generateShareImage(options: ShareImageOptions): Promise<st
     <!-- 趨勢變化 -->
     <div style="
       background: white;
-      padding: 24px 28px;
+      padding: 32px 36px;
       border-radius: 16px;
       margin-bottom: 40px;
       box-shadow: 0 2px 12px rgba(0,0,0,0.06);
       border: 1px solid #e9ecef;
     ">
-      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+      <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
         <div style="
-          width: 48px;
-          height: 48px;
+          width: 64px;
+          height: 64px;
           background: ${stats.isMultiMetric ? '#f0f9ff' : '#f0f9ff'};
           border-radius: 12px;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 24px;
+          font-size: 36px;
         ">${stats.emoji}</div>
         <div style="flex: 1;">
-          <div style="font-size: 18px; font-weight: 700; color: #1f2937; margin-bottom: 4px;">
+          <div style="font-size: 30px; font-weight: 700; color: #1f2937; margin-bottom: 6px;">
             ${stats.trend}
           </div>
           ${stats.isMultiMetric ? `
-            <div style="font-size: 13px; color: #6b7280; display: flex; gap: 12px; flex-wrap: wrap;">
+            <div style="font-size: 20px; color: #6b7280; display: flex; gap: 12px; flex-wrap: wrap;">
               ${stats.metricsStats ? stats.metricsStats.map((m: any) => `
                 <span style="
                   background: ${parseFloat(m.change) > 0 ? '#fee2e2' : parseFloat(m.change) < 0 ? '#d1fae5' : '#f3f4f6'};
-                  padding: 2px 8px;
-                  border-radius: 6px;
+                  padding: 4px 12px;
+                  border-radius: 8px;
                   font-weight: 500;
                 ">
                   ${m.label}: ${parseFloat(m.change) > 0 ? '▲' : parseFloat(m.change) < 0 ? '▼' : '—'}${Math.abs(parseFloat(m.change))}${m.unit}
@@ -121,7 +121,7 @@ export async function generateShareImage(options: ShareImageOptions): Promise<st
               `).join('') : ''}
             </div>
           ` : `
-            <div style="font-size: 14px; color: #6b7280;">
+            <div style="font-size: 22px; color: #6b7280;">
               ${stats.firstValue} → ${stats.lastValue} ${stats.unit}
             </div>
           `}
@@ -129,14 +129,14 @@ export async function generateShareImage(options: ShareImageOptions): Promise<st
       </div>
       <div style="
         background: linear-gradient(135deg, #f6f9fc 0%, #fff 100%);
-        padding: 16px 20px;
+        padding: 20px 24px;
         border-radius: 12px;
         border-left: 3px solid #5c9c84;
       ">
-        <div style="font-size: 15px; color: #374151; font-weight: 600; margin-bottom: 6px;">
+        <div style="font-size: 24px; color: #374151; font-weight: 600; margin-bottom: 8px;">
           💡 數據洞察
         </div>
-        <div style="font-size: 14px; color: #6b7280; line-height: 1.6;">
+        <div style="font-size: 22px; color: #6b7280; line-height: 1.6;">
           ${stats.suggestion}
         </div>
       </div>
@@ -145,24 +145,24 @@ export async function generateShareImage(options: ShareImageOptions): Promise<st
     <!-- 簡化版趨勢圖（SVG） -->
     <div style="
       background: white;
-      padding: 28px;
+      padding: 32px;
       border-radius: 16px;
       margin-bottom: 40px;
       box-shadow: 0 2px 12px rgba(0,0,0,0.06);
       border: 1px solid #e9ecef;
     ">
-      <div style="font-size: 16px; font-weight: 700; color: #1f2937; margin-bottom: 20px;">
+      <div style="font-size: 28px; font-weight: 700; color: #1f2937; margin-bottom: 24px;">
         趨勢走向
       </div>
       ${generateSimpleTrendSVG(chartData, metric, stats)}
     </div>
 
     <!-- 底部資訊 -->
-    <div style="text-align: center; color: #9ca3af; font-size: 13px; padding-top: 20px; border-top: 1px solid #e9ecef;">
-      <p style="margin: 0 0 8px 0; font-weight: 500;">
+    <div style="text-align: center; color: #9ca3af; font-size: 20px; padding-top: 20px; border-top: 1px solid #e9ecef;">
+      <p style="margin: 0 0 12px 0; font-weight: 500;">
         資料期間：${dayjs(chartData[0]?.fullDate).format('YYYY/MM/DD')} - ${dayjs(chartData[chartData.length-1]?.fullDate).format('YYYY/MM/DD')}
       </p>
-      <p style="margin: 0; font-weight: 600; color: #5c9c84;">
+      <p style="margin: 0; font-weight: 600; color: #5c9c84; font-size: 22px;">
         使用 Ju Smile 記錄健康數據
       </p>
     </div>
@@ -226,24 +226,24 @@ function generateStatsCards(stats: any): string {
           return `
             <div style="
               background: ${color.bg};
-              padding: 24px 20px;
+              padding: 32px 24px;
               border-radius: 16px;
               text-align: center;
               box-shadow: 0 2px 8px rgba(0,0,0,0.05);
               border: 1px solid ${color.border};
             ">
-              <div style="font-size: 13px; color: ${color.text}; font-weight: 600; margin-bottom: 8px;">${metricStat.label}</div>
-              <div style="font-size: 28px; font-weight: 800; color: #1f2937; margin-bottom: 4px;">
+              <div style="font-size: 22px; color: ${color.text}; font-weight: 600; margin-bottom: 12px;">${metricStat.label}</div>
+              <div style="font-size: 48px; font-weight: 800; color: #1f2937; margin-bottom: 8px;">
                 ${metricStat.avg}
               </div>
-              <div style="font-size: 12px; color: #6b7280; font-weight: 500; margin-bottom: 8px;">${metricStat.unit}</div>
+              <div style="font-size: 20px; color: #6b7280; font-weight: 500; margin-bottom: 12px;">${metricStat.unit}</div>
               <div style="
-                font-size: 12px; 
+                font-size: 18px; 
                 color: ${parseFloat(metricStat.change) > 0 ? '#ef4444' : parseFloat(metricStat.change) < 0 ? '#10b981' : '#6b7280'}; 
                 font-weight: 600;
                 background: ${parseFloat(metricStat.change) > 0 ? '#fee2e2' : parseFloat(metricStat.change) < 0 ? '#d1fae5' : '#f3f4f6'};
-                padding: 4px 8px;
-                border-radius: 6px;
+                padding: 6px 12px;
+                border-radius: 8px;
                 display: inline-block;
               ">
                 ${parseFloat(metricStat.change) > 0 ? '▲' : parseFloat(metricStat.change) < 0 ? '▼' : '—'} ${Math.abs(parseFloat(metricStat.change))} ${metricStat.unit}
@@ -265,49 +265,49 @@ function generateStatsCards(stats: any): string {
         <!-- 平均值 -->
         <div style="
           background: linear-gradient(135deg, #e8f5e9 0%, #f1f8f4 100%);
-          padding: 24px;
+          padding: 32px 28px;
           border-radius: 16px;
           text-align: center;
           box-shadow: 0 2px 8px rgba(0,0,0,0.05);
           border: 1px solid rgba(92, 156, 132, 0.1);
         ">
-          <div style="font-size: 14px; color: #5c9c84; font-weight: 600; margin-bottom: 8px;">平均值</div>
-          <div style="font-size: 32px; font-weight: 800; color: #1f2937; margin-bottom: 4px;">
+          <div style="font-size: 24px; color: #5c9c84; font-weight: 600; margin-bottom: 12px;">平均值</div>
+          <div style="font-size: 56px; font-weight: 800; color: #1f2937; margin-bottom: 8px;">
             ${stats.avg}
           </div>
-          <div style="font-size: 13px; color: #6b7280; font-weight: 500;">${stats.unit}</div>
+          <div style="font-size: 22px; color: #6b7280; font-weight: 500;">${stats.unit}</div>
         </div>
 
         <!-- 最高值 -->
         <div style="
           background: linear-gradient(135deg, #fff3e0 0%, #fff8f1 100%);
-          padding: 24px;
+          padding: 32px 28px;
           border-radius: 16px;
           text-align: center;
           box-shadow: 0 2px 8px rgba(0,0,0,0.05);
           border: 1px solid rgba(255, 152, 0, 0.1);
         ">
-          <div style="font-size: 14px; color: #f59e0b; font-weight: 600; margin-bottom: 8px;">最高值</div>
-          <div style="font-size: 32px; font-weight: 800; color: #1f2937; margin-bottom: 4px;">
+          <div style="font-size: 24px; color: #f59e0b; font-weight: 600; margin-bottom: 12px;">最高值</div>
+          <div style="font-size: 56px; font-weight: 800; color: #1f2937; margin-bottom: 8px;">
             ${stats.max}
           </div>
-          <div style="font-size: 13px; color: #6b7280; font-weight: 500;">${stats.unit}</div>
+          <div style="font-size: 22px; color: #6b7280; font-weight: 500;">${stats.unit}</div>
         </div>
 
         <!-- 最低值 -->
         <div style="
           background: linear-gradient(135deg, #e3f2fd 0%, #f1f8fd 100%);
-          padding: 24px;
+          padding: 32px 28px;
           border-radius: 16px;
           text-align: center;
           box-shadow: 0 2px 8px rgba(0,0,0,0.05);
           border: 1px solid rgba(33, 150, 243, 0.1);
         ">
-          <div style="font-size: 14px; color: #2196f3; font-weight: 600; margin-bottom: 8px;">最低值</div>
-          <div style="font-size: 32px; font-weight: 800; color: #1f2937; margin-bottom: 4px;">
+          <div style="font-size: 24px; color: #2196f3; font-weight: 600; margin-bottom: 12px;">最低值</div>
+          <div style="font-size: 56px; font-weight: 800; color: #1f2937; margin-bottom: 8px;">
             ${stats.min}
           </div>
-          <div style="font-size: 13px; color: #6b7280; font-weight: 500;">${stats.unit}</div>
+          <div style="font-size: 22px; color: #6b7280; font-weight: 500;">${stats.unit}</div>
         </div>
       </div>
     `;
@@ -597,16 +597,21 @@ function generateSimpleTrendSVG(
 ): string {
   const width = 1000;
   const height = 200;
-  const padding = 40;
+  const paddingLeft = 70;   // 左側加大（容納 "100 kg"）
+  const paddingRight = 70;  // 右側加大（容納 "100 %"）
+  const paddingTop = 40;
+  const paddingBottom = 40;
   
   // 🆕 特別處理多指標 - 繪製多條趨勢線
   if (metric === 'bodyComposition') {
     return generateMultiMetricSVG(data, ['weight', 'bodyFat', 'skeletalMuscle'], 
-      ['體重', '體脂率', '骨骼肌率'], ['#5c9c84', '#f59e0b', '#2196f3'], width, height, padding);
+      ['體重', '體脂率', '骨骼肌率'], ['#5c9c84', '#f59e0b', '#2196f3'], 
+      width, height, paddingLeft, paddingRight, paddingTop, paddingBottom);
   }
   if (metric === 'nutrition') {
     return generateMultiMetricSVG(data, ['protein', 'carb', 'fat'], 
-      ['蛋白質', '碳水', '脂肪'], ['#5c9c84', '#ffbe76', '#ff7979'], width, height, padding);
+      ['蛋白質', '碳水', '脂肪'], ['#5c9c84', '#ffbe76', '#ff7979'], 
+      width, height, paddingLeft, paddingRight, paddingTop, paddingBottom);
   }
   
   // 單一指標的趨勢圖
@@ -624,23 +629,23 @@ function generateSimpleTrendSVG(
 
   // 計算座標
   const points = values.map((value, index) => {
-    const x = padding + (index / (values.length - 1)) * (width - padding * 2);
-    const y = height - padding - ((value - minValue) / range) * (height - padding * 2);
+    const x = paddingLeft + (index / (values.length - 1)) * (width - paddingLeft - paddingRight);
+    const y = height - paddingBottom - ((value - minValue) / range) * (height - paddingTop - paddingBottom);
     return `${x},${y}`;
   }).join(' ');
 
   // 填充區域
-  const fillPoints = `${padding},${height - padding} ${points} ${width - padding},${height - padding}`;
+  const fillPoints = `${paddingLeft},${height - paddingBottom} ${points} ${width - paddingRight},${height - paddingBottom}`;
 
   return `
     <svg width="100%" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
       <!-- 背景網格 -->
       ${[0, 1, 2, 3, 4].map(i => `
         <line 
-          x1="${padding}" 
-          y1="${padding + i * (height - padding * 2) / 4}" 
-          x2="${width - padding}" 
-          y2="${padding + i * (height - padding * 2) / 4}" 
+          x1="${paddingLeft}" 
+          y1="${paddingTop + i * (height - paddingTop - paddingBottom) / 4}" 
+          x2="${width - paddingRight}" 
+          y2="${paddingTop + i * (height - paddingTop - paddingBottom) / 4}" 
           stroke="#f0f0f0" 
           stroke-width="1"
         />
@@ -665,8 +670,8 @@ function generateSimpleTrendSVG(
       
       <!-- 資料點 -->
       ${values.map((value, index) => {
-        const x = padding + (index / (values.length - 1)) * (width - padding * 2);
-        const y = height - padding - ((value - minValue) / range) * (height - padding * 2);
+        const x = paddingLeft + (index / (values.length - 1)) * (width - paddingLeft - paddingRight);
+        const y = height - paddingBottom - ((value - minValue) / range) * (height - paddingTop - paddingBottom);
         return `
           <circle cx="${x}" cy="${y}" r="5" fill="#fff" stroke="#5c9c84" stroke-width="2.5"/>
         `;
@@ -681,10 +686,10 @@ function generateSimpleTrendSVG(
       </defs>
       
       <!-- Y 軸刻度 -->
-      <text x="${padding - 10}" y="${padding}" text-anchor="end" font-size="11" fill="#9ca3af">
+      <text x="${paddingLeft - 10}" y="${paddingTop + 6}" text-anchor="end" font-size="18" fill="#9ca3af">
         ${maxValue.toFixed(0)}${stats.unit}
       </text>
-      <text x="${padding - 10}" y="${height - padding}" text-anchor="end" font-size="11" fill="#9ca3af">
+      <text x="${paddingLeft - 10}" y="${height - paddingBottom + 6}" text-anchor="end" font-size="18" fill="#9ca3af">
         ${minValue.toFixed(0)}${stats.unit}
       </text>
     </svg>
@@ -701,7 +706,10 @@ function generateMultiMetricSVG(
   colors: string[],
   width: number,
   height: number,
-  padding: number
+  paddingLeft: number,
+  paddingRight: number,
+  paddingTop: number,
+  paddingBottom: number
 ): string {
   // 收集所有指標的有效數據
   const allValidData = metrics.map(metric => 
@@ -736,14 +744,14 @@ function generateMultiMetricSVG(
     const values = validData.map(d => Number(d[metric as keyof ChartDataPoint]));
     
     const points = values.map((value, index) => {
-      const x = padding + (index / (values.length - 1)) * (width - padding * 2);
-      const y = height - padding - ((value - globalMin) / range) * (height - padding * 2);
+      const x = paddingLeft + (index / (values.length - 1)) * (width - paddingLeft - paddingRight);
+      const y = height - paddingBottom - ((value - globalMin) / range) * (height - paddingTop - paddingBottom);
       return `${x},${y}`;
     }).join(' ');
     
     const circles = values.map((value, index) => {
-      const x = padding + (index / (values.length - 1)) * (width - padding * 2);
-      const y = height - padding - ((value - globalMin) / range) * (height - padding * 2);
+      const x = paddingLeft + (index / (values.length - 1)) * (width - paddingLeft - paddingRight);
+      const y = height - paddingBottom - ((value - globalMin) / range) * (height - paddingTop - paddingBottom);
       return `<circle cx="${x}" cy="${y}" r="4" fill="#fff" stroke="${colors[metricIndex]}" stroke-width="2"/>`;
     }).join('');
     
@@ -765,22 +773,35 @@ function generateMultiMetricSVG(
   // 圖例
   const legend = metrics.map((metric, index) => {
     return `
-      <g transform="translate(${padding + index * 140}, ${height - 10})">
-        <line x1="0" y1="0" x2="20" y2="0" stroke="${colors[index]}" stroke-width="2" ${index > 0 ? 'stroke-dasharray="5 5"' : ''}/>
-        <text x="25" y="4" font-size="11" fill="#6b7280">${labels[index]}</text>
+      <g transform="translate(${paddingLeft + index * 180}, ${height + 5})">
+        <line x1="0" y1="0" x2="30" y2="0" stroke="${colors[index]}" stroke-width="3" ${index > 0 ? 'stroke-dasharray="5 5"' : ''}/>
+        <text x="35" y="6" font-size="18" fill="#6b7280" font-weight="600">${labels[index]}</text>
       </g>
     `;
   }).join('');
   
+  // 🆕 計算單位（身體組成: weight=kg, bodyFat=%, skeletalMuscle=%）
+  const units = metrics.map(m => {
+    if (m === 'weight') return 'kg';
+    if (m === 'bodyFat' || m === 'skeletalMuscle') return '%';
+    if (m === 'protein' || m === 'carb' || m === 'fat') return 'g';
+    return '';
+  });
+  
+  // 左側 Y 軸（第一個指標 - 體重或蛋白質）
+  const leftUnit = units[0];
+  // 右側 Y 軸（第二個指標 - 體脂率或碳水，通常與第三個指標單位相同）
+  const rightUnit = units[1];
+  
   return `
-    <svg width="100%" height="${height + 20}" viewBox="0 0 ${width} ${height + 20}" xmlns="http://www.w3.org/2000/svg">
+    <svg width="100%" height="${height + 40}" viewBox="0 0 ${width} ${height + 40}" xmlns="http://www.w3.org/2000/svg">
       <!-- 背景網格 -->
       ${[0, 1, 2, 3, 4].map(i => `
         <line 
-          x1="${padding}" 
-          y1="${padding + i * (height - padding * 2) / 4}" 
-          x2="${width - padding}" 
-          y2="${padding + i * (height - padding * 2) / 4}" 
+          x1="${paddingLeft}" 
+          y1="${paddingTop + i * (height - paddingTop - paddingBottom) / 4}" 
+          x2="${width - paddingRight}" 
+          y2="${paddingTop + i * (height - paddingTop - paddingBottom) / 4}" 
           stroke="#f0f0f0" 
           stroke-width="1"
         />
@@ -788,12 +809,20 @@ function generateMultiMetricSVG(
       
       ${lines}
       
-      <!-- Y 軸刻度 -->
-      <text x="${padding - 10}" y="${padding}" text-anchor="end" font-size="11" fill="#9ca3af">
-        ${globalMax.toFixed(0)}
+      <!-- 左側 Y 軸刻度（第一個指標） -->
+      <text x="${paddingLeft - 12}" y="${paddingTop + 6}" text-anchor="end" font-size="18" fill="#5c9c84" font-weight="600">
+        ${globalMax.toFixed(0)} ${leftUnit}
       </text>
-      <text x="${padding - 10}" y="${height - padding}" text-anchor="end" font-size="11" fill="#9ca3af">
-        ${globalMin.toFixed(0)}
+      <text x="${paddingLeft - 12}" y="${height - paddingBottom + 6}" text-anchor="end" font-size="18" fill="#5c9c84" font-weight="600">
+        ${globalMin.toFixed(0)} ${leftUnit}
+      </text>
+      
+      <!-- 右側 Y 軸刻度（第二/三個指標 - 體脂率%/骨骼肌率% 或 碳水g/脂肪g） -->
+      <text x="${width - paddingRight + 12}" y="${paddingTop + 6}" text-anchor="start" font-size="18" fill="${colors[1]}" font-weight="600">
+        ${globalMax.toFixed(0)} ${rightUnit}
+      </text>
+      <text x="${width - paddingRight + 12}" y="${height - paddingBottom + 6}" text-anchor="start" font-size="18" fill="${colors[1]}" font-weight="600">
+        ${globalMin.toFixed(0)} ${rightUnit}
       </text>
       
       <!-- 圖例 -->
