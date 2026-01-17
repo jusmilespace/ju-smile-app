@@ -140,28 +140,35 @@ const NumberPadModal: React.FC<NumberPadModalProps> = ({
      <div
       className="modal-backdrop"
       style={{
-        position: 'fixed', 
-        inset: 0, 
-        background: 'rgba(0,0,0,0.0)', 
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'rgba(0,0,0,0.0)',
         zIndex: 200,
-        display: 'flex', 
-        alignItems: 'flex-end', 
-        justifyContent: 'center',
         pointerEvents: 'auto'
       }}
-      onClick={onClose} 
+      onClick={onClose}
     >
       <div
-  style={{
-    width: '100%', maxWidth: 420, background: '#f0f2f5',
-    borderTopLeftRadius: 24, borderTopRightRadius: 24, 
-    padding: '24px 20px 24px 20px',
-    boxShadow: '0 -4px 20px rgba(0,0,0,0.15)',
-    animation: 'slideIn 0.2s ease-out',
-    pointerEvents: 'auto'
-  }}
-  onClick={(e) => e.stopPropagation()}
->
+        style={{
+          position: 'absolute',
+          bottom: 'calc(70px + env(safe-area-inset-bottom))',
+          left: 0,
+          right: 0,
+          maxWidth: 420,
+          margin: '0 auto',
+          background: '#f0f2f5',
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+          padding: '24px 20px 24px 20px',
+          boxShadow: '0 -4px 20px rgba(0,0,0,0.15)',
+          animation: 'slideInUp 0.2s ease-out',
+          pointerEvents: 'auto'
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20, alignItems: 'center' }}>
           {/* 🟢 移除 X，只留標題 */}
           <span style={{ fontSize: 16, fontWeight: 600, color: '#666' }}>{title}</span>
@@ -4206,20 +4213,36 @@ const totalFats = combo.items.reduce((sum, item) => sum + (item.fat || 0), 0);
                             </div>
   {/* === 份量輸入彈窗 (Servings Modal) === */}
   {showServingsModal && (
-    <div 
+     <div 
       className="modal-backdrop"
       style={{ 
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 100,
-        display: 'flex', alignItems: 'flex-end', justifyContent: 'center' 
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'rgba(0,0,0,0.4)',
+        zIndex: 100
       }}
       onClick={() => setShowServingsModal(false)}
     >
       <div 
         style={{ 
-          width: '100%', maxWidth: 420, background: '#f0f2f5', 
-          borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20,
+          position: 'absolute',
+          bottom: 'calc(70px + env(safe-area-inset-bottom))',
+          left: 0,
+          right: 0,
+          maxWidth: 420,
+          margin: '0 auto',
+          background: '#f0f2f5', 
+          borderTopLeftRadius: 20, 
+          borderTopRightRadius: 20, 
+          padding: 20,
           boxShadow: '0 -4px 20px rgba(0,0,0,0.1)',
-          display: 'flex', flexDirection: 'column', gap: 16
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: 16,
+          animation: 'slideInUp 0.2s ease-out'
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -4459,16 +4482,30 @@ const totalFats = combo.items.reduce((sum, item) => sum + (item.fat || 0), 0);
           <div 
             className="modal-backdrop"
             style={{ 
-              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 100,
-              display: 'flex', alignItems: 'flex-end', justifyContent: 'center' 
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0,0,0,0.4)',
+              zIndex: 100
             }}
             onClick={() => setShowQtyPad(false)}
           >
             <div 
               style={{ 
-                width: '100%', maxWidth: 420, background: '#f0f2f5', 
-                borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20,
-                boxShadow: '0 -4px 20px rgba(0,0,0,0.1)' 
+                position: 'absolute',
+                bottom: 'calc(70px + env(safe-area-inset-bottom))',
+                left: 0,
+                right: 0,
+                maxWidth: 420,
+                margin: '0 auto',
+                background: '#f0f2f5', 
+                borderTopLeftRadius: 20, 
+                borderTopRightRadius: 20, 
+                padding: 20,
+                boxShadow: '0 -4px 20px rgba(0,0,0,0.1)',
+                animation: 'slideInUp 0.2s ease-out'
               }}
               onClick={(e) => e.stopPropagation()} // 防止點擊內部關閉
             >
@@ -4530,18 +4567,35 @@ const totalFats = combo.items.reduce((sum, item) => sum + (item.fat || 0), 0);
           <div 
             className="modal-backdrop"
             style={{ 
-              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 100,
-              display: 'flex', alignItems: 'flex-end', justifyContent: 'center' 
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0,0,0,0.4)',
+              zIndex: 100
             }}
             onClick={() => setShowQtyPad(false)}
           >
             <div 
               style={{ 
-                width: '100%', maxWidth: 420, background: '#f0f2f5', 
-                borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20,
+                position: 'absolute',
+                bottom: 'calc(70px + env(safe-area-inset-bottom))',
+                left: 0,
+                right: 0,
+                maxWidth: 420,
+                margin: '0 auto',
+                background: '#f0f2f5', 
+                borderTopLeftRadius: 20, 
+                borderTopRightRadius: 20, 
+                padding: 20,
                 boxShadow: '0 -4px 20px rgba(0,0,0,0.1)',
-                display: 'flex', flexDirection: 'column', gap: 16
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: 16,
+                animation: 'slideInUp 0.2s ease-out'
               }}
+              
               onClick={(e) => e.stopPropagation()}
             >
               {/* 頂部列：標題 + Tab 切換 */}
@@ -4618,18 +4672,32 @@ const totalFats = combo.items.reduce((sum, item) => sum + (item.fat || 0), 0);
           <div 
             className="modal-backdrop"
             style={{ 
-              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100,
-              display: 'flex', alignItems: 'flex-end', justifyContent: 'center' 
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0,0,0,0.5)',
+              zIndex: 100
             }}
             onClick={() => setShowUnitPicker(false)}
           >
             <div 
               style={{ 
-                width: '100%', maxWidth: 420, background: '#fff', 
-                borderTopLeftRadius: 20, borderTopRightRadius: 20,
-                display: 'flex', flexDirection: 'column', 
+                position: 'absolute',
+                bottom: 'calc(70px + env(safe-area-inset-bottom))',
+                left: 0,
+                right: 0,
+                maxWidth: 420,
+                margin: '0 auto',
+                background: '#fff', 
+                borderTopLeftRadius: 20, 
+                borderTopRightRadius: 20,
+                display: 'flex', 
+                flexDirection: 'column', 
                 paddingBottom: 20, // 底部留白 (適應 iPhone Home Bar)
-                boxShadow: '0 -4px 20px rgba(0,0,0,0.1)'
+                boxShadow: '0 -4px 20px rgba(0,0,0,0.1)',
+                animation: 'slideInUp 0.2s ease-out'
               }}
               onClick={(e) => e.stopPropagation()}
             >
@@ -4816,11 +4884,32 @@ const totalFats = combo.items.reduce((sum, item) => sum + (item.fat || 0), 0);
                           {editingMacro && (
                             <div 
                               className="modal-backdrop"
-                              style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 100, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+                              style={{ 
+                                position: 'fixed',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                background: 'rgba(0,0,0,0.4)',
+                                zIndex: 100
+                              }}
                               onClick={() => setEditingMacro(null)}
                             >
                               <div 
-                                style={{ width: '100%', maxWidth: 420, background: '#f0f2f5', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, boxShadow: '0 -4px 20px rgba(0,0,0,0.1)' }}
+                                style={{ 
+                                  position: 'absolute',
+                                  bottom: 'calc(70px + env(safe-area-inset-bottom))',
+                                  left: 0,
+                                  right: 0,
+                                  maxWidth: 420,
+                                  margin: '0 auto',
+                                  background: '#f0f2f5', 
+                                  borderTopLeftRadius: 20, 
+                                  borderTopRightRadius: 20, 
+                                  padding: 20, 
+                                  boxShadow: '0 -4px 20px rgba(0,0,0,0.1)',
+                                  animation: 'slideInUp 0.2s ease-out'
+                                }}
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, alignItems: 'center' }}>
