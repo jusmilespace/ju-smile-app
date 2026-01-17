@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 // 確保圖片路徑正確，這裡沿用原本的 assets 圖片作為「類別圖示」
 import proteinImg from './assets/protein.png';
 import veggieImg from './assets/veggie.png';
@@ -135,7 +135,7 @@ export const VisualPortionPicker: React.FC<VisualPortionPickerProps> = ({
   onCancel,
   mealType,
 }) => {
-  const [foodName, setFoodName] = useState('');
+  const [foodName, setFoodName] = useState(mealType);
   const [counts, setCounts] = useState<PortionCounts>({
     protein: 0,
     veggie: 0,
@@ -144,7 +144,9 @@ export const VisualPortionPicker: React.FC<VisualPortionPickerProps> = ({
     fat: 0,
     dairy: 0,
   });
-
+useEffect(() => {
+  setFoodName(mealType);
+}, [mealType]);
   const summary = useMemo(() => {
     let totalKcal = 0;
     let totalProtein = 0;
@@ -254,15 +256,61 @@ export const VisualPortionPicker: React.FC<VisualPortionPickerProps> = ({
 
   return (
     <div style={{ padding: '4px 0 20px 0' }}>
-      <div style={{ marginBottom: 20 }}>
-        <input
-          type="text"
-          value={foodName}
-          onChange={(e) => setFoodName(e.target.value)}
-          placeholder="例如：午餐便當、雞胸肉沙拉..."
-          style={{ width: '100%', padding: '12px 16px', border: '2px solid #e9ecef', borderRadius: 8, fontSize: 16 }}
-        />
-      </div>
+      <div style={{ marginBottom: 20, position: 'relative' }}>
+  <input
+    type="text"
+    value={foodName}
+    onChange={(e) => setFoodName(e.target.value)}
+    placeholder="例如：午餐便當、雞胸肉沙拉..."
+    style={{ 
+      width: '100%', 
+      padding: '12px 44px 12px 16px', // 🟢 右側留空間給 X 按鈕
+      border: '2px solid #e9ecef', 
+      borderRadius: 10, 
+      fontSize: 16,
+      transition: 'border-color 0.2s'
+    }}
+    onFocus={(e) => e.currentTarget.style.borderColor = '#97d0ba'}
+    onBlur={(e) => e.currentTarget.style.borderColor = '#e9ecef'}
+  />
+  
+  {/* 🟢 新增：快速清除按鈕 (X) */}
+  {foodName && (
+    <button
+      type="button"
+      onClick={() => setFoodName('')}
+      style={{
+        position: 'absolute',
+        right: 8,
+        top: '50%',
+        transform: 'translateY(-50%)',
+        width: 28,
+        height: 28,
+        borderRadius: '50%',
+        border: 'none',
+        background: '#e5e7eb',
+        color: '#6b7280',
+        fontSize: 16,
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        transition: 'all 0.2s',
+        fontWeight: 600
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = '#d1d5db';
+        e.currentTarget.style.color = '#374151';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = '#e5e7eb';
+        e.currentTarget.style.color = '#6b7280';
+      }}
+    >
+      ✕
+    </button>
+  )}
+</div>
 
       <div style={{ marginBottom: 20 }}>
         {PORTION_TYPES.map((portion) => {

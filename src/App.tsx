@@ -147,15 +147,17 @@ const NumberPadModal: React.FC<NumberPadModalProps> = ({
       onClick={onClose} 
     >
       <div
-        style={{
-          width: '100%', maxWidth: 420, background: '#f0f2f5',
-          borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: '24px 20px calc(60px + env(safe-area-inset-bottom)) 20px',
-          boxShadow: '0 -4px 20px rgba(0,0,0,0.15)',
-          animation: 'slideIn 0.2s ease-out',
-          pointerEvents: 'auto' /* 🟢 恢復內容區塊的點擊感應 */
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
+  style={{
+    width: '100%', maxWidth: 420, background: '#f0f2f5',
+    borderTopLeftRadius: 24, borderTopRightRadius: 24, 
+    padding: '24px 20px 20px 20px', // 🟢 改為固定上下 padding
+    paddingBottom: 'calc(80px + env(safe-area-inset-bottom))', // 🟢 新增：確保足夠空間
+    boxShadow: '0 -4px 20px rgba(0,0,0,0.15)',
+    animation: 'slideIn 0.2s ease-out',
+    pointerEvents: 'auto'
+  }}
+  onClick={(e) => e.stopPropagation()}
+>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20, alignItems: 'center' }}>
           {/* 🟢 移除 X，只留標題 */}
           <span style={{ fontSize: 16, fontWeight: 600, color: '#666' }}>{title}</span>
@@ -3084,12 +3086,100 @@ useEffect(() => {
                 <div className="hint">
                   {selectedUnitFood.Food} ({selectedUnitFood.Unit})：{selectedUnitFood.Kcal_per_serv} kcal / 份
                 </div>
-                {autoFoodInfo.kcal > 0 && (
-                  <div className="hint">
-                    目前估算熱量:約 {autoFoodInfo.kcal} kcal
-                  </div>
-                )}
                 
+                {/* 即時營養資訊卡片 - 優化版 */}
+{selectedUnitFood && unitQuantity && Number(unitQuantity) > 0 && (
+  <div style={{
+    background: 'linear-gradient(135deg, #f0fdf9 0%, #f7fbf8 100%)',
+    borderRadius: 12,
+    padding: '16px',
+    marginTop: 12,
+    marginBottom: 8,
+    border: '1px solid #d1f0e3',
+    boxShadow: '0 2px 8px rgba(151, 208, 186, 0.1)'
+  }}>
+    {/* 標題 */}
+    <div style={{ 
+      fontSize: 13, 
+      fontWeight: 600, 
+      color: '#5c9c84', 
+      marginBottom: 12,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 6
+    }}>
+      <span>📊</span>
+      <span>營養資訊預覽</span>
+    </div>
+
+    {/* 熱量 (大字) */}
+    <div style={{ 
+      textAlign: 'center',
+      marginBottom: 12,
+      paddingBottom: 12,
+      borderBottom: '1px solid #e5f3ed'
+    }}>
+      <div style={{ fontSize: 32, fontWeight: 700, color: '#1f2937', lineHeight: 1 }}>
+        {Math.round(effectiveFoodKcal)}
+        <span style={{ fontSize: 16, fontWeight: 500, color: '#6b7280', marginLeft: 4 }}>kcal</span>
+      </div>
+    </div>
+
+    {/* 營養素 (P/C/F) 三欄 */}
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+      {/* 蛋白質 */}
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4, fontWeight: 500 }}>蛋白質</div>
+        <div style={{ 
+          fontSize: 18, 
+          fontWeight: 700, 
+          color: '#5c9c84',
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'center',
+          gap: 2
+        }}>
+          {round1((Number(selectedUnitFood['Prot_per_serv (g)'] || 0) * Number(unitQuantity)))}
+          <span style={{ fontSize: 12, fontWeight: 500, color: '#9ca3af' }}>g</span>
+        </div>
+      </div>
+
+      {/* 碳水化合物 */}
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4, fontWeight: 500 }}>碳水</div>
+        <div style={{ 
+          fontSize: 18, 
+          fontWeight: 700, 
+          color: '#ffbe76',
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'center',
+          gap: 2
+        }}>
+          {round1((Number(selectedUnitFood['Carb_per_serv (g)'] || 0) * Number(unitQuantity)))}
+          <span style={{ fontSize: 12, fontWeight: 500, color: '#9ca3af' }}>g</span>
+        </div>
+      </div>
+
+      {/* 脂肪 */}
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4, fontWeight: 500 }}>脂肪</div>
+        <div style={{ 
+          fontSize: 18, 
+          fontWeight: 700, 
+          color: '#ff7979',
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'center',
+          gap: 2
+        }}>
+          {round1((Number(selectedUnitFood['Fat_per_serv (g)'] || 0) * Number(unitQuantity)))}
+          <span style={{ fontSize: 12, fontWeight: 500, color: '#9ca3af' }}>g</span>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
                 {/* 加入按鈕 */}
                 <button 
                   className="primary" 
@@ -3222,11 +3312,101 @@ useEffect(() => {
                 <div className="hint">
                   {selectedFoodDbRow.food}：{selectedFoodDbRow.kcal} kcal / 100g
                 </div>
-                {autoFoodInfo.kcal > 0 && (
-                  <div className="hint">
-                    目前估算熱量:約 {autoFoodInfo.kcal} kcal
-                  </div>
-                )}
+          
+
+                {/* 即時營養資訊卡片 - Food DB 版本 */}
+{selectedFoodDbRow && foodAmountG && Number(foodAmountG) > 0 && (
+  <div style={{
+    background: 'linear-gradient(135deg, #f0fdf9 0%, #f7fbf8 100%)',
+    borderRadius: 12,
+    padding: '16px',
+    marginTop: 12,
+    marginBottom: 8,
+    border: '1px solid #d1f0e3',
+    boxShadow: '0 2px 8px rgba(151, 208, 186, 0.1)'
+  }}>
+    {/* 標題 */}
+    <div style={{ 
+      fontSize: 13, 
+      fontWeight: 600, 
+      color: '#5c9c84', 
+      marginBottom: 12,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 6
+    }}>
+      <span>📊</span>
+      <span>營養資訊預覽（{foodAmountG}g）</span>
+    </div>
+
+    {/* 熱量 (大字) */}
+    <div style={{ 
+      textAlign: 'center',
+      marginBottom: 12,
+      paddingBottom: 12,
+      borderBottom: '1px solid #e5f3ed'
+    }}>
+      <div style={{ fontSize: 32, fontWeight: 700, color: '#1f2937', lineHeight: 1 }}>
+        {Math.round(effectiveFoodKcal)}
+        <span style={{ fontSize: 16, fontWeight: 500, color: '#6b7280', marginLeft: 4 }}>kcal</span>
+      </div>
+    </div>
+
+    {/* 營養素 (P/C/F) 三欄 */}
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+      {/* 蛋白質 */}
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4, fontWeight: 500 }}>蛋白質</div>
+        <div style={{ 
+          fontSize: 18, 
+          fontWeight: 700, 
+          color: '#5c9c84',
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'center',
+          gap: 2
+        }}>
+          {round1((Number(selectedFoodDbRow['protein (g)']) / 100) * Number(foodAmountG))}
+          <span style={{ fontSize: 12, fontWeight: 500, color: '#9ca3af' }}>g</span>
+        </div>
+      </div>
+
+      {/* 碳水化合物 */}
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4, fontWeight: 500 }}>碳水</div>
+        <div style={{ 
+          fontSize: 18, 
+          fontWeight: 700, 
+          color: '#ffbe76',
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'center',
+          gap: 2
+        }}>
+          {round1((Number(selectedFoodDbRow['carb (g)']) / 100) * Number(foodAmountG))}
+          <span style={{ fontSize: 12, fontWeight: 500, color: '#9ca3af' }}>g</span>
+        </div>
+      </div>
+
+      {/* 脂肪 */}
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4, fontWeight: 500 }}>脂肪</div>
+        <div style={{ 
+          fontSize: 18, 
+          fontWeight: 700, 
+          color: '#ff7979',
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'center',
+          gap: 2
+        }}>
+          {round1((Number(selectedFoodDbRow['fat (g)']) / 100) * Number(foodAmountG))}
+          <span style={{ fontSize: 12, fontWeight: 500, color: '#9ca3af' }}>g</span>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
                 
                 {/* 加入按鈕 */}
                 <button 
