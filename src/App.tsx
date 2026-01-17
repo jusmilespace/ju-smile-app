@@ -137,26 +137,31 @@ const NumberPadModal: React.FC<NumberPadModalProps> = ({
   };
 
   return (
-    <div className="modal-backdrop" style={{
-  position: 'fixed',
-  top: 0,  // ✅ 明確設定四邊
-  left: 0,
-  right: 0,
-  bottom: 0,
-  zIndex: 1000,  // ✅ 提高到 1000
-  // ✅ 移除 flex 和 paddingBottom
-}}>
-      
-      <div style={{
-  position: 'absolute',  // ✅ 絕對定位
-  bottom: 'calc(70px + env(safe-area-inset-bottom))',  // ✅ 定在 nav 上方
-  left: 0,
-  right: 0,
-  maxWidth: 420,
-  margin: '0 auto',  // ✅ 水平置中
-  padding: '24px 20px 24px 20px',
-  animation: 'slideInUp 0.2s ease-out'  // ✅ 改用 slideInUp
-}}>
+     <div
+      className="modal-backdrop"
+      style={{
+        position: 'fixed', 
+        inset: 0, 
+        background: 'rgba(0,0,0,0.0)', 
+        zIndex: 200,
+        display: 'flex', 
+        alignItems: 'flex-end', 
+        justifyContent: 'center',
+        pointerEvents: 'auto'
+      }}
+      onClick={onClose} 
+    >
+      <div
+  style={{
+    width: '100%', maxWidth: 420, background: '#f0f2f5',
+    borderTopLeftRadius: 24, borderTopRightRadius: 24, 
+    padding: '24px 20px 24px 20px',
+    boxShadow: '0 -4px 20px rgba(0,0,0,0.15)',
+    animation: 'slideIn 0.2s ease-out',
+    pointerEvents: 'auto'
+  }}
+  onClick={(e) => e.stopPropagation()}
+>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20, alignItems: 'center' }}>
           {/* 🟢 移除 X，只留標題 */}
           <span style={{ fontSize: 16, fontWeight: 600, color: '#666' }}>{title}</span>
@@ -3003,11 +3008,35 @@ useEffect(() => {
                   {showUnitQtyModal && (
                     <div 
                       className="modal-backdrop"
-                      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+                      style={{ 
+                        position: 'fixed', 
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'rgba(0,0,0,0.4)', 
+                        zIndex: 200
+                      }}
                       onClick={() => setShowUnitQtyModal(false)}
                     >
                       <div 
-                        style={{ width: '100%', maxWidth: 420, background: '#f0f2f5', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, boxShadow: '0 -4px 20px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', gap: 16 }}
+                        style={{ 
+                          position: 'absolute',
+                          bottom: 'calc(70px + env(safe-area-inset-bottom))',
+                          left: 0,
+                          right: 0,
+                          maxWidth: 420, 
+                          margin: '0 auto',
+                          background: '#f0f2f5', 
+                          borderTopLeftRadius: 20, 
+                          borderTopRightRadius: 20, 
+                          padding: 20, 
+                          boxShadow: '0 -4px 20px rgba(0,0,0,0.1)', 
+                          display: 'flex', 
+                          flexDirection: 'column', 
+                          gap: 16,
+                          animation: 'slideInUp 0.2s ease-out'
+                        }}
                         onClick={(e) => e.stopPropagation()}
                       >
                         {/* 頂部列 */}
@@ -3198,7 +3227,7 @@ useEffect(() => {
               </>
             )}
 
-            {/* =========================================================
+             {/* =========================================================
                 🔴 補回遺失區塊：已選中 Food DB 食物 (顯示重量輸入按鈕)
                ========================================================= */}
             {selectedFoodDbRow && (
@@ -3229,11 +3258,35 @@ useEffect(() => {
                   {showGramModal && (
                     <div 
                       className="modal-backdrop"
-                      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+                      style={{ 
+                        position: 'fixed', 
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'rgba(0,0,0,0.4)', 
+                        zIndex: 200
+                      }}
                       onClick={() => setShowGramModal(false)}
                     >
                       <div 
-                        style={{ width: '100%', maxWidth: 420, background: '#f0f2f5', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, boxShadow: '0 -4px 20px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', gap: 16 }}
+                        style={{ 
+                          position: 'absolute',
+                          bottom: 'calc(70px + env(safe-area-inset-bottom))',
+                          left: 0,
+                          right: 0,
+                          maxWidth: 420, 
+                          margin: '0 auto',
+                          background: '#f0f2f5', 
+                          borderTopLeftRadius: 20, 
+                          borderTopRightRadius: 20, 
+                          padding: 20, 
+                          boxShadow: '0 -4px 20px rgba(0,0,0,0.1)', 
+                          display: 'flex', 
+                          flexDirection: 'column', 
+                          gap: 16,
+                          animation: 'slideInUp 0.2s ease-out'
+                        }}
                         onClick={(e) => e.stopPropagation()}
                       >
                         {/* 頂部列 */}
