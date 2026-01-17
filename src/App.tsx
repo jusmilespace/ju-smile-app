@@ -1547,6 +1547,9 @@ const [showUnitPicker, setShowUnitPicker] = useState(false);
 
 // 👇 [新增] 用於控制 P/C/F 鍵盤的狀態
     const [editingMacro, setEditingMacro] = useState<'p' | 'c' | 'f' | null>(null);
+    const [editingCustomKcal, setEditingCustomKcal] = useState<'servings' | 'kcal' | null>(null);
+
+   
 
 // 單位列表 (固定順序，方便計算索引)
 const unitList = [
@@ -4971,36 +4974,272 @@ const totalFats = combo.items.reduce((sum, item) => sum + (item.fat || 0), 0);
                       </div>
                     )}
 
-                    {/* C3：自定義熱量 (僅 Kcal) */}
+                   {/* C3：自定義熱量 (僅 Kcal) */}
                     {fallbackType === '自定義熱量' && (
-                      <>
-                        <label>
-                          份量 (份)
-                          <input
-                            type="number"
-                            value={fallbackServings}
-                            onChange={(e) => setFallbackServings(e.target.value)}
-                            placeholder="例如:1"
-                          />
-                        </label>
-                        <label>
-                          每份熱量 (kcal)
-                          <input
-                            type="number"
-                            value={fallbackKcalPerServ}
-                            onChange={(e) => setFallbackKcalPerServ(e.target.value)}
-                            placeholder="例如:250"
-                          />
-                        </label>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        {/* 份量輸入 */}
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: '#666', marginBottom: 6 }}>
+                            份量 (份)
+                          </div>
+                          <div
+                            onClick={() => {
+                              setEditingCustomKcal('servings');
+                              setFallbackServings('');
+                            }}
+                            style={{
+                              background: '#fff',
+                              borderRadius: 12,
+                              padding: '12px',
+                              textAlign: 'center',
+                              fontSize: 24,
+                              fontWeight: 700,
+                              color: '#333',
+                              border: '1px solid #e5e7eb',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {fallbackServings || '0'}
+                          </div>
+                        </div>
+
+                        {/* 每份熱量輸入 */}
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: '#666', marginBottom: 6 }}>
+                            每份熱量 (kcal)
+                          </div>
+                          <div
+                            onClick={() => {
+                              setEditingCustomKcal('kcal');
+                              setFallbackKcalPerServ('');
+                            }}
+                            style={{
+                              background: '#fff',
+                              borderRadius: 12,
+                              padding: '12px',
+                              textAlign: 'center',
+                              fontSize: 24,
+                              fontWeight: 700,
+                              color: '#333',
+                              border: '1px solid #e5e7eb',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {fallbackKcalPerServ || '0'}
+                          </div>
+                        </div>
+
                         <div className="hint">
                           不在意 P/C/F，只估算總熱量。
                         </div>
-                      </>
+
+                        {/* 自定義熱量數字鍵盤 Modal */}
+                        {editingCustomKcal && (
+                          <div
+                            className="modal-backdrop"
+                            style={{
+                              position: 'fixed',
+                              top: 0,
+                              left: 0,
+                              right: 0,
+                              bottom: 0,
+                              background: 'rgba(0,0,0,0.4)',
+                              zIndex: 100
+                            }}
+                            onClick={() => setEditingCustomKcal(null)}
+                          >
+                            <div
+                              style={{
+                                position: 'absolute',
+                                bottom: 'calc(70px + env(safe-area-inset-bottom))',
+                                left: 0,
+                                right: 0,
+                                maxWidth: 420,
+                                margin: '0 auto',
+                                background: '#f0f2f5',
+                                borderTopLeftRadius: 20,
+                                borderTopRightRadius: 20,
+                                padding: 20,
+                                boxShadow: '0 -4px 20px rgba(0,0,0,0.1)',
+                                animation: 'slideInUp 0.2s ease-out'
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, alignItems: 'center' }}>
+                                <span style={{ fontSize: 16, fontWeight: 600, color: '#666' }}>
+                                  輸入{editingCustomKcal === 'servings' ? '份量' : '每份熱量'}
+                                </span>
+                                <span style={{ fontSize: 24, fontWeight: 700, color: '#333' }}>
+                                  {editingCustomKcal === 'servings' ? (fallbackServings || '0') : (fallbackKcalPerServ || '0')}
+                                </span>
+                              </div>
+
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, '.', 0].map((num) => (
+                                  <button
+                                    key={num}
+                                    type="button"
+                                    onClick={() => {
+                                      const setter = editingCustomKcal === 'servings' ? setFallbackServings : setFallbackKcalPerServ;
+                                      setter(prev => {
+                                        if (num === '.') {
+                                          return prev.includes('.') ? prev : prev + '.';
+                                        }
+                                        return (prev === '0' || prev === '') ? String(num) : prev + num;
+                                      });
+                                    }}
+                                    style={{
+                                      padding: '16px 0',
+                                      borderRadius: 12,
+                                      border: 'none',
+                                      background: '#fff',
+                                      fontSize: 24,
+                                      fontWeight: 600,
+                                      color: '#333',
+                                      boxShadow: '0 2px 0 #e5e7eb',
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    {num}
+                                  </button>
+                                ))}
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const setter = editingCustomKcal === 'servings' ? setFallbackServings : setFallbackKcalPerServ;
+                                    setter(prev => prev.slice(0, -1));
+                                  }}
+                                  style={{
+                                    padding: '16px 0',
+                                    borderRadius: 12,
+                                    border: 'none',
+                                    background: '#e5e7eb',
+                                    fontSize: 20,
+                                    color: '#333',
+                                    boxShadow: '0 2px 0 #d1d5db',
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  ⌫
+                                </button>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => setEditingCustomKcal(null)}
+                                style={{
+                                  width: '100%',
+                                  marginTop: 12,
+                                  padding: '14px 0',
+                                  borderRadius: 12,
+                                  border: 'none',
+                                  background: '#5c9c84',
+                                  color: '#fff',
+                                  fontSize: 18,
+                                  fontWeight: 700,
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                完成
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     )}
 
+                    {/* 營養資訊預覽卡片 - 食物類別版本 */}
                     {fallbackType && autoFoodInfo.kcal > 0 && (
-                      <div className="hint">
-                        系統估算總熱量約 {autoFoodInfo.kcal} kcal
+                      <div style={{
+                        background: 'linear-gradient(135deg, #f0fdf9 0%, #f7fbf8 100%)',
+                        borderRadius: 12,
+                        padding: '16px',
+                        marginTop: 12,
+                        marginBottom: 8,
+                        border: '1px solid #d1f0e3',
+                        boxShadow: '0 2px 8px rgba(151, 208, 186, 0.1)'
+                      }}>
+                        {/* 標題 */}
+                        <div style={{ 
+                          fontSize: 13, 
+                          fontWeight: 600, 
+                          color: '#5c9c84', 
+                          marginBottom: 12,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6
+                        }}>
+                          <span>📊</span>
+                          <span>營養資訊預覽</span>
+                        </div>
+
+                        {/* 熱量 (大字) */}
+                        <div style={{ 
+                          textAlign: 'center',
+                          marginBottom: 12,
+                          paddingBottom: 12,
+                          borderBottom: '1px solid #e5f3ed'
+                        }}>
+                          <div style={{ fontSize: 32, fontWeight: 700, color: '#1f2937', lineHeight: 1 }}>
+                            {autoFoodInfo.kcal}
+                            <span style={{ fontSize: 16, fontWeight: 500, color: '#6b7280', marginLeft: 4 }}>kcal</span>
+                          </div>
+                        </div>
+
+                        {/* 營養素 (P/C/F) 三欄 */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                          {/* 蛋白質 */}
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4, fontWeight: 500 }}>蛋白質</div>
+                            <div style={{ 
+                              fontSize: 18, 
+                              fontWeight: 700, 
+                              color: '#5c9c84',
+                              display: 'flex',
+                              alignItems: 'baseline',
+                              justifyContent: 'center',
+                              gap: 2
+                            }}>
+                              {Math.round(autoFoodInfo.protein * 10) / 10}
+                              <span style={{ fontSize: 12, fontWeight: 500, color: '#9ca3af' }}>g</span>
+                            </div>
+                          </div>
+
+                          {/* 碳水化合物 */}
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4, fontWeight: 500 }}>碳水</div>
+                            <div style={{ 
+                              fontSize: 18, 
+                              fontWeight: 700, 
+                              color: '#ffbe76',
+                              display: 'flex',
+                              alignItems: 'baseline',
+                              justifyContent: 'center',
+                              gap: 2
+                            }}>
+                              {Math.round(autoFoodInfo.carb * 10) / 10}
+                              <span style={{ fontSize: 12, fontWeight: 500, color: '#9ca3af' }}>g</span>
+                            </div>
+                          </div>
+
+                          {/* 脂肪 */}
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4, fontWeight: 500 }}>脂肪</div>
+                            <div style={{ 
+                              fontSize: 18, 
+                              fontWeight: 700, 
+                              color: '#ff7979',
+                              display: 'flex',
+                              alignItems: 'baseline',
+                              justifyContent: 'center',
+                              gap: 2
+                            }}>
+                              {Math.round(autoFoodInfo.fat * 10) / 10}
+                              <span style={{ fontSize: 12, fontWeight: 500, color: '#9ca3af' }}>g</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     )}
 {/* === 份量輸入彈窗 (Servings Modal) === */}
@@ -5008,17 +5247,33 @@ const totalFats = combo.items.reduce((sum, item) => sum + (item.fat || 0), 0);
     <div 
       className="modal-backdrop"
       style={{ 
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 100,
-        display: 'flex', alignItems: 'flex-end', justifyContent: 'center' 
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'rgba(0,0,0,0.4)',
+        zIndex: 100
       }}
       onClick={() => setShowServingsModal(false)}
     >
       <div 
         style={{ 
-          width: '100%', maxWidth: 420, background: '#f0f2f5', 
-          borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20,
+          position: 'absolute',
+          bottom: 'calc(70px + env(safe-area-inset-bottom))',
+          left: 0,
+          right: 0,
+          maxWidth: 420,
+          margin: '0 auto',
+          background: '#f0f2f5', 
+          borderTopLeftRadius: 20, 
+          borderTopRightRadius: 20, 
+          padding: 20,
           boxShadow: '0 -4px 20px rgba(0,0,0,0.1)',
-          display: 'flex', flexDirection: 'column', gap: 16
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: 16,
+          animation: 'slideInUp 0.2s ease-out'
         }}
         onClick={(e) => e.stopPropagation()}
       >
