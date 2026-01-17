@@ -148,7 +148,7 @@ const NumberPadModal: React.FC<NumberPadModalProps> = ({
         alignItems: 'flex-end', 
         justifyContent: 'center',
         pointerEvents: 'auto',
-        paddingBottom: 'calc(70px + env(safe-area-inset-bottom))' // 🟢 新增：給 bottom-nav 留空間
+        paddingBottom: 'calc(100px + env(safe-area-inset-bottom))' // 🟢 新增：給 bottom-nav 留空間
       }}
       onClick={onClose} 
     >
@@ -9797,7 +9797,7 @@ return (
       {/* 3️⃣ 底部導航：移出 main 之外，加上安全區設定 */}
       <nav className="bottom-nav" style={{
   flexShrink: 0,
-  paddingBottom: '10px',
+  paddingBottom: 'calc(10px + env(safe-area-inset-bottom))', // ✅ 加上安全區域
   paddingTop: '8px'
 }}>
 

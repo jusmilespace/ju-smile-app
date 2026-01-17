@@ -113,8 +113,3 @@ button:focus-visible {
   background-clip: padding-box;
 }
 
-/* 2. 如果你的導覽列是用 Fixed 固定在頂端的，需要往下推 Body */
-/* 這樣原本的第一塊內容才不會被變高的導覽列擋住 */
-body {
-  padding-top: env(safe-area-inset-top);
-}
