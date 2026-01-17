@@ -137,32 +137,26 @@ const NumberPadModal: React.FC<NumberPadModalProps> = ({
   };
 
   return (
-    <div
-      className="modal-backdrop"
-      style={{
-        position: 'fixed', 
-        inset: 0, 
-        background: 'rgba(0,0,0,0.0)', 
-        zIndex: 200,
-        display: 'flex', 
-        alignItems: 'flex-end', 
-        justifyContent: 'center',
-        pointerEvents: 'auto',
-        paddingBottom: 'calc(100px + env(safe-area-inset-bottom))' // 🟢 新增：給 bottom-nav 留空間
-      }}
-      onClick={onClose} 
-    >
-      <div
-  style={{
-    width: '100%', maxWidth: 420, background: '#f0f2f5',
-    borderTopLeftRadius: 24, borderTopRightRadius: 24, 
-    padding: '24px 20px 24px 20px', // 🟢 恢復正常 padding
-    boxShadow: '0 -4px 20px rgba(0,0,0,0.15)',
-    animation: 'slideIn 0.2s ease-out',
-    pointerEvents: 'auto'
-  }}
-  onClick={(e) => e.stopPropagation()}
->
+    <div className="modal-backdrop" style={{
+  position: 'fixed',
+  top: 0,  // ✅ 明確設定四邊
+  left: 0,
+  right: 0,
+  bottom: 0,
+  zIndex: 1000,  // ✅ 提高到 1000
+  // ✅ 移除 flex 和 paddingBottom
+}}>
+      
+      <div style={{
+  position: 'absolute',  // ✅ 絕對定位
+  bottom: 'calc(70px + env(safe-area-inset-bottom))',  // ✅ 定在 nav 上方
+  left: 0,
+  right: 0,
+  maxWidth: 420,
+  margin: '0 auto',  // ✅ 水平置中
+  padding: '24px 20px 24px 20px',
+  animation: 'slideInUp 0.2s ease-out'  // ✅ 改用 slideInUp
+}}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20, alignItems: 'center' }}>
           {/* 🟢 移除 X，只留標題 */}
           <span style={{ fontSize: 16, fontWeight: 600, color: '#666' }}>{title}</span>
@@ -9797,7 +9791,7 @@ return (
       {/* 3️⃣ 底部導航：移出 main 之外，加上安全區設定 */}
       <nav className="bottom-nav" style={{
   flexShrink: 0,
-  paddingBottom: 'calc(10px + env(safe-area-inset-bottom))', // ✅ 加上安全區域
+  paddingBottom: '10px', 
   paddingTop: '8px'
 }}>
 
