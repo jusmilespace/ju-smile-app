@@ -140,9 +140,15 @@ const NumberPadModal: React.FC<NumberPadModalProps> = ({
     <div
       className="modal-backdrop"
       style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.0)', zIndex: 200, // 背景改為全透明
-        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-        pointerEvents: 'auto' /* 🟢 關鍵修改：讓點擊穿透背景，這樣你可以直接點擊其他欄位來切換 */
+        position: 'fixed', 
+        inset: 0, 
+        background: 'rgba(0,0,0,0.0)', 
+        zIndex: 200,
+        display: 'flex', 
+        alignItems: 'flex-end', 
+        justifyContent: 'center',
+        pointerEvents: 'auto',
+        paddingBottom: 'calc(70px + env(safe-area-inset-bottom))' // 🟢 新增：給 bottom-nav 留空間
       }}
       onClick={onClose} 
     >
@@ -150,8 +156,7 @@ const NumberPadModal: React.FC<NumberPadModalProps> = ({
   style={{
     width: '100%', maxWidth: 420, background: '#f0f2f5',
     borderTopLeftRadius: 24, borderTopRightRadius: 24, 
-    padding: '24px 20px 20px 20px', // 🟢 改為固定上下 padding
-    paddingBottom: 'calc(80px + env(safe-area-inset-bottom))', // 🟢 新增：確保足夠空間
+    padding: '24px 20px 24px 20px', // 🟢 恢復正常 padding
     boxShadow: '0 -4px 20px rgba(0,0,0,0.15)',
     animation: 'slideIn 0.2s ease-out',
     pointerEvents: 'auto'

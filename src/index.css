@@ -1,7 +1,7 @@
 /* 讓整個 App 的內容往內縮，避開瀏海和底線 */
 body {
   padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
+  /* padding-bottom: env(safe-area-inset-bottom); */ /* 🔧 註解掉 */
   
   /* 確保背景色延伸到滿版 */
   min-height: 100vh;
