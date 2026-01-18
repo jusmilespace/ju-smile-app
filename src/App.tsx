@@ -6076,13 +6076,13 @@ const totalFats = combo.items.reduce((sum, item) => sum + (item.fat || 0), 0);
 {showAiModal && aiResult && (
   <div 
     className="modal-backdrop"
-    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px 20px calc(80px + env(safe-area-inset-bottom)) 20px' }}
     onClick={() => setShowAiModal(false)}
   >
     <div 
       className="modal" 
       onClick={(e) => e.stopPropagation()}
-      style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 400, padding: 20, boxShadow: '0 10px 25px rgba(0,0,0,0.2)', maxHeight: '90vh', overflowY: 'auto' }}
+      style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 400, padding: 20, boxShadow: '0 10px 25px rgba(0,0,0,0.2)', maxHeight: 'calc(90vh - 100px)', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}
     >
       <div style={{ textAlign: 'center', marginBottom: 16 }}>
         <div style={{ fontSize: 40, marginBottom: 8 }}>✨</div>
@@ -6430,7 +6430,8 @@ const totalFats = combo.items.reduce((sum, item) => sum + (item.fat || 0), 0);
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 9999
+    zIndex: 9999,
+    padding: '20px 20px calc(80px + env(safe-area-inset-bottom)) 20px'
   }}>
     <div style={{
       backgroundColor: '#fff',
@@ -6438,8 +6439,10 @@ const totalFats = combo.items.reduce((sum, item) => sum + (item.fat || 0), 0);
       padding: '24px',
       maxWidth: '400px',
       width: '90%',
-      maxHeight: '90vh',
-      overflowY: 'auto'
+      maxHeight: 'calc(90vh - 100px)',
+      overflowY: 'auto',
+      display: 'flex',
+      flexDirection: 'column'
     }}>
       <h3 style={{ marginBottom: '16px', fontSize: '1.2rem', color: '#333' }}>
         📄 營養標示掃描結果
