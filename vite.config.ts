@@ -25,6 +25,8 @@ export default defineConfig({
         theme_color: '#5c9c84',
         background_color: '#ffffff',
         display: 'standalone',
+        start_url: '/ju-smile-app/',
+        scope: '/ju-smile-app/',
         icons: [
           {
             src: 'pwa-192x192.png',
