@@ -173,7 +173,7 @@ const SimpleNumPad: React.FC<{
           background: '#f0f2f5', 
           borderTopLeftRadius: 24, 
           borderTopRightRadius: 24,
-          padding: '24px 20px 40px 20px', // 底部留白適應手機
+          padding: '24px 20px calc(40px + env(safe-area-inset-bottom)) 20px',
           boxShadow: '0 -4px 20px rgba(0,0,0,0.15)',
           animation: 'slideInUp 0.2s ease-out'
         }} 
