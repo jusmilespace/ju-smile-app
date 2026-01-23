@@ -30,7 +30,7 @@ type PortionType = {
   name: string;
   desc: string;
   unit: string;
-  handIcon?: string; // 改用圖片路徑
+  handIcon?: string;
   kcal: number;
   protein: number;
   carbs: number;
@@ -44,7 +44,7 @@ const PORTION_TYPES: PortionType[] = [
     name: '豆魚肉蛋類',
     desc: '參考：肉類 1手掌 ≈ 3份 | 1顆蛋 ≈ 1份',
     unit: '份',
-    handIcon: HAND_ICON_PALM, // ✋
+    handIcon: HAND_ICON_PALM,
     kcal: 75,
     protein: 7,
     carbs: 0,
@@ -56,7 +56,7 @@ const PORTION_TYPES: PortionType[] = [
     name: '蔬菜類',
     desc: '參考：1拳頭 ≈ 1份 (煮熟約100g)',
     unit: '份',
-    handIcon: HAND_ICON_FIST, // 👊
+    handIcon: HAND_ICON_FIST,
     kcal: 25,
     protein: 1,
     carbs: 5,
@@ -68,7 +68,7 @@ const PORTION_TYPES: PortionType[] = [
     name: '全穀雜糧類',
     desc: '參考：飯 1拳頭 ≈ 4份 | 麵 1拳頭 ≈ 2份',
     unit: '份',
-    handIcon: HAND_ICON_FIST, // 👊
+    handIcon: HAND_ICON_FIST,
     kcal: 70,
     protein: 2,
     carbs: 15,
@@ -80,7 +80,7 @@ const PORTION_TYPES: PortionType[] = [
     name: '水果類',
     desc: '參考：1拳頭 ≈ 1份 | 1顆蘋果 ≈ 1份',
     unit: '份',
-    handIcon: HAND_ICON_FIST, // 👊
+    handIcon: HAND_ICON_FIST,
     kcal: 60,
     protein: 0,
     carbs: 15,
@@ -92,7 +92,7 @@ const PORTION_TYPES: PortionType[] = [
     name: '油脂類',
     desc: '參考：1大拇指指節 ≈ 1份 | 1茶匙油 ≈ 1份',
     unit: '份',
-    handIcon: HAND_ICON_THUMB, // 👍
+    handIcon: HAND_ICON_THUMB,
     kcal: 45,
     protein: 0,
     carbs: 0,
@@ -130,6 +130,86 @@ type VisualPortionPickerProps = {
   mealType: '早餐' | '午餐' | '晚餐' | '點心';
 };
 
+// 🟢 新增：簡單的數字鍵盤元件 (解決原生鍵盤難用的問題)
+const SimpleNumPad: React.FC<{
+  visible: boolean;
+  title: string;
+  value: number;
+  onClose: () => void;
+  onConfirm: (val: number) => void;
+}> = ({ visible, title, value, onClose, onConfirm }) => {
+  const [tempVal, setTempVal] = useState(String(value));
+
+  // 當開啟時，重置數值
+  useEffect(() => {
+    if (visible) setTempVal(String(value));
+  }, [visible, value]);
+
+  if (!visible) return null;
+
+  const handleNum = (num: string) => {
+    if (num === '.') {
+      if (!tempVal.includes('.')) setTempVal(tempVal + '.');
+    } else {
+      setTempVal(tempVal === '0' ? num : tempVal + num);
+    }
+  };
+
+  const handleBackspace = () => {
+    setTempVal(prev => prev.slice(0, -1) || '0');
+  };
+
+  return (
+    <div 
+      style={{
+        position: 'fixed', inset: 0, zIndex: 3000, // 確保蓋過其他層級
+        background: 'rgba(0,0,0,0.4)', pointerEvents: 'auto',
+        display: 'flex', flexDirection: 'column', justifyContent: 'flex-end'
+      }} 
+      onClick={onClose}
+    >
+      <div 
+        style={{
+          background: '#f0f2f5', 
+          borderTopLeftRadius: 24, 
+          borderTopRightRadius: 24,
+          padding: '24px 20px 40px 20px', // 底部留白適應手機
+          boxShadow: '0 -4px 20px rgba(0,0,0,0.15)',
+          animation: 'slideInUp 0.2s ease-out'
+        }} 
+        onClick={e => e.stopPropagation()}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <span style={{ fontSize: 16, fontWeight: 600, color: '#666' }}>{title}</span>
+          <span style={{ fontSize: 32, fontWeight: 700, color: '#1f2937' }}>{tempVal}</span>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, '.', 0].map(n => (
+            <button key={n} onClick={() => handleNum(String(n))} style={{
+              padding: '16px 0', borderRadius: 12, border: 'none', background: '#fff',
+              fontSize: 24, fontWeight: 600, color: '#333', boxShadow: '0 2px 0 #e5e7eb', cursor: 'pointer'
+            }}>{n}</button>
+          ))}
+          <button onClick={handleBackspace} style={{
+            padding: '16px 0', borderRadius: 12, border: 'none', background: '#e5e7eb',
+            fontSize: 22, color: '#333', boxShadow: '0 2px 0 #d1d5db', cursor: 'pointer'
+          }}>⌫</button>
+        </div>
+        
+        <button onClick={() => {
+          onConfirm(Number(tempVal) || 0);
+          onClose();
+        }} style={{
+          width: '100%', marginTop: 20, padding: '16px', borderRadius: 12, border: 'none',
+          background: '#5c9c84', color: '#fff', fontSize: 18, fontWeight: 700, cursor: 'pointer',
+          boxShadow: '0 4px 12px rgba(92, 156, 132, 0.3)'
+        }}>完成</button>
+      </div>
+    </div>
+  );
+};
+
 export const VisualPortionPicker: React.FC<VisualPortionPickerProps> = ({
   onConfirm,
   onCancel,
@@ -144,9 +224,14 @@ export const VisualPortionPicker: React.FC<VisualPortionPickerProps> = ({
     fat: 0,
     dairy: 0,
   });
-useEffect(() => {
-  setFoodName(mealType);
-}, [mealType]);
+  
+  // 🟢 新增：控制目前正在編輯哪一個項目
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setFoodName(mealType);
+  }, [mealType]);
+
   const summary = useMemo(() => {
     let totalKcal = 0;
     let totalProtein = 0;
@@ -169,14 +254,12 @@ useEffect(() => {
     };
   }, [counts]);
 
-  // 生成 amountText (這裡還是用 Emoji 方便存成字串，但顯示層會用圖片解析)
-  // 或者您也可以改成這裡就存成某種代碼，但維持原樣最安全
   const amountText = useMemo(() => {
     const parts: string[] = [];
     PORTION_TYPES.forEach((p) => {
       const count = counts[p.id];
       if (count > 0) {
-        // 這裡的 Emoji 僅作為資料儲存識別用
+        // Emoji 作為資料識別，App.tsx 會轉成圖片
         const emoji = p.id === 'protein' ? '✋' :
                       p.id === 'fat' ? '👍' :
                       p.id === 'dairy' ? '🥛' : '👊'; 
@@ -215,22 +298,22 @@ useEffect(() => {
     return { message, type };
   }, [summary, counts]);
 
+  // 🟢 修改：增加單位改成 0.5
   const increase = (id: string) => {
-    setCounts((prev) => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
+    setCounts((prev) => ({ ...prev, [id]: (prev[id] || 0) + 0.5 }));
   };
 
+  // 🟢 修改：減少單位改成 0.5
   const decrease = (id: string) => {
     setCounts((prev) => {
       const current = prev[id] || 0;
-      return { ...prev, [id]: current >= 1 ? current - 1 : 0 };
+      return { ...prev, [id]: current >= 0.5 ? current - 0.5 : 0 };
     });
   };
 
-  const updateCount = (id: string, value: string) => {
-    const num = parseFloat(value);
-    if (!isNaN(num) && num >= 0) {
-      setCounts((prev) => ({ ...prev, [id]: num }));
-    }
+  // 此函式保留給鍵盤元件呼叫用
+  const updateCountDirectly = (id: string, val: number) => {
+    setCounts((prev) => ({ ...prev, [id]: val }));
   };
 
   const handleConfirm = () => {
@@ -257,60 +340,52 @@ useEffect(() => {
   return (
     <div style={{ padding: '4px 0 20px 0' }}>
       <div style={{ marginBottom: 20, position: 'relative' }}>
-  <input
-    type="text"
-    value={foodName}
-    onChange={(e) => setFoodName(e.target.value)}
-    placeholder="例如：午餐便當、雞胸肉沙拉..."
-    style={{ 
-      width: '100%', 
-      padding: '12px 44px 12px 16px', // 🟢 右側留空間給 X 按鈕
-      border: '2px solid #e9ecef', 
-      borderRadius: 10, 
-      fontSize: 16,
-      transition: 'border-color 0.2s'
-    }}
-    onFocus={(e) => e.currentTarget.style.borderColor = '#97d0ba'}
-    onBlur={(e) => e.currentTarget.style.borderColor = '#e9ecef'}
-  />
-  
-  {/* 🟢 新增：快速清除按鈕 (X) */}
-  {foodName && (
-    <button
-      type="button"
-      onClick={() => setFoodName('')}
-      style={{
-        position: 'absolute',
-        right: 8,
-        top: '50%',
-        transform: 'translateY(-50%)',
-        width: 28,
-        height: 28,
-        borderRadius: '50%',
-        border: 'none',
-        background: '#e5e7eb',
-        color: '#6b7280',
-        fontSize: 16,
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        transition: 'all 0.2s',
-        fontWeight: 600
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = '#d1d5db';
-        e.currentTarget.style.color = '#374151';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = '#e5e7eb';
-        e.currentTarget.style.color = '#6b7280';
-      }}
-    >
-      ✕
-    </button>
-  )}
-</div>
+        <input
+          type="text"
+          value={foodName}
+          onChange={(e) => setFoodName(e.target.value)}
+          placeholder="例如：午餐便當、雞胸肉沙拉..."
+          style={{ 
+            width: '100%', 
+            padding: '12px 44px 12px 16px', 
+            border: '2px solid #e9ecef', 
+            borderRadius: 10, 
+            fontSize: 16,
+            transition: 'border-color 0.2s',
+            boxSizing: 'border-box'
+          }}
+          onFocus={(e) => e.currentTarget.style.borderColor = '#97d0ba'}
+          onBlur={(e) => e.currentTarget.style.borderColor = '#e9ecef'}
+        />
+        
+        {foodName && (
+          <button
+            type="button"
+            onClick={() => setFoodName('')}
+            style={{
+              position: 'absolute',
+              right: 8,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              width: 28,
+              height: 28,
+              borderRadius: '50%',
+              border: 'none',
+              background: '#e5e7eb',
+              color: '#6b7280',
+              fontSize: 16,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s',
+              fontWeight: 600
+            }}
+          >
+            ✕
+          </button>
+        )}
+      </div>
 
       <div style={{ marginBottom: 20 }}>
         {PORTION_TYPES.map((portion) => {
@@ -340,7 +415,6 @@ useEffect(() => {
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 600, color: '#1f2937', fontSize: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span>{portion.name}</span>
-                        {/* 🟢 修改：顯示圖片而非 Emoji */}
                         {portion.handIcon && (
                           <img 
                             src={portion.handIcon} 
@@ -353,12 +427,33 @@ useEffect(() => {
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <button onClick={() => decrease(portion.id)} style={{ width: 28, height: 28, borderRadius: 6, border: 'none', background: isActive ? '#97d0ba' : '#e5e7eb', color: '#fff', fontSize: 16, cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>−</button>
-                    <div style={{ minWidth: 42, textAlign: 'center', position: 'relative' }}>
-                      <div style={{ fontSize: 10, color: '#9ca3af', fontWeight: 500, position: 'absolute', top: -18, left: '50%', transform: 'translateX(-50%)', whiteSpace: 'nowrap' }}>份數</div>
-                      <input type="number" value={count} min="0" step="0.5" onChange={(e) => updateCount(portion.id, e.target.value)} style={{ width: 42, height: 28, textAlign: 'center', fontSize: 18, fontWeight: 700, color: isActive ? '#97d0ba' : '#9ca3af', border: 'none', borderRadius: 6, background: isActive ? '#f0f9f6' : '#f3f4f6', cursor: 'pointer', padding: 0 }} />
+                    <button onClick={() => decrease(portion.id)} style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: isActive ? '#97d0ba' : '#e5e7eb', color: '#fff', fontSize: 18, cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>−</button>
+                    
+                    {/* 🟢 修改：點擊數字時開啟鍵盤，而非使用 input */}
+                    <div 
+                      onClick={() => setEditingId(portion.id)}
+                      style={{ 
+                        minWidth: 48, 
+                        textAlign: 'center', 
+                        position: 'relative',
+                        cursor: 'pointer' 
+                      }}
+                    >
+                      <div style={{ fontSize: 10, color: '#9ca3af', fontWeight: 500, position: 'absolute', top: -16, left: '50%', transform: 'translateX(-50%)', whiteSpace: 'nowrap' }}>份數</div>
+                      <div style={{ 
+                        fontSize: 20, 
+                        fontWeight: 700, 
+                        color: isActive ? '#97d0ba' : '#9ca3af',
+                        background: isActive ? '#f0f9f6' : '#f3f4f6',
+                        borderRadius: 6,
+                        padding: '2px 0',
+                        borderBottom: '1px dashed #ccc' // 增加一點視覺提示表示可點擊
+                      }}>
+                        {count}
+                      </div>
                     </div>
-                    <button onClick={() => increase(portion.id)} style={{ width: 28, height: 28, borderRadius: 6, border: 'none', background: '#97d0ba', color: '#fff', fontSize: 16, cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>+</button>
+
+                    <button onClick={() => increase(portion.id)} style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: '#97d0ba', color: '#fff', fontSize: 18, cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>+</button>
                   </div>
                 </div>
 
@@ -408,6 +503,17 @@ useEffect(() => {
         <button onClick={onCancel} style={{ flex: 1, padding: 12, background: '#fff', color: '#97d0ba', border: '2px solid #97d0ba', borderRadius: 8, fontSize: 16, fontWeight: 600, cursor: 'pointer' }}>取消</button>
         <button onClick={handleConfirm} style={{ flex: 1, padding: 12, background: '#97d0ba', color: '#fff', border: 'none', borderRadius: 8, fontSize: 16, fontWeight: 600, cursor: 'pointer' }}>加入記錄</button>
       </div>
+
+      {/* 🟢 新增：數字鍵盤 Modal */}
+      {editingId && (
+        <SimpleNumPad
+          visible={true}
+          title={`輸入${PORTION_TYPES.find(p => p.id === editingId)?.name || '份數'}`}
+          value={counts[editingId] || 0}
+          onClose={() => setEditingId(null)}
+          onConfirm={(val) => updateCountDirectly(editingId, val)}
+        />
+      )}
     </div>
   );
 };
