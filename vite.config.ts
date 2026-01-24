@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react-swc'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig(({ command }) => ({
-  base: command === 'serve' ? '/' : '/ju-smile-app/',
+  base: command === 'serve' || process.env.CAPACITOR ? '/' : '/ju-smile-app/',
   plugins: [
     react(),
     VitePWA({
@@ -22,8 +22,8 @@ export default defineConfig(({ command }) => ({
         theme_color: '#5c9c84',
         background_color: '#ffffff',
         display: 'standalone',
-        start_url: '/ju-smile-app/',
-        scope: '/ju-smile-app/',
+        start_url: process.env.CAPACITOR ? '/' : '/ju-smile-app/',
+        scope: process.env.CAPACITOR ? '/' : '/ju-smile-app/',
         icons: [
           {
             src: 'pwa-192x192.png',

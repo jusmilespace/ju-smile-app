@@ -1,0 +1,57 @@
+
+> ju-smile-app@1.0.3 build
+> vite build
+
+vite v7.2.2 building client environment for production...
+transforming...
+src/components/BarcodeScanner.tsx (3:32): "ScannedFood" is not exported by "src/services/foodApi.ts", imported by "src/components/BarcodeScanner.tsx".
+src/App.tsx (12:9): "ScannedFood" is not exported by "src/services/foodApi.ts", imported by "src/App.tsx".
+✓ 711 modules transformed.
+rendering chunks...
+[esbuild css minify]
+▲ [WARNING] Unexpected "}" [css-syntax-error]
+
+    <stdin>:891:0:
+      891 │ }
+          ╵ ^
+
+
+computing gzip size...
+dist/registerSW.js                             0.16 kB
+dist/manifest.webmanifest                      0.37 kB
+dist/index.html                                0.90 kB │ gzip:   0.44 kB
+dist/assets/barcode-BvJ5OLQS.png               7.12 kB
+dist/assets/logo_v1-BXPl28Hb.png              20.69 kB
+dist/assets/grains-C3GWktSF.png               28.07 kB
+dist/assets/fat-Cef-Abk_.png                  28.30 kB
+dist/assets/fruit-BFj8yWvM.png                29.10 kB
+dist/assets/nutrition-CE7cGLoL.png            29.62 kB
+dist/assets/dairy-C18twEQt.png                31.16 kB
+dist/assets/Ju Smile App-C4xWTFPw.png         32.93 kB
+dist/assets/low_intensity-BPyWzEOU.png        33.45 kB
+dist/assets/protein-BRbDoEc_.png              38.31 kB
+dist/assets/female-DuGGPhL6.png               46.22 kB
+dist/assets/veggie-BpUWpi7T.png               50.48 kB
+dist/assets/male-BY6R9xEa.png                 51.20 kB
+dist/assets/thumb-Cvam9ZoQ.png                61.64 kB
+dist/assets/fist-yiAVlIKd.png                 64.71 kB
+dist/assets/milk-PAXGo5H6.png                 68.84 kB
+dist/assets/palm-Bssb6eUK.png                 70.71 kB
+dist/assets/high_intensity-CY6p9dTi.png       84.13 kB
+dist/assets/medium_intensity-BPMh9ORr.png     84.67 kB
+dist/assets/index-CFrgJGGt.css                26.03 kB │ gzip:   5.79 kB
+dist/assets/web-DEF5gSgd.js                    0.36 kB │ gzip:   0.25 kB
+dist/assets/index-DqZ1Tosb.js              1,298.35 kB │ gzip: 369.32 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 2.04s
+
+PWA v1.2.0
+mode      generateSW
+precache  43 entries (2583.68 KiB)
+files generated
+  dist/sw.js
+  dist/workbox-1ef09536.js

@@ -2,19 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CAPACITOR_DEBUG</key>
+    <key>CAPACITOR_DEBUG</key>
 	<string>$(CAPACITOR_DEBUG)</string>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>zh_TW</string>
-    
-    <key>CFBundleLocalizations</key>
-    <array>
-       <string>zh_Hant</string>
-       <string>zh_TW</string>
-    </array>
-    
+	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>Ju Smile</string>
+        <string>Ju Smile</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -54,11 +47,5 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
-	<key>NSCameraUsageDescription</key>
-	<string>Ju Smile 需要相機權限以掃描條碼與辨識食物。</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Ju Smile 需要存取相簿以載入食物照片。</string>
 </dict>
 </plist>

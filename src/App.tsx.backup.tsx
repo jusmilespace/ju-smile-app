@@ -1025,45 +1025,6 @@ const AboutPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </p>
         </div>
       </section>
-      <section className="card">
-  <div className="form-section" style={{ lineHeight: 1.6 }}>
-    <h2>❓ 常見問題</h2>
-    
-    <div style={{ marginBottom: 16 }}>
-      <p style={{ fontWeight: 'bold', marginBottom: 8, color: '#1f2937' }}>
-        Q: 如何購買創始會員？
-      </p>
-      <p style={{ marginBottom: 0, paddingLeft: 16, color: '#6b7280' }}>
-        A: 請前往官網 <strong style={{ color: '#5c9c84' }}>jusmilespace.com</strong> 查看方案，
-        購買後將收到兌換碼 Email，即可在 App 內「我的」→「訂閱與升級」中輸入兌換碼完成升級。
-      </p>
-    </div>
-
-    <div style={{ marginBottom: 16 }}>
-      <p style={{ fontWeight: 'bold', marginBottom: 8, color: '#1f2937' }}>
-        Q: 創始會員有哪些權益？
-      </p>
-      <ul style={{ paddingLeft: 32, marginBottom: 0, color: '#6b7280' }}>
-        <li>3,600 次終身智能輔助額度</li>
-        <li>專屬創始會員編號</li>
-        <li>獨家禮物與 VIP 折扣權益</li>
-        <li>未來新功能搶先體驗</li>
-      </ul>
-    </div>
-
-    <div>
-      <p style={{ fontWeight: 'bold', marginBottom: 8, color: '#1f2937' }}>
-        Q: 如何使用兌換碼？
-      </p>
-      <ol style={{ paddingLeft: 32, marginBottom: 0, color: '#6b7280' }}>
-        <li>進入「🦋 我的」頁面</li>
-        <li>找到「💎 訂閱與升級」區塊</li>
-        <li>在「🎁 有兌換碼？」欄位輸入兌換碼</li>
-        <li>點擊「兌換」按鈕即可完成升級</li>
-      </ol>
-    </div>
-  </div>
-</section>
 
       <section className="card">
         <div className="form-section" style={{ lineHeight: 1.6 }}>
@@ -6901,7 +6862,8 @@ const RecordsPage: React.FC<RecordsPageProps> = ({
 
     // ✅ 加入這些（訂閱相關）
     const [founderPrice, setFounderPrice] = useState<any>(null);
-  
+    const [redeemCode, setRedeemCode] = useState('');
+    const [isRedeeming, setIsRedeeming] = useState(false);
 
     const [recordDefaultMealType, setRecordDefaultMealType] =
       useState<'早餐' | '午餐' | '晚餐' | '點心'>('早餐');
@@ -7152,6 +7114,86 @@ const fetchFounderPrice = async () => {
     // 靜默失敗，不影響 App 運作
   }
 };
+   // 兌換碼處理
+const handleRedeemCode = async () => {
+  const code = redeemCode.trim().toUpperCase();
+  
+  if (!code) {
+    showToast('warning', '請輸入兌換碼');
+    return;
+  }
+  
+  // 🟢 前端格式驗證（FOUNDER-XXXX-000 格式）
+  const codePattern = /^FOUNDER-[A-Z0-9]{4}-\d{3}$/;
+  if (!codePattern.test(code)) {
+    showToast('error', '兌換碼格式錯誤\n正確格式：FOUNDER-XXXX-000');
+    return;
+  }
+
+  setIsRedeeming(true);
+
+  try {
+    const subscription = getSubscription();
+
+    const response = await fetch('https://api.jusmilespace.com/redeem-founder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: subscription.userId,
+        code: code,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      // 🟢 根據錯誤類型顯示不同訊息
+      if (response.status === 429) {
+        showToast('error', '嘗試次數過多，請 1 小時後再試');
+      } else if (response.status === 409) {
+        showToast('error', '此兌換碼已被使用');
+      } else {
+        showToast('error', data.error || '兌換失敗');
+      }
+      return;
+    }
+
+    // 🟢 從兌換碼中提取編號（FOUNDER-A7K2-001 → 001 → 1）
+    const founderNumber = parseInt(code.split('-')[2]);
+    
+    // 🟢 生成推薦碼（REF001）
+    const referralCode = `REF${String(founderNumber).padStart(3, '0')}`;
+
+    // 🟢 升級成功
+    updateSubscription({
+      type: 'founder',
+      aiCredits: 3600, // 終身 3,600 次
+      founderTier: data.founderTier,
+      founderCode: code, // 儲存完整兌換碼
+      referralCode: referralCode, // 儲存推薦碼
+    });
+
+    // 🟢 根據階段顯示不同訊息
+    const tierNames = {
+      'super-early-bird': '超級早鳥',
+      'early-bird': '早鳥優惠',
+      'founder': '創始會員'
+    };
+    const tierName = tierNames[data.founderTier as keyof typeof tierNames] || '創始會員';
+
+    showToast('success', `🎉 恭喜！您已升級為 ${tierName}\n兌換碼：${code}`);
+    setRedeemCode('');
+
+    // 重新載入頁面以更新 UI
+    setTimeout(() => location.reload(), 2000);
+
+  } catch (error) {
+    console.error('兌換錯誤:', error);
+    showToast('error', '網路錯誤，請稍後再試');
+  } finally {
+    setIsRedeeming(false);
+  }
+};
 
     // CSV 資料
     const [typeTable, setTypeTable] = useState<TypeRow[]>([]);
@@ -7223,59 +7265,6 @@ const fetchFounderPrice = async () => {
     useEffect(() => {
       saveJSON(STORAGE_KEYS.COMBOS, combos);
     }, [combos]);
-
-    // 🟢 新增：App 啟動時自動檢查訂閱狀態
-useEffect(() => {
-  checkSubscriptionStatus();
-}, []);
-
-// 🟢 新增：檢查訂閱狀態函數
-async function checkSubscriptionStatus() {
-  const userId = generateUserId();
-
-  // 🟢 臨時加入這行，用來查看 userId
-  console.log('📱 當前 App userId:', userId);
-  alert('當前 userId: ' + userId);  // 🟢 也在 App 中顯示，更方便
-  
-  // 取得目前本地的訂閱狀態
-  const currentSub = getSubscription();
-  
-  try {
-    const response = await fetch('https://api.jusmilespace.com/check-subscription', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId })
-    });
-    
-    if (!response.ok) {
-      console.error('檢查訂閱狀態失敗');
-      return;
-    }
-    
-    const data = await response.json();
-    
-    // 如果遠端狀態和本地不同，更新本地狀態
-    if (data.type !== currentSub.type) {
-      // 更新本地訂閱狀態
-      updateSubscription({
-        type: data.type,
-        aiCredits: data.aiCredits,
-        aiCreditsResetDate: data.aiCreditsResetDate,
-        founderTier: data.founderTier,
-        founderCode: data.founderCode
-      });
-      
-      // 如果升級為創始會員，顯示恭喜訊息
-      if (data.type === 'founder' && currentSub.type === 'free') {
-        setTimeout(() => {
-          showToast('success', `🎉 恭喜！您已成功升級為創始會員\n兌換碼：${data.founderCode}`);
-        }, 1000);
-      }
-    }
-  } catch (error) {
-    console.error('檢查訂閱狀態錯誤:', error);
-  }
-}
 
     // ======== 取得 / 更新某日資料 ========
 
@@ -8323,84 +8312,6 @@ async function checkSubscriptionStatus() {
     const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout, onOpenNumericKeyboard }) => {
       const { showToast } = React.useContext(ToastContext);
 
-      // 🟢 兌換碼相關 state（移到這裡）
-  const [redeemCode, setRedeemCode] = useState('');
-  const [isRedeeming, setIsRedeeming] = useState(false);
-
-  // 🟢 兌換碼處理函數（移到這裡）
-  const handleRedeemCode = async () => {
-    const code = redeemCode.trim().toUpperCase();
-    
-    if (!code) {
-      showToast('warning', '請輸入兌換碼');
-      return;
-    }
-    
-    const codePattern = /^FOUNDER-[A-Z0-9]{4}-\d{3}$/;
-    if (!codePattern.test(code)) {
-      showToast('error', '兌換碼格式錯誤\\n正確格式：FOUNDER-XXXX-000');
-      return;
-    }
-
-    setIsRedeeming(true);
-
-    try {
-      const subscription = getSubscription();
-
-      const response = await fetch('https://api.jusmilespace.com/redeem-founder', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: subscription.userId,
-          code: code,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 429) {
-          showToast('error', '嘗試次數過多，請 1 小時後再試');
-        } else if (response.status === 409) {
-          showToast('error', '此兌換碼已被使用');
-        } else {
-          showToast('error', data.error || '兌換失敗');
-        }
-        return;
-      }
-
-      const founderNumber = parseInt(code.split('-')[2]);
-      const referralCode = `REF${String(founderNumber).padStart(3, '0')}`;
-
-      updateSubscription({
-        type: 'founder',
-        aiCredits: 3600,
-        founderTier: data.founderTier,
-        founderCode: code,
-        referralCode: referralCode,
-      });
-
-      const tierNames = {
-        'super-early-bird': '超級早鳥',
-        'early-bird': '早鳥優惠',
-        'founder': '創始會員'
-      };
-      const tierName = tierNames[data.founderTier as keyof typeof tierNames] || '創始會員';
-
-      showToast('success', `🎉 恭喜！您已升級為 ${tierName}\\n兌換碼：${code}`);
-      setRedeemCode('');
-
-      setTimeout(() => location.reload(), 2000);
-
-    } catch (error) {
-      console.error('兌換錯誤:', error);
-      showToast('error', '網路錯誤，請稍後再試');
-    } finally {
-      setIsRedeeming(false);
-    }
-  };
-
-
       // 🟢 新增：AI Key 狀態管理
 
       const [showApiGuide, setShowApiGuide] = useState(false);
@@ -8670,7 +8581,7 @@ async function checkSubscriptionStatus() {
                     </div>
                     <div style={{ fontSize: 13, color: '#6b7280', marginTop: 8 }}>
   {sub.type === 'free' && '每日 1 次 AI 辨識（30 次/月）• 歷史數據保留 30 天'}
-  {sub.type === 'founder' && '終身 3,600 次 AI 辨識 • 未來功能專屬折扣'}
+  {sub.type === 'founder' && '終身 3,600 次 AI 辨識 • 所有功能永久免費'}
   {sub.type === 'monthly' && '每月 60 次 AI 辨識（可累積 3 個月）• 完整功能'}
   {sub.type === 'yearly' && '每年 720 次 AI 辨識（期內有效）• 完整功能'}
 </div>
@@ -8683,16 +8594,6 @@ async function checkSubscriptionStatus() {
     fontSize: 12,
     color: '#059669',
   }}>
-    {/* 🟢 新增：顯示創始會員階段 */}
-    {sub.founderTier && (
-      <>
-        ✨ 階段：
-        {sub.founderTier === 'super-early-bird' && '超級早鳥'}
-        {sub.founderTier === 'early-bird' && '早鳥優惠'}
-        {sub.founderTier === 'founder' && '創始會員'}
-        <br/>
-      </>
-    )}
     💚 您的創始會員編號：{sub.founderCode}<br/>
     感謝您的支持讓 Ju Smile 不斷進步
   </div>
@@ -8743,23 +8644,22 @@ async function checkSubscriptionStatus() {
         }}>
           ✨ 升級後可享：<br/>
           • 終身 3,600 次 AI 識別額度<br/>
-          • 專屬創始會員編號<br/>
-  • 獨家禮物與 VIP 折扣權益<br/>
-  • 未來新功能搶先體驗
+          • 所有功能永久免費<br/>
+          • 未來新模組永久免費
         </div>
 
         <div style={{ 
-  fontSize: 13, 
-  color: '#6b7280', 
-  marginBottom: 16, 
-  lineHeight: 1.5,
-  textAlign: 'center'
-}}>
-  已有兌換碼？請在下方輸入<br/>
-  <span style={{ fontSize: 11, color: '#9ca3af' }}>
-    更多資訊請參考 App 內「關於」頁面或官網
-  </span>
-</div>
+          fontSize: 13, 
+          color: '#6b7280', 
+          marginBottom: 16, 
+          lineHeight: 1.5,
+          textAlign: 'center'
+        }}>
+          已購買會員？請在下方輸入兌換碼<br/>
+          <span style={{ fontSize: 11, color: '#9ca3af' }}>
+            尚未購買？訪問 <strong style={{ color: '#5c9c84' }}>jusmilespace.com</strong> 了解更多
+          </span>
+        </div>
       </div>
     );
   }
@@ -8923,13 +8823,9 @@ async function checkSubscriptionStatus() {
                     <input
   type="text"
   value={redeemCode}
-  onChange={(e) => setRedeemCode(e.target.value)}  // 🟢 移除 toUpperCase()
+  onChange={(e) => setRedeemCode(e.target.value.toUpperCase())}
   placeholder="請輸入您的兌換碼"
-  maxLength={18}
-  autoCapitalize="characters"  // 🟢 新增：讓 iOS 自動大寫
-  autoCorrect="off"  // 🟢 新增：關閉自動修正
-  autoComplete="off"  // 🟢 新增：關閉自動完成
-  spellCheck={false}  // 🟢 新增：關閉拼字檢查
+  maxLength={18} // FOUNDER-XXXX-000 = 18 字元
   style={{
     width: '100%',
     padding: '10px',
@@ -8937,9 +8833,8 @@ async function checkSubscriptionStatus() {
     borderRadius: '8px',
     fontSize: 14,
     marginBottom: '8px',
-    fontFamily: 'monospace',
+    fontFamily: 'monospace', // 等寬字體，方便輸入
     letterSpacing: '0.5px',
-    textTransform: 'uppercase',  // 🟢 新增：CSS 大寫顯示
   }}
 />
 
