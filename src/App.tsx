@@ -8325,16 +8325,20 @@ async function checkSubscriptionStatus() {
 
       // 🟢 兌換碼相關 state（移到這裡）
   const [redeemCode, setRedeemCode] = useState('');
+  const [redeemEmail, setRedeemEmail] = useState('');
   const [isRedeeming, setIsRedeeming] = useState(false);
 
   // 🟢 兌換碼處理函數（移到這裡）
   const handleRedeemCode = async () => {
     const code = redeemCode.trim().toUpperCase();
-    
-    if (!code) {
-      showToast('warning', '請輸入兌換碼');
+    const email = redeemEmail.trim().toLowerCase(); // 🌟 取得 email
+
+    if (!code || !email) {
+      showToast('warning', '請輸入兌換碼與購買時使用的 Email');
       return;
     }
+    
+
     
     const codePattern = /^FOUNDER-[A-Z0-9]{4}-\d{3}$/;
     if (!codePattern.test(code)) {
@@ -8353,6 +8357,7 @@ async function checkSubscriptionStatus() {
         body: JSON.stringify({
           userId: subscription.userId,
           code: code,
+          email: email,
         }),
       });
 
@@ -8920,6 +8925,21 @@ async function checkSubscriptionStatus() {
                     }}>
                       🎁 有兌換碼？
                     </label>
+                    {/* 🌟 新增：Email 輸入框 */}
+  <input
+    type="email"
+    value={redeemEmail}
+    onChange={(e) => setRedeemEmail(e.target.value)}
+    placeholder="購買時使用的 Email"
+    style={{
+      width: '100%',
+      padding: '10px',
+      border: '1px solid #d1d5db',
+      borderRadius: '8px',
+      fontSize: 14,
+      marginBottom: '10px', // 與下方序號框保持距離
+    }}
+  />
                     <input
   type="text"
   value={redeemCode}
