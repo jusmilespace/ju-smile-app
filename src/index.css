@@ -1,12 +1,12 @@
 /* 修正 iOS/Safari 標楷體問題 */
-* {
+:root, body, * {
   font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Hiragino Sans GB", "Microsoft JhengHei", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
   -webkit-font-smoothing: antialiased;
 }
 
-/* 針對輸入框與按鈕強化 */
+/* 確保所有表單元素強制繼承 */
 input, button, select, textarea {
-  font-family: inherit;
+  font-family: inherit !important;
 }
 
 /* 讓整個 App 的內容往內縮，避開瀏海和底線 */
