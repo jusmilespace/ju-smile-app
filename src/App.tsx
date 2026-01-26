@@ -8378,12 +8378,13 @@ async function checkSubscriptionStatus() {
       const referralCode = `REF${String(founderNumber).padStart(3, '0')}`;
 
       updateSubscription({
-        type: 'founder',
-        aiCredits: 3600,
-        founderTier: data.founderTier,
-        founderCode: code,
-        referralCode: referralCode,
-      });
+      type: 'founder',
+      aiCredits: 3600,
+      founderTier: data.founderTier,
+      founderCode: code,
+      referralCode: referralCode,
+      email: email, // 🌟 記得也存入本地，之後可以顯示「已綁定：xxx@xxx.com」
+    });
 
       const tierNames = {
         'super-early-bird': '超級早鳥',
@@ -8394,6 +8395,7 @@ async function checkSubscriptionStatus() {
 
       showToast('success', `🎉 恭喜！您已升級為 ${tierName}\\n兌換碼：${code}`);
       setRedeemCode('');
+      setRedeemEmail('');
 
       setTimeout(() => location.reload(), 2000);
 
