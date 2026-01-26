@@ -9117,7 +9117,7 @@ async function checkSubscriptionStatus() {
                     >
                       {isRedeeming ? '驗證中...' : '兌換'}
                     </button>
-                  </div>
+                 
                   {/* 🆕 裝置管理區塊 - 只有創始會員才顯示 */}
                   {subscription.type === 'founder' && subscription.founderCode && (
                     <div style={{
@@ -9298,6 +9298,7 @@ async function checkSubscriptionStatus() {
                       )}
                     </div>
                   )}
+                  </div>
 
 
 
