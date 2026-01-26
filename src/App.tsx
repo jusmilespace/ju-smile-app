@@ -9117,193 +9117,197 @@ async function checkSubscriptionStatus() {
                     >
                       {isRedeeming ? '驗證中...' : '兌換'}
                     </button>
-                 
-                  {/* 🆕 裝置管理區塊 - 只有創始會員才顯示 */}
-                  {subscription.type === 'founder' && subscription.founderCode && (
-                    <div style={{
-                      marginTop: '30px',
-                      padding: '20px',
-                      background: '#f8f9fa',
-                      borderRadius: '12px',
-                      border: '1px solid #e0e0e0',
-                    }}>
-                      <div style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: '15px',
-                      }}>
-                        <h3 style={{ 
-                          margin: 0,
-                          fontSize: '18px',
-                          color: '#333',
-                        }}>
-                          🔧 已綁定的裝置
-                        </h3>
-                        <button
-                          onClick={() => {
-                            setShowDeviceManagement(!showDeviceManagement);
-                            if (!showDeviceManagement) {
-                              loadDeviceList();
-                            }
-                          }}
-                          style={{
-                            padding: '8px 16px',
-                            background: 'white',
-                            border: '1px solid #ddd',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontSize: '14px',
-                          }}
-                        >
-                          {showDeviceManagement ? '收起' : '查看'}
-                        </button>
-                      </div>
-
-                      {showDeviceManagement && (
-                        <div>
-                          {isLoadingDevices ? (
-                            <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
-                              載入中...
-                            </div>
-                          ) : deviceList.length === 0 ? (
-                            <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
-                              尚無綁定裝置
-                            </div>
-                          ) : (
-                            <>
-                              {deviceList.map((device, index) => (
-                                <div
-                                  key={index}
-                                  style={{
-                                    padding: '15px',
-                                    background: device.isCurrent ? '#e3f2fd' : 'white',
-                                    border: `1px solid ${device.isCurrent ? '#2196f3' : '#ddd'}`,
-                                    borderRadius: '8px',
-                                    marginBottom: '10px',
-                                  }}
-                                >
-                                  <div style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                  }}>
-                                    <div style={{ flex: 1 }}>
-                                      <div style={{ 
-                                        fontSize: '16px', 
-                                        fontWeight: 'bold',
-                                        marginBottom: '5px',
-                                        color: '#333',
-                                      }}>
-                                        {device.platform === 'ios' && '📱'}
-                                        {device.platform === 'android' && '📱'}
-                                        {device.platform === 'web' && '💻'}
-                                        {device.platform === 'unknown' && '🔹'}
-                                        {' '}
-                                        {device.platform.toUpperCase()}
-                                        {device.browser && ` (${device.browser})`}
-                                      </div>
-                                      <div style={{ fontSize: '13px', color: '#666' }}>
-                                        最後使用：{device.lastUsed}
-                                        {device.daysInactive > 0 && ` (${device.daysInactive} 天前)`}
-                                      </div>
-                                      <div style={{ 
-                                        marginTop: '5px',
-                                        display: 'flex',
-                                        gap: '8px',
-                                      }}>
-                                        {device.isCurrent && (
-                                          <span style={{
-                                            fontSize: '12px',
-                                            padding: '2px 8px',
-                                            background: '#2196f3',
-                                            color: 'white',
-                                            borderRadius: '4px',
-                                          }}>
-                                            目前裝置
-                                          </span>
-                                        )}
-                                        {device.isActive ? (
-                                          <span style={{
-                                            fontSize: '12px',
-                                            padding: '2px 8px',
-                                            background: '#4caf50',
-                                            color: 'white',
-                                            borderRadius: '4px',
-                                          }}>
-                                            活躍
-                                          </span>
-                                        ) : (
-                                          <span style={{
-                                            fontSize: '12px',
-                                            padding: '2px 8px',
-                                            background: '#9e9e9e',
-                                            color: 'white',
-                                            borderRadius: '4px',
-                                          }}>
-                                            閒置
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
-                                    {!device.isCurrent && (
-                                      <button
-                                        onClick={() => handleRemoveDevice(device.deviceFingerprint)}
-                                        style={{
-                                          padding: '8px 12px',
-                                          background: '#f44336',
-                                          color: 'white',
-                                          border: 'none',
-                                          borderRadius: '6px',
-                                          cursor: 'pointer',
-                                          fontSize: '13px',
-                                        }}
-                                      >
-                                        解除綁定
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
-
-                              {/* 裝置數量統計 */}
-                              {deviceLimits && (
-                                <div style={{
-                                  marginTop: '15px',
-                                  padding: '12px',
-                                  background: '#fff3cd',
-                                  border: '1px solid #ffc107',
-                                  borderRadius: '6px',
-                                  fontSize: '14px',
-                                  color: '#856404',
-                                }}>
-                                  <div style={{ marginBottom: '5px' }}>
-                                    ✅ 活躍裝置：{deviceList.filter(d => d.isActive).length}/{deviceLimits.maxActive}
-                                  </div>
-                                  <div>
-                                    📊 總綁定數：{deviceList.length}/{deviceLimits.maxTotal}
-                                  </div>
-                                  <div style={{ 
-                                    marginTop: '8px', 
-                                    fontSize: '12px',
-                                    color: '#666',
-                                  }}>
-                                    💡 {deviceLimits.activeDays} 天內使用過的裝置視為「活躍」
-                                  </div>
-                                </div>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
                   </div>
-
-
-
                 );
               })()}
+              {/* 🆕 裝置管理區塊 - 只有創始會員才顯示 */}
+              {(() => {
+                const subscription = getSubscription();
+                if (subscription.type !== 'founder' || !subscription.founderCode) {
+                  return null;
+                }
+
+                return (
+                  <div style={{
+                    marginTop: '20px',
+                    padding: '20px',
+                    background: '#f8f9fa',
+                    borderRadius: '12px',
+                    border: '1px solid #e0e0e0',
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '15px',
+                    }}>
+                      <h3 style={{ 
+                        margin: 0,
+                        fontSize: '18px',
+                        color: '#333',
+                      }}>
+                        🔧 已綁定的裝置
+                      </h3>
+                      <button
+                        onClick={() => {
+                          setShowDeviceManagement(!showDeviceManagement);
+                          if (!showDeviceManagement) {
+                            loadDeviceList();
+                          }
+                        }}
+                        style={{
+                          padding: '8px 16px',
+                          background: 'white',
+                          border: '1px solid #ddd',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                        }}
+                      >
+                        {showDeviceManagement ? '收起' : '查看'}
+                      </button>
+                    </div>
+
+                    {showDeviceManagement && (
+                      <div>
+                        {isLoadingDevices ? (
+                          <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                            載入中...
+                          </div>
+                        ) : deviceList.length === 0 ? (
+                          <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                            尚無綁定裝置
+                          </div>
+                        ) : (
+                          <>
+                            {deviceList.map((device, index) => (
+                              <div
+                                key={index}
+                                style={{
+                                  padding: '15px',
+                                  background: device.isCurrent ? '#e3f2fd' : 'white',
+                                  border: `1px solid ${device.isCurrent ? '#2196f3' : '#ddd'}`,
+                                  borderRadius: '8px',
+                                  marginBottom: '10px',
+                                }}
+                              >
+                                <div style={{
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                }}>
+                                  <div style={{ flex: 1 }}>
+                                    <div style={{ 
+                                      fontSize: '16px', 
+                                      fontWeight: 'bold',
+                                      marginBottom: '5px',
+                                      color: '#333',
+                                    }}>
+                                      {device.platform === 'ios' && '📱'}
+                                      {device.platform === 'android' && '📱'}
+                                      {device.platform === 'web' && '💻'}
+                                      {device.platform === 'unknown' && '🔹'}
+                                      {' '}
+                                      {device.platform.toUpperCase()}
+                                      {device.browser && ` (${device.browser})`}
+                                    </div>
+                                    <div style={{ fontSize: '13px', color: '#666' }}>
+                                      最後使用：{device.lastUsed}
+                                      {device.daysInactive > 0 && ` (${device.daysInactive} 天前)`}
+                                    </div>
+                                    <div style={{ 
+                                      marginTop: '5px',
+                                      display: 'flex',
+                                      gap: '8px',
+                                    }}>
+                                      {device.isCurrent && (
+                                        <span style={{
+                                          fontSize: '12px',
+                                          padding: '2px 8px',
+                                          background: '#2196f3',
+                                          color: 'white',
+                                          borderRadius: '4px',
+                                        }}>
+                                          目前裝置
+                                        </span>
+                                      )}
+                                      {device.isActive ? (
+                                        <span style={{
+                                          fontSize: '12px',
+                                          padding: '2px 8px',
+                                          background: '#4caf50',
+                                          color: 'white',
+                                          borderRadius: '4px',
+                                        }}>
+                                          活躍
+                                        </span>
+                                      ) : (
+                                        <span style={{
+                                          fontSize: '12px',
+                                          padding: '2px 8px',
+                                          background: '#9e9e9e',
+                                          color: 'white',
+                                          borderRadius: '4px',
+                                        }}>
+                                          閒置
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  {!device.isCurrent && (
+                                    <button
+                                      onClick={() => handleRemoveDevice(device.deviceFingerprint)}
+                                      style={{
+                                        padding: '8px 12px',
+                                        background: '#f44336',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        cursor: 'pointer',
+                                        fontSize: '13px',
+                                      }}
+                                    >
+                                      解除綁定
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+
+                            {/* 裝置數量統計 */}
+                            {deviceLimits && (
+                              <div style={{
+                                marginTop: '15px',
+                                padding: '12px',
+                                background: '#fff3cd',
+                                border: '1px solid #ffc107',
+                                borderRadius: '6px',
+                                fontSize: '14px',
+                                color: '#856404',
+                              }}>
+                                <div style={{ marginBottom: '5px' }}>
+                                  ✅ 活躍裝置：{deviceList.filter(d => d.isActive).length}/{deviceLimits.maxActive}
+                                </div>
+                                <div>
+                                  📊 總綁定數：{deviceList.length}/{deviceLimits.maxTotal}
+                                </div>
+                                <div style={{ 
+                                  marginTop: '8px', 
+                                  fontSize: '12px',
+                                  color: '#666',
+                                }}>
+                                  💡 {deviceLimits.activeDays} 天內使用過的裝置視為「活躍」
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
             </div>
           </section>
 
