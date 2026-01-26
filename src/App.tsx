@@ -97,6 +97,54 @@ async function callWorkerAPI(
 ): Promise<any> {
   const subscription = getSubscription();
 
+  // 🆕 生成裝置指紋
+function generateDeviceFingerprint(): string {
+  try {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.fillText('jusmile', 0, 0);
+    }
+    
+    const components = [
+      navigator.userAgent,
+      navigator.language,
+      `${screen.width}x${screen.height}`,
+      String(new Date().getTimezoneOffset()),
+      canvas.toDataURL(),
+      String(navigator.hardwareConcurrency || 'unknown'),
+      navigator.platform,
+    ];
+    
+    const fingerprint = components.join('|');
+    
+    // 簡單的 hash（用 btoa）
+    const hash = btoa(fingerprint).replace(/[^a-zA-Z0-9]/g, '').substring(0, 32);
+    
+    return hash;
+  } catch (error) {
+    console.error('生成裝置指紋失敗:', error);
+    return `fallback_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+}
+
+// 🆕 取得裝置資訊
+function getDeviceInfo() {
+  const platform = Capacitor.getPlatform();
+  const ua = navigator.userAgent;
+  
+  let browser = 'Unknown';
+  if (ua.includes('Chrome')) browser = 'Chrome';
+  else if (ua.includes('Safari')) browser = 'Safari';
+  else if (ua.includes('Firefox')) browser = 'Firefox';
+  
+  return {
+    platform,
+    browser,
+    os: navigator.platform,
+  };
+}
+
   const WORKER_URL = 'https://api.jusmilespace.com';
 
   try {
@@ -8328,6 +8376,12 @@ async function checkSubscriptionStatus() {
   const [redeemEmail, setRedeemEmail] = useState('');
   const [isRedeeming, setIsRedeeming] = useState(false);
 
+  // 🆕 裝置管理相關 state
+  const [showDeviceManagement, setShowDeviceManagement] = useState(false);
+  const [deviceList, setDeviceList] = useState<any[]>([]);
+  const [isLoadingDevices, setIsLoadingDevices] = useState(false);
+  const [deviceLimits, setDeviceLimits] = useState<any>(null);
+
   // 🟢 兌換碼處理函數（移到這裡）
   const handleRedeemCode = async () => {
     const code = redeemCode.trim().toUpperCase();
@@ -8342,13 +8396,18 @@ async function checkSubscriptionStatus() {
 
     try {
         const subscription = getSubscription();
+        const deviceFingerprint = generateDeviceFingerprint();  // 🆕
+        const deviceInfo = getDeviceInfo();                     // 🆕
+        
         const response = await fetch('https://api.jusmilespace.com/redeem-founder', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 userId: subscription.userId,
                 code: code,
-                email: email, // 傳給後端比對
+                email: email,
+                deviceFingerprint,  // 🆕
+                deviceInfo,         // 🆕
             }),
         });
 
@@ -8356,17 +8415,24 @@ async function checkSubscriptionStatus() {
 
         // 🌟 嚴格阻斷：只要不是 200 OK，就絕對不准往下執行 updateSubscription
         if (!response.ok) {
-            setIsRedeeming(false); // 記得結束載入狀態
+            setIsRedeeming(false);
             if (response.status === 429) {
                 showToast('error', '嘗試次數過多，請 1 小時後再試');
             } else if (response.status === 409) {
                 showToast('error', '此兌換碼已被使用');
             } else if (response.status === 403) {
-                showToast('error', 'Email 與購買紀錄不符，請檢查輸入是否正確');
+                // 🆕 區分不同的 403 錯誤
+                if (data.activeDevices !== undefined) {
+                    // 裝置上限錯誤
+                    showToast('error', data.error || '裝置綁定已達上限');
+                } else {
+                    // Email 不符錯誤
+                    showToast('error', 'Email 與購買紀錄不符，請檢查輸入是否正確');
+                }
             } else {
                 showToast('error', data.error || '兌換失敗');
             }
-            return; // 🛑 核心：阻斷後續邏輯
+            return;
         }
 
         // ✅ 只有成功 (Status 200) 才會執行到這裡
@@ -8396,6 +8462,84 @@ async function checkSubscriptionStatus() {
         setIsRedeeming(false);
     }
 };
+
+// 🆕 裝置管理：載入裝置列表
+  const loadDeviceList = async () => {
+    const subscription = getSubscription();
+    if (subscription.type !== 'founder' || !subscription.founderCode) {
+      return;
+    }
+
+    setIsLoadingDevices(true);
+
+    try {
+      const deviceFingerprint = generateDeviceFingerprint();
+      const email = localStorage.getItem('JU_EMAIL') || redeemEmail;
+
+      const response = await fetch('https://api.jusmilespace.com/list-devices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          code: subscription.founderCode,
+          currentDeviceFingerprint: deviceFingerprint,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setDeviceList(data.devices || []);
+        setDeviceLimits(data.limits);
+      } else {
+        console.error('載入裝置列表失敗');
+      }
+    } catch (error) {
+      console.error('載入裝置列表錯誤:', error);
+    } finally {
+      setIsLoadingDevices(false);
+    }
+  };
+
+  // 🆕 裝置管理：解除裝置綁定
+  const handleRemoveDevice = async (deviceFingerprint: string) => {
+    if (!confirm('確定要解除此裝置的綁定嗎？解除後該裝置將無法繼續使用創始會員功能。')) {
+      return;
+    }
+
+    const subscription = getSubscription();
+    const email = localStorage.getItem('JU_EMAIL') || redeemEmail;
+
+    try {
+      const response = await fetch('https://api.jusmilespace.com/remove-device', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          code: subscription.founderCode,
+          deviceFingerprint,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        showToast('success', '已解除裝置綁定');
+        loadDeviceList(); // 重新載入列表
+      } else {
+        showToast('error', data.error || '解除綁定失敗');
+      }
+    } catch (error) {
+      console.error('解除綁定錯誤:', error);
+      showToast('error', '網路連線異常');
+    }
+  };
+
+  // 🆕 當顯示裝置管理時，自動載入列表
+  useEffect(() => {
+    if (showDeviceManagement) {
+      loadDeviceList();
+    }
+  }, [showDeviceManagement]);
 
 
       // 🟢 新增：AI Key 狀態管理
@@ -8974,6 +9118,189 @@ async function checkSubscriptionStatus() {
                       {isRedeeming ? '驗證中...' : '兌換'}
                     </button>
                   </div>
+                  {/* 🆕 裝置管理區塊 - 只有創始會員才顯示 */}
+                  {subscription.type === 'founder' && subscription.founderCode && (
+                    <div style={{
+                      marginTop: '30px',
+                      padding: '20px',
+                      background: '#f8f9fa',
+                      borderRadius: '12px',
+                      border: '1px solid #e0e0e0',
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '15px',
+                      }}>
+                        <h3 style={{ 
+                          margin: 0,
+                          fontSize: '18px',
+                          color: '#333',
+                        }}>
+                          🔧 已綁定的裝置
+                        </h3>
+                        <button
+                          onClick={() => {
+                            setShowDeviceManagement(!showDeviceManagement);
+                            if (!showDeviceManagement) {
+                              loadDeviceList();
+                            }
+                          }}
+                          style={{
+                            padding: '8px 16px',
+                            background: 'white',
+                            border: '1px solid #ddd',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                          }}
+                        >
+                          {showDeviceManagement ? '收起' : '查看'}
+                        </button>
+                      </div>
+
+                      {showDeviceManagement && (
+                        <div>
+                          {isLoadingDevices ? (
+                            <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                              載入中...
+                            </div>
+                          ) : deviceList.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                              尚無綁定裝置
+                            </div>
+                          ) : (
+                            <>
+                              {deviceList.map((device, index) => (
+                                <div
+                                  key={index}
+                                  style={{
+                                    padding: '15px',
+                                    background: device.isCurrent ? '#e3f2fd' : 'white',
+                                    border: `1px solid ${device.isCurrent ? '#2196f3' : '#ddd'}`,
+                                    borderRadius: '8px',
+                                    marginBottom: '10px',
+                                  }}
+                                >
+                                  <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                  }}>
+                                    <div style={{ flex: 1 }}>
+                                      <div style={{ 
+                                        fontSize: '16px', 
+                                        fontWeight: 'bold',
+                                        marginBottom: '5px',
+                                        color: '#333',
+                                      }}>
+                                        {device.platform === 'ios' && '📱'}
+                                        {device.platform === 'android' && '📱'}
+                                        {device.platform === 'web' && '💻'}
+                                        {device.platform === 'unknown' && '🔹'}
+                                        {' '}
+                                        {device.platform.toUpperCase()}
+                                        {device.browser && ` (${device.browser})`}
+                                      </div>
+                                      <div style={{ fontSize: '13px', color: '#666' }}>
+                                        最後使用：{device.lastUsed}
+                                        {device.daysInactive > 0 && ` (${device.daysInactive} 天前)`}
+                                      </div>
+                                      <div style={{ 
+                                        marginTop: '5px',
+                                        display: 'flex',
+                                        gap: '8px',
+                                      }}>
+                                        {device.isCurrent && (
+                                          <span style={{
+                                            fontSize: '12px',
+                                            padding: '2px 8px',
+                                            background: '#2196f3',
+                                            color: 'white',
+                                            borderRadius: '4px',
+                                          }}>
+                                            目前裝置
+                                          </span>
+                                        )}
+                                        {device.isActive ? (
+                                          <span style={{
+                                            fontSize: '12px',
+                                            padding: '2px 8px',
+                                            background: '#4caf50',
+                                            color: 'white',
+                                            borderRadius: '4px',
+                                          }}>
+                                            活躍
+                                          </span>
+                                        ) : (
+                                          <span style={{
+                                            fontSize: '12px',
+                                            padding: '2px 8px',
+                                            background: '#9e9e9e',
+                                            color: 'white',
+                                            borderRadius: '4px',
+                                          }}>
+                                            閒置
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    {!device.isCurrent && (
+                                      <button
+                                        onClick={() => handleRemoveDevice(device.deviceFingerprint)}
+                                        style={{
+                                          padding: '8px 12px',
+                                          background: '#f44336',
+                                          color: 'white',
+                                          border: 'none',
+                                          borderRadius: '6px',
+                                          cursor: 'pointer',
+                                          fontSize: '13px',
+                                        }}
+                                      >
+                                        解除綁定
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+
+                              {/* 裝置數量統計 */}
+                              {deviceLimits && (
+                                <div style={{
+                                  marginTop: '15px',
+                                  padding: '12px',
+                                  background: '#fff3cd',
+                                  border: '1px solid #ffc107',
+                                  borderRadius: '6px',
+                                  fontSize: '14px',
+                                  color: '#856404',
+                                }}>
+                                  <div style={{ marginBottom: '5px' }}>
+                                    ✅ 活躍裝置：{deviceList.filter(d => d.isActive).length}/{deviceLimits.maxActive}
+                                  </div>
+                                  <div>
+                                    📊 總綁定數：{deviceList.length}/{deviceLimits.maxTotal}
+                                  </div>
+                                  <div style={{ 
+                                    marginTop: '8px', 
+                                    fontSize: '12px',
+                                    color: '#666',
+                                  }}>
+                                    💡 {deviceLimits.activeDays} 天內使用過的裝置視為「活躍」
+                                  </div>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+
+
                 );
               })()}
             </div>
