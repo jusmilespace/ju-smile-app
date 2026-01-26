@@ -8331,81 +8331,71 @@ async function checkSubscriptionStatus() {
   // 🟢 兌換碼處理函數（移到這裡）
   const handleRedeemCode = async () => {
     const code = redeemCode.trim().toUpperCase();
-    const email = redeemEmail.trim().toLowerCase(); // 🌟 取得 email
-
+    const email = redeemEmail.trim().toLowerCase(); // 確保抓到輸入的 email 狀態
+    
     if (!code || !email) {
-      showToast('warning', '請輸入兌換碼與購買時使用的 Email');
-      return;
-    }
-    
-
-    
-    const codePattern = /^FOUNDER-[A-Z0-9]{4}-\d{3}$/;
-    if (!codePattern.test(code)) {
-      showToast('error', '兌換碼格式錯誤\\n正確格式：FOUNDER-XXXX-000');
-      return;
+        showToast('warning', '請輸入 Email 與兌換碼');
+        return;
     }
 
     setIsRedeeming(true);
 
     try {
-      const subscription = getSubscription();
+        const subscription = getSubscription();
+        const response = await fetch('https://api.jusmilespace.com/redeem-founder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userId: subscription.userId,
+                code: code,
+                email: email, // 傳給後端比對
+            }),
+        });
 
-      const response = await fetch('https://api.jusmilespace.com/redeem-founder', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: subscription.userId,
-          code: code,
-          email: email,
-        }),
-      });
+        const data = await response.json();
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 429) {
-          showToast('error', '嘗試次數過多，請 1 小時後再試');
-        } else if (response.status === 409) {
-          showToast('error', '此兌換碼已被使用');
-        } else {
-          showToast('error', data.error || '兌換失敗');
+        // 🌟 嚴格阻斷：只要不是 200 OK，就絕對不准往下執行 updateSubscription
+        if (!response.ok) {
+            setIsRedeeming(false); // 記得結束載入狀態
+            if (response.status === 429) {
+                showToast('error', '嘗試次數過多，請 1 小時後再試');
+            } else if (response.status === 409) {
+                showToast('error', '此兌換碼已被使用');
+            } else if (response.status === 403) {
+                showToast('error', 'Email 與購買紀錄不符，請檢查輸入是否正確');
+            } else {
+                showToast('error', data.error || '兌換失敗');
+            }
+            return; // 🛑 核心：阻斷後續邏輯
         }
-        return;
-      }
 
-      const founderNumber = parseInt(code.split('-')[2]);
-      const referralCode = `REF${String(founderNumber).padStart(3, '0')}`;
+        // ✅ 只有成功 (Status 200) 才會執行到這裡
+        const founderNumber = parseInt(code.split('-')[2]);
+        const referralCode = `REF${String(founderNumber).padStart(3, '0')}`;
 
-      updateSubscription({
-      type: 'founder',
-      aiCredits: 3600,
-      founderTier: data.founderTier,
-      founderCode: code,
-      referralCode: referralCode,
-      email: email, // 🌟 記得也存入本地，之後可以顯示「已綁定：xxx@xxx.com」
-    });
+        updateSubscription({
+            type: 'founder',
+            aiCredits: 3600,
+            founderTier: data.founderTier,
+            founderCode: code,
+            referralCode: referralCode,
+            email: email, 
+        });
 
-      const tierNames = {
-        'super-early-bird': '超級早鳥',
-        'early-bird': '早鳥優惠',
-        'founder': '創始會員'
-      };
-      const tierName = tierNames[data.founderTier as keyof typeof tierNames] || '創始會員';
+        showToast('success', `🎉 恭喜！您已升級為創始會員`);
+        setRedeemCode('');
+        setRedeemEmail('');
 
-      showToast('success', `🎉 恭喜！您已升級為 ${tierName}\\n兌換碼：${code}`);
-      setRedeemCode('');
-      setRedeemEmail('');
-
-      setTimeout(() => location.reload(), 2000);
+        // 延遲重整，讓用戶看到成功提示
+        setTimeout(() => location.reload(), 2000);
 
     } catch (error) {
-      console.error('兌換錯誤:', error);
-      showToast('error', '網路錯誤，請稍後再試');
+        console.error('兌換錯誤:', error);
+        showToast('error', '網路連線異常，請稍後再試');
     } finally {
-      setIsRedeeming(false);
+        setIsRedeeming(false);
     }
-  };
+};
 
 
       // 🟢 新增：AI Key 狀態管理
