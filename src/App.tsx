@@ -8449,6 +8449,8 @@ async function checkSubscriptionStatus() {
             referralCode: referralCode,
             email: email, 
         });
+         // 🆕 儲存 email 到 localStorage
+        localStorage.setItem('JU_EMAIL', email);
 
         showToast('success', `🎉 恭喜！您已升級為創始會員`);
         setRedeemCode('');
