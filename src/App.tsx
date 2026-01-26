@@ -90,14 +90,7 @@ function updateSubscription(updates: Partial<UserSubscription>) {
   localStorage.setItem('JU_SUBSCRIPTION', JSON.stringify(updated));
 }
 
-// 呼叫 Worker API
-async function callWorkerAPI(
-  imageBase64: string,
-  mode: 'nutrition' | 'label' = 'nutrition'
-): Promise<any> {
-  const subscription = getSubscription();
-
-  // 🆕 生成裝置指紋
+// 🆕 生成裝置指紋（全域函數）
 function generateDeviceFingerprint(): string {
   try {
     const canvas = document.createElement('canvas');
@@ -128,7 +121,7 @@ function generateDeviceFingerprint(): string {
   }
 }
 
-// 🆕 取得裝置資訊
+// 🆕 取得裝置資訊（全域函數）
 function getDeviceInfo() {
   const platform = Capacitor.getPlatform();
   const ua = navigator.userAgent;
@@ -144,6 +137,15 @@ function getDeviceInfo() {
     os: navigator.platform,
   };
 }
+
+// 呼叫 Worker API
+async function callWorkerAPI(
+  imageBase64: string,
+  mode: 'nutrition' | 'label' = 'nutrition'
+): Promise<any> {
+  const subscription = getSubscription();
+
+  
 
   const WORKER_URL = 'https://api.jusmilespace.com';
 
