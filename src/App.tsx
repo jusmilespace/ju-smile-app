@@ -1127,15 +1127,21 @@ const AboutPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       只需輸入購買時使用的 Email，系統會自動為您完成兌換。
     </p>
   </div>
-  <ol style={{ paddingLeft: 32, marginBottom: 0, color: '#6b7280', fontSize: '14px' }}>
+  <ol style={{ paddingLeft: 32, marginBottom: 12, color: '#6b7280', fontSize: '14px' }}>
     <li>進入「🦋 我的」頁面</li>
     <li>找到「💎 訂閱與升級」區塊</li>
     <li>在「<strong>購買時使用的 Email</strong>」欄位輸入您的 Email</li>
     <li>點擊「兌換」按鈕，系統會自動識別並完成升級 🎉</li>
-    <li style={{ marginTop: '8px', color: '#9ca3af', fontSize: '13px' }}>
-      💡 備註：如需手動兌換，可同時輸入 Email 和兌換碼
-    </li>
   </ol>
+  <p style={{ 
+    margin: 0, 
+    paddingLeft: 32,
+    color: '#9ca3af', 
+    fontSize: '13px',
+    lineHeight: 1.5
+  }}>
+    💡 <strong>備註：</strong>如需手動兌換，可同時輸入 Email 和兌換碼
+  </p>
 </div>
   </div>
 </section>
