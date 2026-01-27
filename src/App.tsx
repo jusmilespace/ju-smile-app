@@ -99,23 +99,23 @@ function generateDeviceFingerprint(): string {
       ctx.fillText('jusmile', 0, 0);
     }
     
-    // 🔥 加入更多瀏覽器特徵，避免碰撞
+    // 🔥 把 vendor 放最前面，確保不同瀏覽器產生不同指紋
     const components = [
-      navigator.userAgent,           // 基本 UA
-      navigator.language,             // 語言
-      navigator.languages?.join(',') || '', // 🆕 語言列表
+      navigator.vendor || 'none',        // 🆕 最前面！Safari: "Apple Computer, Inc.", Chrome: "Google Inc.", Firefox: ""
+      navigator.userAgent,               // 基本 UA
+      navigator.language,                // 語言
+      navigator.languages?.join(',') || '', // 語言列表
       `${screen.width}x${screen.height}`, // 螢幕解析度
       String(new Date().getTimezoneOffset()), // 時區
-      canvas.toDataURL(),             // Canvas 指紋
+      canvas.toDataURL(),                // Canvas 指紋
       String(navigator.hardwareConcurrency || 'unknown'), // CPU 核心數
-      navigator.platform,             // 平台
-      navigator.vendor || '',         // 🆕 瀏覽器廠商（Chrome: Google Inc., Safari: Apple Computer, Inc.）
-      String(screen.colorDepth),      // 🆕 色彩深度
-      String(navigator.maxTouchPoints || 0), // 🆕 觸控點數
-      navigator.cookieEnabled ? '1' : '0', // 🆕 Cookie 狀態
-      String(screen.pixelDepth),      // 🆕 像素深度
-      navigator.doNotTrack || '',     // 🆕 DNT 設定
-      String(window.devicePixelRatio || 1), // 🆕 裝置像素比
+      navigator.platform,                // 平台
+      String(screen.colorDepth),         // 色彩深度
+      String(navigator.maxTouchPoints || 0), // 觸控點數
+      navigator.cookieEnabled ? '1' : '0', // Cookie 狀態
+      String(screen.pixelDepth),         // 像素深度
+      navigator.doNotTrack || '',        // DNT 設定
+      String(window.devicePixelRatio || 1), // 裝置像素比
     ];
     
     const fingerprint = components.join('|');
@@ -128,6 +128,22 @@ function generateDeviceFingerprint(): string {
     console.error('生成裝置指紋失敗:', error);
     return `fallback_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
+}
+// 🆕 取得裝置資訊（全域函數）
+function getDeviceInfo() {
+  const platform = Capacitor.getPlatform();
+  const ua = navigator.userAgent;
+  
+  let browser = 'Unknown';
+  if (ua.includes('Chrome')) browser = 'Chrome';
+  else if (ua.includes('Safari')) browser = 'Safari';
+  else if (ua.includes('Firefox')) browser = 'Firefox';
+  
+  return {
+    platform,
+    browser,
+    os: navigator.platform,
+  };
 }
 
 // 呼叫 Worker API
@@ -7275,9 +7291,8 @@ useEffect(() => {
 async function checkSubscriptionStatus() {
   const userId = generateUserId();
 
-  // 🟢 臨時加入這行，用來查看 userId
+  // Debug: 在 console 查看 userId（不干擾用戶）
   console.log('📱 當前 App userId:', userId);
-  alert('當前 userId: ' + userId);  // 🟢 也在 App 中顯示，更方便
   
   // 取得目前本地的訂閱狀態
   const currentSub = getSubscription();
