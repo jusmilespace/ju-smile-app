@@ -671,7 +671,7 @@ const CSV_DEFAULT_URLS = {
 } as const;
 
 // 🔹 App 版本（之後要改版本號可以只改這裡）
-const APP_VERSION = '1.0.3';
+const APP_VERSION = '1.0.4';
 
 function loadJSON<T>(key: string, fallback: T): T {
   try {
@@ -1110,16 +1110,33 @@ const AboutPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     </div>
 
     <div>
-      <p style={{ fontWeight: 'bold', marginBottom: 8, color: '#1f2937' }}>
-        Q: 如何使用兌換碼？
-      </p>
-      <ol style={{ paddingLeft: 32, marginBottom: 0, color: '#6b7280' }}>
-        <li>進入「🦋 我的」頁面</li>
-        <li>找到「💎 訂閱與升級」區塊</li>
-        <li>在「🎁 有兌換碼？」欄位輸入兌換碼</li>
-        <li>點擊「兌換」按鈕即可完成升級</li>
-      </ol>
-    </div>
+  <p style={{ fontWeight: 'bold', marginBottom: 8, color: '#1f2937' }}>
+    Q: 如何使用兌換碼？
+  </p>
+  <div style={{ 
+    background: '#e8f5e9', 
+    padding: '12px', 
+    borderRadius: '8px', 
+    marginBottom: '12px',
+    border: '1px solid #4caf50'
+  }}>
+    <p style={{ margin: 0, color: '#2e7d32', fontSize: '14px', fontWeight: 'bold' }}>
+      ✨ 新功能：自動兌換！
+    </p>
+    <p style={{ margin: '4px 0 0 0', color: '#2e7d32', fontSize: '13px' }}>
+      只需輸入購買時使用的 Email，系統會自動為您完成兌換。
+    </p>
+  </div>
+  <ol style={{ paddingLeft: 32, marginBottom: 0, color: '#6b7280', fontSize: '14px' }}>
+    <li>進入「🦋 我的」頁面</li>
+    <li>找到「💎 訂閱與升級」區塊</li>
+    <li>在「<strong>購買時使用的 Email</strong>」欄位輸入您的 Email</li>
+    <li>點擊「兌換」按鈕，系統會自動識別並完成升級 🎉</li>
+    <li style={{ marginTop: '8px', color: '#9ca3af', fontSize: '13px' }}>
+      💡 備註：如需手動兌換，可同時輸入 Email 和兌換碼
+    </li>
+  </ol>
+</div>
   </div>
 </section>
 
@@ -1130,11 +1147,11 @@ const AboutPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             目前版本：<b>Ju Smile App v{APP_VERSION}</b>
           </p>
           <ul style={{ paddingLeft: 20, marginBottom: 0, fontSize: 'var(--font-xs)' }}>
-            <li>v1.0.3：修正更新提示被導航列擋住的問題，提升介面穩定性。</li>
-            <li>v1.0.2：修正上架語言設定為繁中。</li>
-            <li>v1.0.1：初始版本，提供體重 / 飲食 / 運動紀錄與 JSON 匯出 / 匯入功能。</li>
-            {/* 未來可以在這裡往下加 v0.1.1, v0.2.0 ... */}
-          </ul>
+  <li>v1.0.4：新增自動兌換功能，只需輸入購買 Email 即可自動升級創始會員。</li>
+  <li>v1.0.3：修正更新提示被導航列擋住的問題，提升介面穩定性。</li>
+  <li>v1.0.2：修正上架語言設定為繁中。</li>
+  <li>v1.0.1：初始版本，提供體重 / 飲食 / 運動紀錄與 JSON 匯出 / 匯入功能。</li>
+</ul>
         </div>
       </section>
 
@@ -9116,14 +9133,23 @@ async function checkSubscriptionStatus() {
                     border: '1px solid #e5e7eb',
                   }}>
                     <label style={{
-                      display: 'block',
-                      marginBottom: 8,
-                      fontSize: 14,
-                      fontWeight: 'bold',
-                      color: '#1f2937',
-                    }}>
-                      🎁 有兌換碼？
-                    </label>
+  display: 'block',
+  marginBottom: 8,
+  fontSize: 14,
+  fontWeight: 'bold',
+  color: '#1f2937',
+}}>
+  🎁 升級為創始會員
+</label>
+<p style={{
+  margin: '0 0 12px 0',
+  fontSize: 13,
+  color: '#6b7280',
+  lineHeight: 1.5
+}}>
+  ✨ 只需輸入購買 Email 即可自動兌換<br/>
+  或手動輸入 Email + 兌換碼
+</p>
                     {/* 🌟 新增：Email 輸入框 */}
   <input
     type="email"
