@@ -8393,85 +8393,137 @@ async function checkSubscriptionStatus() {
 
   // 🟢 兌換碼處理函數（移到這裡）
   const handleRedeemCode = async () => {
-    const code = redeemCode.trim().toUpperCase();
-    const email = redeemEmail.trim().toLowerCase(); // 確保抓到輸入的 email 狀態
-    
-    if (!code || !email) {
-        showToast('warning', '請輸入 Email 與兌換碼');
-        return;
-    }
+  const code = redeemCode.trim().toUpperCase();
+  const email = redeemEmail.trim().toLowerCase();
+  
+  // 基本驗證：至少要有 email
+  if (!email) {
+    showToast('warning', '請輸入購買時使用的 Email');
+    return;
+  }
 
-    setIsRedeeming(true);
+  setIsRedeeming(true);
 
-    try {
-        const subscription = getSubscription();
-        const deviceFingerprint = generateDeviceFingerprint();  // 🆕
-        const deviceInfo = getDeviceInfo();                     // 🆕
-        
-        const response = await fetch('https://api.jusmilespace.com/redeem-founder', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                userId: subscription.userId,
-                code: code,
-                email: email,
-                deviceFingerprint,  // 🆕
-                deviceInfo,         // 🆕
-            }),
+  try {
+    const subscription = getSubscription();
+    const deviceFingerprint = generateDeviceFingerprint();
+    const deviceInfo = getDeviceInfo();
+
+    // 🌟 優先自動兌換：先用 email 檢查是否有未兌換的碼
+    let finalCode = code; // 最終要使用的兌換碼
+
+    if (!finalCode) {
+      // 如果沒有手動輸入兌換碼，嘗試自動檢查
+      showToast('info', '正在檢查您的購買記錄...');
+      
+      try {
+        const checkResponse = await fetch('https://api.jusmilespace.com/check-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
         });
 
-        const data = await response.json();
-
-        // 🌟 嚴格阻斷：只要不是 200 OK，就絕對不准往下執行 updateSubscription
-        if (!response.ok) {
+        if (checkResponse.ok) {
+          const checkData = await checkResponse.json();
+          
+          if (checkData.hasCode) {
+            // 🎉 找到未兌換的碼，使用它
+            finalCode = checkData.code;
+            console.log(`✅ 自動找到兌換碼：${finalCode}`);
+          } else {
+            // 沒有找到兌換碼
             setIsRedeeming(false);
-            if (response.status === 429) {
-                showToast('error', '嘗試次數過多，請 1 小時後再試');
-            } else if (response.status === 409) {
-                showToast('error', '此兌換碼已被使用');
-            } else if (response.status === 403) {
-                // 🆕 區分不同的 403 錯誤
-                if (data.activeDevices !== undefined) {
-                    // 裝置上限錯誤
-                    showToast('error', data.error || '裝置綁定已達上限');
-                } else {
-                    // Email 不符錯誤
-                    showToast('error', 'Email 與購買紀錄不符，請檢查輸入是否正確');
-                }
-            } else {
-                showToast('error', data.error || '兌換失敗');
-            }
+            showToast('info', '此 Email 尚未購買創始會員，如已購買請檢查 Email 是否正確，或手動輸入兌換碼');
             return;
+          }
+        } else if (checkResponse.status === 429) {
+          setIsRedeeming(false);
+          showToast('error', '查詢過於頻繁，請稍後再試');
+          return;
+        } else {
+          // 查詢失敗，但如果有手動輸入兌換碼，繼續執行
+          console.error('自動檢查失敗，但用戶未輸入兌換碼');
+          setIsRedeeming(false);
+          showToast('error', '無法自動檢查購買記錄，請手動輸入兌換碼');
+          return;
         }
-
-        // ✅ 只有成功 (Status 200) 才會執行到這裡
-        const founderNumber = parseInt(code.split('-')[2]);
-        const referralCode = `REF${String(founderNumber).padStart(3, '0')}`;
-
-        updateSubscription({
-            type: 'founder',
-            aiCredits: 3600,
-            founderTier: data.founderTier,
-            founderCode: code,
-            referralCode: referralCode,
-            email: email, 
-        });
-         // 🆕 儲存 email 到 localStorage
-        localStorage.setItem('JU_EMAIL', email);
-
-        showToast('success', `🎉 恭喜！您已升級為創始會員`);
-        setRedeemCode('');
-        setRedeemEmail('');
-
-        // 延遲重整，讓用戶看到成功提示
-        setTimeout(() => location.reload(), 2000);
-
-    } catch (error) {
-        console.error('兌換錯誤:', error);
-        showToast('error', '網路連線異常，請稍後再試');
-    } finally {
+      } catch (checkError) {
+        console.error('自動檢查錯誤:', checkError);
         setIsRedeeming(false);
+        showToast('error', '網路連線異常，請稍後再試');
+        return;
+      }
     }
+
+    // 🔄 執行兌換（無論是自動找到的碼或手動輸入的碼）
+    if (!finalCode) {
+      setIsRedeeming(false);
+      showToast('warning', '請輸入 Email 或兌換碼');
+      return;
+    }
+
+    const response = await fetch('https://api.jusmilespace.com/redeem-founder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: subscription.userId,
+        code: finalCode,
+        email: email,
+        deviceFingerprint,
+        deviceInfo,
+      }),
+    });
+
+    const data = await response.json();
+
+    // 🌟 嚴格阻斷：只要不是 200 OK，就絕對不准往下執行
+    if (!response.ok) {
+      setIsRedeeming(false);
+      if (response.status === 429) {
+        showToast('error', '嘗試次數過多，請 1 小時後再試');
+      } else if (response.status === 409) {
+        showToast('error', '此兌換碼已被使用');
+      } else if (response.status === 403) {
+        if (data.activeDevices !== undefined) {
+          showToast('error', data.error || '裝置綁定已達上限');
+        } else {
+          showToast('error', 'Email 與購買紀錄不符，請檢查輸入是否正確');
+        }
+      } else {
+        showToast('error', data.error || '兌換失敗');
+      }
+      return;
+    }
+
+    // ✅ 兌換成功
+    const founderNumber = parseInt(finalCode.split('-')[2]);
+    const referralCode = `REF${String(founderNumber).padStart(3, '0')}`;
+
+    updateSubscription({
+      type: 'founder',
+      aiCredits: 3600,
+      founderTier: data.founderTier,
+      founderCode: finalCode,
+      referralCode: referralCode,
+      email: email,
+    });
+
+    // 儲存 email 到 localStorage
+    localStorage.setItem('JU_EMAIL', email);
+
+    showToast('success', `🎉 恭喜！您已升級為創始會員`);
+    setRedeemCode('');
+    setRedeemEmail('');
+
+    // 延遲重整，讓用戶看到成功提示
+    setTimeout(() => location.reload(), 2000);
+
+  } catch (error) {
+    console.error('兌換錯誤:', error);
+    showToast('error', '網路連線異常，請稍後再試');
+  } finally {
+    setIsRedeeming(false);
+  }
 };
 
 // 🆕 裝置管理：載入裝置列表
