@@ -9165,17 +9165,17 @@ async function checkSubscriptionStatus() {
 
                     <button
                       onClick={handleRedeemCode}
-                      disabled={isRedeeming || !redeemCode.trim()}
+                      disabled={isRedeeming || (!redeemCode.trim() && !redeemEmail.trim())}
                       style={{
                         width: '100%',
                         padding: '10px',
-                        background: (isRedeeming || !redeemCode.trim()) ? '#9ca3af' : '#5c9c84',
                         color: 'white',
                         border: 'none',
                         borderRadius: '8px',
                         fontSize: 14,
                         fontWeight: 'bold',
-                        cursor: (isRedeeming || !redeemCode.trim()) ? 'not-allowed' : 'pointer',
+                        background: (isRedeeming || (!redeemCode.trim() && !redeemEmail.trim())) ? '#9ca3af' : '#5c9c84',
+cursor: (isRedeeming || (!redeemCode.trim() && !redeemEmail.trim())) ? 'not-allowed' : 'pointer',
                       }}
                     >
                       {isRedeeming ? '驗證中...' : '兌換'}
