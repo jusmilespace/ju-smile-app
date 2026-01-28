@@ -8551,40 +8551,55 @@ async function checkSubscriptionStatus() {
 
 // 🆕 裝置管理：載入裝置列表
   const loadDeviceList = async () => {
+  try {
     const subscription = getSubscription();
-    if (subscription.type !== 'founder' || !subscription.founderCode) {
+    
+    // 驗證必要資料
+    if (!subscription.email || !subscription.founderCode) {
+      console.error('❌ 缺少必要資料:', {
+        email: subscription.email,
+        founderCode: subscription.founderCode
+      });
+      setDeviceList([]);
       return;
     }
-
-    setIsLoadingDevices(true);
-
-    try {
-      const deviceFingerprint = generateDeviceFingerprint();
-      const email = localStorage.getItem('JU_EMAIL') || redeemEmail;
-
-      const response = await fetch('https://api.jusmilespace.com/list-devices', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          code: subscription.founderCode,
-          currentDeviceFingerprint: deviceFingerprint,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setDeviceList(data.devices || []);
-        setDeviceLimits(data.limits);
-      } else {
-        console.error('載入裝置列表失敗');
-      }
-    } catch (error) {
-      console.error('載入裝置列表錯誤:', error);
-    } finally {
-      setIsLoadingDevices(false);
+    
+    // 🆕 每次查詢時即時生成 deviceFingerprint
+    const currentDeviceFingerprint = generateDeviceFingerprint();
+    
+    console.log('📤 查詢裝置列表，參數:', {
+      email: subscription.email,
+      code: subscription.founderCode,
+      deviceFingerprint: currentDeviceFingerprint
+    });
+    
+    const response = await fetch('https://api.jusmilespace.com/list-devices', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: subscription.email,
+        code: subscription.founderCode,
+        currentDeviceFingerprint: currentDeviceFingerprint // 使用即時生成的
+      })
+    });
+    
+    if (!response.ok) {
+      console.error('❌ API 錯誤:', response.status);
+      const errorData = await response.json();
+      console.error('錯誤詳情:', errorData);
+      setDeviceList([]);
+      return;
     }
-  };
+    
+    const data = await response.json();
+    console.log('✅ 查詢成功:', data);
+    setDeviceList(data.devices || []);
+    
+  } catch (error) {
+    console.error('❌ 查詢裝置列表失敗:', error);
+    setDeviceList([]);
+  }
+};
 
   // 🆕 裝置管理：解除裝置綁定
   const handleRemoveDevice = async (deviceFingerprint: string) => {
@@ -8619,6 +8634,77 @@ async function checkSubscriptionStatus() {
       showToast('error', '網路連線異常');
     }
   };
+// 🔒 App 啟動時驗證創始會員裝置
+useEffect(() => {
+  const verifyFounderDevice = async () => {
+    const subscription = getSubscription();
+    
+    // 只驗證創始會員
+    if (subscription.type !== 'founder') {
+      return;
+    }
+    
+    // 檢查是否有必要資料
+    if (!subscription.email || !subscription.founderCode) {
+      console.warn('⚠️ 創始會員資料不完整，清除本地狀態');
+      updateSubscription({ type: 'free', aiCredits: 10 });
+      showToast('warning', '創始會員資料異常，已重置為免費版');
+      return;
+    }
+    
+    try {
+      const deviceFingerprint = generateDeviceFingerprint();
+      
+      console.log('🔍 驗證裝置綁定...', {
+        email: subscription.email,
+        code: subscription.founderCode,
+        deviceFingerprint
+      });
+      
+      const response = await fetch('https://api.jusmilespace.com/verify-device', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: subscription.email,
+          code: subscription.founderCode,
+          deviceFingerprint
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok || !data.valid) {
+        console.warn('⚠️ 當前裝置未綁定，清除創始會員狀態');
+        console.warn('原因:', data.error);
+        
+        // 清除創始會員狀態
+        localStorage.removeItem('JU_SUBSCRIPTION');
+        localStorage.removeItem('JU_EMAIL');
+        
+        updateSubscription({ 
+          type: 'free', 
+          aiCredits: 10 
+        });
+        
+        // 顯示提示
+        if (data.needRebind) {
+          showToast('warning', '⚠️ 當前裝置未綁定創始會員，請在已綁定的裝置上使用或重新兌換');
+        } else {
+          showToast('error', data.error || '裝置驗證失敗');
+        }
+      } else {
+        console.log('✅ 裝置驗證通過');
+      }
+      
+    } catch (error) {
+      console.error('❌ 裝置驗證失敗:', error);
+      // 網路錯誤時不清除狀態，避免誤判
+    }
+  };
+  
+  // 啟動時驗證
+  verifyFounderDevice();
+}, []); // 只在 App 啟動時執行一次
 
   // 🆕 當顯示裝置管理時，自動載入列表
   useEffect(() => {
