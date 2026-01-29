@@ -62,6 +62,8 @@ function generateUserId(): string {
   return userId;
 }
 
+
+
 // 取得訂閱狀態
 function getSubscription(): UserSubscription {
   const userId = generateUserId();
@@ -6941,16 +6943,21 @@ const RecordsPage: React.FC<RecordsPageProps> = ({
 
 
   const App: React.FC = () => {
+    const userId = generateUserId();
     const mainContentRef = useRef<HTMLDivElement>(null);
     const [tab, setTab] = useState<Tab>('today');
-    const [isSearchExpanded, setIsSearchExpanded] = useState(false); // 🆕 控制搜尋欄收合
+    
+    // ✨ 把所有的 useState 放在最前面
+    const [emailInput, setEmailInput] = useState('');
+    const [isChecking, setIsChecking] = useState(false);
+    const [isSearchExpanded, setIsSearchExpanded] = useState(false);
     const [showUpdateBar, setShowUpdateBar] = useState(false);
-    // 👇 [新增] 1. 這裡新增兩行，專門記住「紀錄頁」選的日期與週曆起點
-    // 這樣就算 RecordsPage 重整，資料還是存在 App 這一層，不會消失
     const [recordsDate, setRecordsDate] = useState(dayjs().format('YYYY-MM-DD'));
-    const [recordsWeekStart, setRecordsWeekStart] = useState(
-      dayjs().startOf('week').format('YYYY-MM-DD')
-    );
+    const [recordsWeekStart, setRecordsWeekStart] = useState(dayjs().startOf('week').format('YYYY-MM-DD'));
+    const [userQuota, setUserQuota] = useState<any>(null);
+
+    // 1. 所有的 useState 必須集中在最上方 -------------------------
+    
     // 🆕 新增：提升到 App 層級的運動表單狀態
     const [exerciseFormState, setExerciseFormState] = useState<ExerciseFormState>({
       mode: 'quick',
@@ -6963,6 +6970,56 @@ const RecordsPage: React.FC<RecordsPageProps> = ({
       editId: null,
     });
 
+  
+    // 2. 所有的邏輯函數放在 useState 之後 -------------------------
+
+    // 檢查 Email 並自動恢復/兌換權限
+    const handleCheckEmail = async (currentUserId: string) => {
+      if (!emailInput || !emailInput.includes('@')) {
+        alert('請輸入有效的 Email');
+        return;
+      }
+      setIsChecking(true);
+      try {
+        const response = await fetch('https://api.jusmilespace.com/check-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            email: emailInput, 
+            userId: currentUserId,
+            deviceFingerprint: 'mobile-app' 
+          }),
+        });
+        const data = await response.json();
+        if (data.hasCode) {
+          alert(data.message || '權限已成功恢復！');
+          window.location.reload(); 
+        } else {
+          alert('查無此 Email 的購買紀錄');
+        }
+      } catch (e) {
+        alert('網路連線失敗，請稍後再試');
+      } finally {
+        setIsChecking(false);
+      }
+    };
+
+    // 刪除帳號
+    const handleDeleteAccount = async (currentUserId: string) => {
+      if (window.confirm('確定要刪除帳號嗎？此動作將永久移除您的紀錄與 AI 額度，無法復原。')) {
+        try {
+          await fetch('https://api.jusmilespace.com/delete-account', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: currentUserId }),
+          });
+          localStorage.clear();
+          window.location.reload();
+        } catch (e) {
+          alert('刪除失敗');
+        }
+      }
+    };
     // Helper: 用來局部更新運動狀態
     const handleUpdateExForm = (patch: Partial<ExerciseFormState>) => {
       setExerciseFormState(prev => ({ ...prev, ...patch }));
@@ -11289,14 +11346,100 @@ cursor: (isRedeeming || (!redeemCode.trim() && !redeemEmail.trim())) ? 'not-allo
             )}
 
             {tab === 'settings' && (
-              <div style={{ height: '100%', overflowY: 'visible' }}>
-                <SettingsPage
-                  settings={settings}
-                  setSettings={setSettings}
-                  onOpenAbout={() => setTab('about')}
-                />
-              </div>
-            )}
+  <div style={{ height: '100%', overflowY: 'auto', paddingBottom: '120px', backgroundColor: '#fcfcfc' }}>
+    <SettingsPage
+      settings={settings}
+      setSettings={setSettings}
+      onOpenAbout={() => setTab('about')}
+    />
+
+    <div style={{ padding: '0 20px' }}>
+      {/* 只有當非創始會員時，顯示驗證區塊 */}
+      {userQuota?.subscriptionType !== 'founder' && (
+        <div style={{ 
+          marginTop: '20px', 
+          padding: '24px', 
+          background: 'linear-gradient(135deg, #ffffff 0%, #f9fbfb 100%)', 
+          borderRadius: '20px', 
+          boxShadow: '0 4px 15px rgba(0,0,0,0.05)',
+          border: '1px solid #eef2f1',
+          position: 'relative'
+        }}>
+          {/* 視覺小圖示，強化驗證感 */}
+          <div style={{ fontSize: '24px', marginBottom: '12px' }}>🔐</div>
+          
+          <h4 style={{ margin: '0 0 8px 0', color: '#333', fontSize: '18px', fontWeight: 'bold' }}>
+            創始會員權限驗證
+          </h4>
+          <p style={{ fontSize: '13px', color: '#777', lineHeight: '1.6', marginBottom: '20px' }}>
+            如果您已在 Jusmile 官網完成購買，請輸入當初登記的 Email 進行權限同步。驗證成功後，系統將自動為您解鎖終身 AI 配額。
+          </p>
+          
+          <div style={{ position: 'relative' }}>
+            <input 
+              type="email" 
+              placeholder="輸入購買時登記的 Email"
+              value={emailInput}
+              onChange={(e) => setEmailInput(e.target.value)}
+              style={{ 
+                width: '100%', 
+                padding: '14px 16px', 
+                borderRadius: '12px', 
+                border: '1px solid #d1d9d6', 
+                marginBottom: '12px',
+                fontSize: '16px',
+                outline: 'none',
+                backgroundColor: '#fff',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
+
+          <button 
+            onClick={() => handleCheckEmail(userId)}
+            disabled={isChecking}
+            style={{ 
+              width: '100%', 
+              padding: '14px', 
+              backgroundColor: isChecking ? '#ccc' : '#2d5a4a', // 使用較深的森林綠，增加穩重感
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '12px', 
+              fontWeight: '600',
+              fontSize: '16px',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            {isChecking ? '正在同步權限...' : '立即驗證並恢復'}
+          </button>
+
+          <p style={{ fontSize: '11px', color: '#999', marginTop: '15px', textAlign: 'center' }}>
+            * 系統將比對官網購買資料庫進行權限授權
+          </p>
+        </div>
+      )}
+
+      {/* 🔴 刪除帳號按鈕 - 符合 Apple 審查規範 */}
+      <div style={{ marginTop: '80px', marginBottom: '40px', textAlign: 'center' }}>
+        <button 
+          onClick={() => handleDeleteAccount(userId)}
+          style={{ 
+            background: 'none', 
+            border: 'none', 
+            color: '#ccc', 
+            fontSize: '12px',
+            textDecoration: 'underline',
+            cursor: 'pointer',
+            padding: '10px'
+          }}
+        >
+          移除帳號與個人數據
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
             {tab === 'plan' && <PlanPage />}
 
