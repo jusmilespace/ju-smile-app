@@ -6998,11 +6998,24 @@ const RecordsPage: React.FC<RecordsPageProps> = ({
     const data = await response.json();
     if (data.hasCode) {
       if (data.autoActivated) {
+        // ✨ [核心修改 1]：不等待重整，直接更新本地 UI 狀態
+        setUserQuota({
+          subscriptionType: 'founder',
+          aiCredits: 3600,
+          founderTier: data.tier || 'founder',
+          aiCreditsResetDate: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString()
+        });
+
         alert('🎉 歡迎回來創始會員！權限已自動恢復。');
+
+        // ✨ [核心修改 2]：先更新狀態，延遲一下再重整（為了確保下次載入也是正確的）
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500); 
       } else {
         alert('查得購買紀錄，請重新整理頁面。');
+        window.location.reload();
       }
-      window.location.reload(); 
     } else {
       alert(data.message || '查無此 Email 的購買紀錄');
     }
