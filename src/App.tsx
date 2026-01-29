@@ -6975,34 +6975,43 @@ const RecordsPage: React.FC<RecordsPageProps> = ({
 
     // 檢查 Email 並自動恢復/兌換權限
     const handleCheckEmail = async (currentUserId: string) => {
-      if (!emailInput || !emailInput.includes('@')) {
-        alert('請輸入有效的 Email');
-        return;
+  const cleanEmail = emailInput.trim().toLowerCase();
+  if (!cleanEmail.includes('@')) {
+    alert('請輸入有效的 Email');
+    return;
+  }
+  
+  setIsChecking(true);
+  try {
+    const response = await fetch('https://api.jusmilespace.com/check-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        email: cleanEmail, 
+        userId: currentUserId,
+        // 這裡傳入一個簡單的指紋，或是您原本產生的 ID 也可以
+        deviceFingerprint: `device_${currentUserId}`, 
+        deviceInfo: { platform: window.navigator.platform }
+      }),
+    });
+    
+    const data = await response.json();
+    if (data.hasCode) {
+      if (data.autoActivated) {
+        alert('🎉 歡迎回來創始會員！權限已自動恢復。');
+      } else {
+        alert('查得購買紀錄，請重新整理頁面。');
       }
-      setIsChecking(true);
-      try {
-        const response = await fetch('https://api.jusmilespace.com/check-code', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            email: emailInput, 
-            userId: currentUserId,
-            deviceFingerprint: 'mobile-app' 
-          }),
-        });
-        const data = await response.json();
-        if (data.hasCode) {
-          alert(data.message || '權限已成功恢復！');
-          window.location.reload(); 
-        } else {
-          alert('查無此 Email 的購買紀錄');
-        }
-      } catch (e) {
-        alert('網路連線失敗，請稍後再試');
-      } finally {
-        setIsChecking(false);
-      }
-    };
+      window.location.reload(); 
+    } else {
+      alert(data.message || '查無此 Email 的購買紀錄');
+    }
+  } catch (e) {
+    alert('網路連線失敗，請檢查網路狀態');
+  } finally {
+    setIsChecking(false);
+  }
+};
 
     // 刪除帳號
     const handleDeleteAccount = async (currentUserId: string) => {
