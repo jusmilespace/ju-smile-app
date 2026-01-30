@@ -3,7 +3,9 @@ import react from '@vitejs/plugin-react-swc'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig(({ command }) => ({
-  base: command === 'serve' || process.env.CAPACITOR ? '/' : '/ju-smile-app/',
+  base: command === 'serve'
+    ? '/'
+    : (process.env.CAPACITOR ? './' : '/ju-smile-app/'),
   plugins: [
     react(),
     VitePWA({
