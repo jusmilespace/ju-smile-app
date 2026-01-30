@@ -8623,9 +8623,6 @@ const App: React.FC = () => {
         setRedeemCode('');
         setRedeemEmail('');
 
-        // 延遲重整，讓用戶看到成功提示
-        setTimeout(() => location.reload(), 2000);
-
       } catch (error) {
         console.error('兌換錯誤:', error);
         showToast('error', '網路連線異常，請稍後再試');
@@ -8723,6 +8720,12 @@ const App: React.FC = () => {
     useEffect(() => {
       const verifyFounderDevice = async () => {
         const subscription = getSubscription();
+
+        // 🟢 新增：如果是審核測試帳號，直接跳過驗證，不准降級！
+        if (subscription.email === 'test@jusmilespace.com') {
+          console.log('✅ 審核測試帳號，跳過裝置驗證');
+          return;
+        }
 
         // 只驗證創始會員
         if (subscription.type !== 'founder') {
