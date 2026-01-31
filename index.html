@@ -1,22 +1,49 @@
 <!doctype html>
 <html lang="zh-Hant">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Ju Smile App</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <link rel="manifest" href="/manifest.webmanifest" />
-<link rel="icon" type="image/png" href="icons/ju-smile-icon-192x192.png" />
-<link rel="apple-touch-icon" href="icons/ju-smile-icon-192x192.png"/>
-    <meta name="theme-color" content="#97d0ba" />
-  </head>
-  <style>
-    /* 這是專門給網頁版 App 使用的強力補丁 */
-    body, #root, .app-container, * {
-        font-family: "PingFang TC", -apple-system, sans-serif !important;
-    }
+
+<head>
+  <script>
+    window.addEventListener('error', function (e) {
+      alert(
+        'JS Error:\n' +
+        e.message + '\n' +
+        (e.filename || '') + ':' +
+        (e.lineno || '') + ':' +
+        (e.colno || '')
+      );
+    });
+
+    window.addEventListener('unhandledrejection', function (e) {
+      alert(
+        'Promise Rejection:\n' +
+        (e.reason && (e.reason.stack || e.reason.message)
+          ? (e.reason.stack || e.reason.message)
+          : String(e.reason))
+      );
+    });
+  </script>
+  <meta charset="UTF-8" />
+  <title>Ju Smile App</title>
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" type="image/png" href="icons/ju-smile-icon-192x192.png" />
+  <link rel="apple-touch-icon" href="icons/ju-smile-icon-192x192.png" />
+  <meta name="theme-color" content="#97d0ba" />
+</head>
+<style>
+  /* 這是專門給網頁版 App 使用的強力補丁 */
+  body,
+  #root,
+  .app-container,
+  * {
+    font-family: "PingFang TC", -apple-system, sans-serif !important;
+  }
 </style>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
 </html>

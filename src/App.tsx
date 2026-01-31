@@ -9,7 +9,7 @@ import { Share } from '@capacitor/share';
 
 // 🟢 新增：引入掃描器元件與型別
 import BarcodeScanner from './components/BarcodeScanner';
-import { ScannedFood } from './services/foodApi';
+import type { ScannedFood } from './services/foodApi';
 import { analyzeImage } from './services/aiService';
 
 import femalePng from './assets/female.png';
@@ -66,24 +66,56 @@ function generateUserId(): string {
 
 // 取得訂閱狀態
 function getSubscription(): UserSubscription {
-  const userId = generateUserId();
   const savedSub = localStorage.getItem('JU_SUBSCRIPTION');
 
-  if (savedSub) {
-    return JSON.parse(savedSub);
-  }
-
-  // 預設為免費版
-  const defaultSub: UserSubscription = {
-    userId,
+  // ✅ 這裡永遠用 localStorage 固定的 JU_USER_ID（同裝置同瀏覽器固定）
+  const base: UserSubscription = {
+    userId: generateUserId(),
     type: 'free',
-    aiCredits: 0,
-    aiCreditsResetDate: '',
+    aiCredits: 10,
+    aiCreditsResetDate: undefined,
+    founderTier: undefined,
+    founderCode: undefined,
+    email: localStorage.getItem('JU_EMAIL') || undefined,
+    referralCode: undefined,
   };
 
-  localStorage.setItem('JU_SUBSCRIPTION', JSON.stringify(defaultSub));
-  return defaultSub;
+  // 第一次使用：沒有 savedSub 就寫入 base
+  if (!savedSub) {
+    localStorage.setItem('JU_SUBSCRIPTION', JSON.stringify(base));
+    return base;
+  }
+
+  try {
+    const parsed = JSON.parse(savedSub) as Partial<UserSubscription>;
+
+    // ✅ migration：舊資料可能沒有 userId / aiCredits / email
+    const merged: UserSubscription = {
+      ...base,
+      ...parsed,
+      userId: parsed.userId || base.userId,
+      aiCredits: typeof parsed.aiCredits === 'number' ? parsed.aiCredits : base.aiCredits,
+      email: parsed.email || base.email,
+    };
+
+    // 如果補了關鍵欄位，就寫回去（避免下次再爆）
+    if (
+      !parsed.userId ||
+      typeof parsed.aiCredits !== 'number' ||
+      (!parsed.email && base.email)
+    ) {
+      localStorage.setItem('JU_SUBSCRIPTION', JSON.stringify(merged));
+    }
+
+    return merged;
+  } catch {
+    // JSON 壞掉就重置
+    localStorage.setItem('JU_SUBSCRIPTION', JSON.stringify(base));
+    return base;
+  }
 }
+
+
 
 // 更新訂閱狀態
 function updateSubscription(updates: Partial<UserSubscription>) {
@@ -154,6 +186,7 @@ async function callWorkerAPI(
   mode: 'nutrition' | 'label' = 'nutrition'
 ): Promise<any> {
   const subscription = getSubscription();
+  const userId = generateUserId(); // ✅ 固定用本機 userId
 
 
 
@@ -166,8 +199,8 @@ async function callWorkerAPI(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        imageBase64: imageBase64.replace(/^data:image\/\w+;base64,/, ''), // 移除 data:image 前綴
-        userId: subscription.userId,
+        imageBase64: imageBase64.replace(/^data:image\/\w+;base64,/, ''),
+        userId, // ✅ 改這裡
         subscriptionType: subscription.type,
         mode,
       }),
@@ -707,43 +740,26 @@ function normalizeText(v: unknown): string {
   return String(v).trim().toLowerCase();
 }
 
-// 用 Vite 提供的 BASE_URL，確保 dev / build / GitHub Pages 一致
-// 例如：
-// - 本機 dev + base 設定為 /ju-smile-app/ 時：  import.meta.env.BASE_URL === '/ju-smile-app/'
-// - GitHub Pages：                           同樣是 '/ju-smile-app/'
-const APP_BASE_URL = import.meta.env.BASE_URL || '/';
+// 1. 修改 Base URL 的判斷方式，優先考慮原生環境
+const isNative = Capacitor.isNativePlatform();
+const APP_BASE_URL = isNative ? '' : (import.meta.env.BASE_URL || '/');
 
-// 🟢 新增：將檔案轉為 Base64 DataURL
-function fileToDataURL(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-// 把呼叫傳進來的字串，轉成真正要拿去 fetch 的 URL
+// 2. 修正 resolveCsvUrl
 function resolveCsvUrl(input: string): string {
-  // 已經是 http / https 完整網址，就原樣用
-  if (input.startsWith('http://') || input.startsWith('https://')) {
-    return input;
-  }
+  if (input.startsWith('http')) return input;
 
-  // 這裡處理像 "data/Food_DB.csv" 或 "/data/Food_DB.csv" 這種
-  // 1. 去掉 base 尾部斜線
-  const base = APP_BASE_URL.endsWith('/')
-    ? APP_BASE_URL.slice(0, -1)
-    : APP_BASE_URL;
-  // 2. 去掉 input 開頭斜線
+  // 清理輸入的路徑
   const cleanInput = input.startsWith('/') ? input.slice(1) : input;
 
-  // 3. 組合結果：/ju-smile-app/ + data/Food_DB.csv
-  // 結果會是： /ju-smile-app/data/Food_DB.csv (正確！)
-  return `${base}/${cleanInput}`;
+  // 在原生 App 中，檔案位於根目錄
+  if (isNative) {
+    return cleanInput;
+  }
+
+  // 網頁版處理逻辑
+  const base = APP_BASE_URL.endsWith('/') ? APP_BASE_URL : `${APP_BASE_URL}/`;
+  return `${base}${cleanInput}`;
 }
-
-
 
 async function fetchCsv<T = any>(url: string): Promise<T[]> {
   const finalUrl = resolveCsvUrl(url);
@@ -6943,7 +6959,7 @@ const INTENSITY_OPTIONS = [
 
 
 const App: React.FC = () => {
-  const userId = generateUserId();
+  const userId = useMemo(() => generateUserId(), []);
   const mainContentRef = useRef<HTMLDivElement>(null);
   const [tab, setTab] = useState<Tab>('today');
 
@@ -6990,28 +7006,43 @@ const App: React.FC = () => {
           email: cleanEmail,
           userId: currentUserId,
           // 這裡傳入一個簡單的指紋，或是您原本產生的 ID 也可以
-          deviceFingerprint: `device_${currentUserId}`,
-          deviceInfo: { platform: window.navigator.platform }
+          deviceFingerprint: generateDeviceFingerprint(),
+          deviceInfo: getDeviceInfo(),
         }),
       });
 
       const data = await response.json();
       if (data.hasCode) {
         if (data.autoActivated) {
-          // ✨ [核心修改 1]：不等待重整，直接更新本地 UI 狀態
+          updateSubscription({
+            type: 'founder',
+            aiCredits: 3600,
+            founderTier: data.tier || 'founder',
+            founderCode: data.code, // 這裡要對應 API 回傳的欄位
+            email: cleanEmail,      // 使用函式上方的 cleanEmail 變數
+          });
+
+          localStorage.setItem('JU_EMAIL', cleanEmail);
+
+
+          // ✅ 2) 設定「正在等待後端生效」旗標（處理 Cloudflare KV 讀寫延遲）
+          localStorage.setItem('JU_PENDING_ACTIVATION', String(Date.now()));
+
+          // ✅ 3) UI 先立即顯示 founder（你原本這段可保留）
           setUserQuota({
             subscriptionType: 'founder',
             aiCredits: 3600,
             founderTier: data.tier || 'founder',
-            aiCreditsResetDate: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString()
+            aiCreditsResetDate: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString(),
           });
 
           alert('🎉 歡迎回來創始會員！權限已自動恢復。');
 
-          // ✨ [核心修改 2]：先更新狀態，延遲一下再重整（為了確保下次載入也是正確的）
+          // ✅ 4) 延後一點 reload（給後端時間寫入/擴散）
           setTimeout(() => {
             window.location.reload();
-          }, 1500);
+          }, 5000); // 從 1500 改 5000（非常常就解了）
+
         } else {
           alert('查得購買紀錄，請重新整理頁面。');
           window.location.reload();
@@ -7075,6 +7106,27 @@ const App: React.FC = () => {
   const [settings, setSettings] = useState<Settings>(() =>
     loadJSON<Settings>(STORAGE_KEYS.SETTINGS, {})
   );
+
+  useEffect(() => {
+    //alert('✅ debug hook mounted');
+    const onError = (event: ErrorEvent) => {
+      alert(
+        `JS Error:\n${event.message}\n\n${event.filename}:${event.lineno}:${event.colno}`
+      );
+    };
+
+    const onRejection = (event: PromiseRejectionEvent) => {
+      alert(`Promise Rejection:\n${String(event.reason)}`);
+    };
+
+    window.addEventListener('error', onError);
+    window.addEventListener('unhandledrejection', onRejection);
+
+    return () => {
+      window.removeEventListener('error', onError);
+      window.removeEventListener('unhandledrejection', onRejection);
+    };
+  }, []);
 
 
   // ✅ 監聽 Service Worker 是否有安裝新版本（只在 Web 版運作）
@@ -7397,13 +7449,10 @@ const App: React.FC = () => {
 
   // 🟢 新增：檢查訂閱狀態函數
   async function checkSubscriptionStatus() {
-    const userId = generateUserId();
-
-    // Debug: 在 console 查看 userId（不干擾用戶）
-    console.log('📱 當前 App userId:', userId);
-
-    // 取得目前本地的訂閱狀態
     const currentSub = getSubscription();
+    const userId = currentSub.userId;
+
+    console.log('📱 當前 App userId:', userId);
 
     try {
       const response = await fetch('https://api.jusmilespace.com/check-subscription', {
@@ -7417,20 +7466,38 @@ const App: React.FC = () => {
         return;
       }
 
+      // 如果遠端狀態和本地不同，更新本地狀態
       const data = await response.json();
+
+      // ✅ Pending activation 保護：避免 KV 還沒同步就讀到 free
+      const pendingAtRaw = localStorage.getItem('JU_PENDING_ACTIVATION');
+      const pendingAt = pendingAtRaw ? Number(pendingAtRaw) : 0;
+      const isPending = !!pendingAt && Date.now() - pendingAt < 60_000; // 60 秒內視為 pending
+
+      if (isPending && data.type === 'free') {
+        console.warn('⏳ pending activation：後端尚未同步，稍後重試 check-subscription');
+        setTimeout(() => {
+          checkSubscriptionStatus();
+        }, 2000);
+        return;
+      }
+
+      // 一旦讀到 founder（或不是 free），清掉 pending
+      if (pendingAtRaw && data.type !== 'free') {
+        localStorage.removeItem('JU_PENDING_ACTIVATION');
+      }
 
       // 如果遠端狀態和本地不同，更新本地狀態
       if (data.type !== currentSub.type) {
-        // 更新本地訂閱狀態
         updateSubscription({
           type: data.type,
           aiCredits: data.aiCredits,
           aiCreditsResetDate: data.aiCreditsResetDate,
           founderTier: data.founderTier,
-          founderCode: data.founderCode
+          founderCode: data.founderCode,
+          email: currentSub.email || localStorage.getItem('JU_EMAIL') || undefined,
         });
 
-        // 如果升級為創始會員，顯示恭喜訊息
         if (data.type === 'founder' && currentSub.type === 'free') {
           setTimeout(() => {
             showToast('success', `🎉 恭喜！您已成功升級為創始會員\n兌換碼：${data.founderCode}`);
@@ -7441,6 +7508,7 @@ const App: React.FC = () => {
       console.error('檢查訂閱狀態錯誤:', error);
     }
   }
+
 
   // ======== 取得 / 更新某日資料 ========
 
@@ -8502,10 +8570,9 @@ const App: React.FC = () => {
     // 🟢 兌換碼處理函數（移到這裡）
     const handleRedeemCode = async () => {
       const code = redeemCode.trim().toUpperCase();
-      const email = redeemEmail.trim().toLowerCase();
+      const cleanEmail = redeemEmail.trim().toLowerCase(); // 使用更明確的變數名稱
 
-      // 基本驗證：至少要有 email
-      if (!email) {
+      if (!cleanEmail) {
         showToast('warning', '請輸入購買時使用的 Email');
         return;
       }
@@ -8514,69 +8581,49 @@ const App: React.FC = () => {
 
       try {
         const subscription = getSubscription();
+        const currentUserId = subscription.userId;
         const deviceFingerprint = generateDeviceFingerprint();
         const deviceInfo = getDeviceInfo();
 
-        // 🌟 優先自動兌換：先用 email 檢查是否有未兌換的碼
-        let finalCode = code; // 最終要使用的兌換碼
+        let finalCode = code;
 
+        // --- 1. 自動檢查邏輯 ---
         if (!finalCode) {
-          // 如果沒有手動輸入兌換碼，嘗試自動檢查
           showToast('info', '正在檢查您的購買記錄...');
-
           try {
             const checkResponse = await fetch('https://api.jusmilespace.com/check-code', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ email }),
+              body: JSON.stringify({ email: cleanEmail }),
             });
 
-            if (checkResponse.ok) {
-              const checkData = await checkResponse.json();
+            const checkData = await checkResponse.json();
 
-              if (checkData.hasCode) {
-                // 🎉 找到未兌換的碼，使用它
-                finalCode = checkData.code;
-                console.log(`✅ 自動找到兌換碼：${finalCode}`);
-              } else {
-                // 沒有找到兌換碼
-                setIsRedeeming(false);
-                showToast('info', '此 Email 尚未購買創始會員，如已購買請檢查 Email 是否正確，或手動輸入兌換碼');
-                return;
-              }
-            } else if (checkResponse.status === 429) {
-              setIsRedeeming(false);
-              showToast('error', '查詢過於頻繁，請稍後再試');
-              return;
+            if (checkResponse.ok && checkData.hasCode) {
+              finalCode = checkData.code;
+              console.log(`✅ 自動找到兌換碼：${finalCode}`);
             } else {
-              // 查詢失敗，但如果有手動輸入兌換碼，繼續執行
-              console.error('自動檢查失敗，但用戶未輸入兌換碼');
               setIsRedeeming(false);
-              showToast('error', '無法自動檢查購買記錄，請手動輸入兌換碼');
+              const msg = checkResponse.status === 429 ? '查詢太頻繁，請稍後再試' : '尚未找到購買記錄，請確認 Email 或手動輸入兌換碼';
+              showToast('info', msg);
               return;
             }
-          } catch (checkError) {
-            console.error('自動檢查錯誤:', checkError);
+          } catch (checkError: any) {
+            console.error('自動檢查網路錯誤:', checkError);
             setIsRedeeming(false);
-            showToast('error', '網路連線異常，請稍後再試');
+            showToast('error', `網路連線異常: ${checkError.message}`);
             return;
           }
         }
 
-        // 🔄 執行兌換（無論是自動找到的碼或手動輸入的碼）
-        if (!finalCode) {
-          setIsRedeeming(false);
-          showToast('warning', '請輸入 Email 或兌換碼');
-          return;
-        }
-
+        // --- 2. 執行兌換邏輯 ---
         const response = await fetch('https://api.jusmilespace.com/redeem-founder', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            userId: subscription.userId,
+            userId: currentUserId,
             code: finalCode,
-            email: email,
+            email: cleanEmail,
             deviceFingerprint,
             deviceInfo,
           }),
@@ -8584,48 +8631,32 @@ const App: React.FC = () => {
 
         const data = await response.json();
 
-        // 🌟 嚴格阻斷：只要不是 200 OK，就絕對不准往下執行
         if (!response.ok) {
-          setIsRedeeming(false);
-          if (response.status === 429) {
-            showToast('error', '嘗試次數過多，請 1 小時後再試');
-          } else if (response.status === 409) {
-            showToast('error', '此兌換碼已被使用');
-          } else if (response.status === 403) {
-            if (data.activeDevices !== undefined) {
-              showToast('error', data.error || '裝置綁定已達上限');
-            } else {
-              showToast('error', 'Email 與購買紀錄不符，請檢查輸入是否正確');
-            }
-          } else {
-            showToast('error', data.error || '兌換失敗');
-          }
+          if (response.status === 429) showToast('error', '嘗試次數過多，請 1 小時後再試');
+          else if (response.status === 409) showToast('error', '此兌換碼已被使用');
+          else showToast('error', data.error || '兌換失敗');
           return;
         }
 
-        // ✅ 兌換成功
-        const founderNumber = parseInt(finalCode.split('-')[2]);
-        const referralCode = `REF${String(founderNumber).padStart(3, '0')}`;
-
+        // --- 3. 兌換成功後的狀態更新 ---
         updateSubscription({
           type: 'founder',
           aiCredits: 3600,
-          founderTier: data.founderTier,
-          founderCode: finalCode,
-          referralCode: referralCode,
-          email: email,
+          founderTier: data.tier || 'founder',
+          founderCode: data.code || finalCode,
+          email: cleanEmail, // 確保這裡使用的是 cleanEmail
         });
 
-        // 儲存 email 到 localStorage
-        localStorage.setItem('JU_EMAIL', email);
+        localStorage.setItem('JU_EMAIL', cleanEmail);
 
-        showToast('success', `🎉 恭喜！您已升級為創始會員`);
+        showToast('success', '🎉 恭喜！您已升級為創始會員');
         setRedeemCode('');
         setRedeemEmail('');
 
-      } catch (error) {
-        console.error('兌換錯誤:', error);
-        showToast('error', '網路連線異常，請稍後再試');
+      } catch (error: any) {
+        console.error('兌換流程崩潰:', error);
+        // 在 iOS 偵錯時，讓 alert 顯示具體錯誤，避免被「網路連線異常」誤導
+        showToast('error', `連線失敗: ${error.message || '請檢查網路狀態'}`);
       } finally {
         setIsRedeeming(false);
       }
@@ -8638,9 +8669,9 @@ const App: React.FC = () => {
 
         // 驗證必要資料
         if (!subscription.email || !subscription.founderCode) {
-          console.error('❌ 缺少必要資料:', {
-            email: subscription.email,
-            founderCode: subscription.founderCode
+          console.warn('⚠️ 裝置管理：缺少 email 或 founderCode，跳過載入裝置列表', {
+            hasEmail: !!subscription.email,
+            hasFounderCode: !!subscription.founderCode,
           });
           setDeviceList([]);
           return;
@@ -8685,7 +8716,7 @@ const App: React.FC = () => {
 
     // 🆕 裝置管理：解除裝置綁定
     const handleRemoveDevice = async (deviceFingerprint: string) => {
-      if (!confirm('確定要解除此裝置的綁定嗎？解除後該裝置將無法繼續使用創始會員功能。')) {
+      if (!window.confirm('確定要解除此裝置的綁定嗎？解除後該裝置將無法繼續使用創始會員功能。')) {
         return;
       }
 
@@ -8717,37 +8748,35 @@ const App: React.FC = () => {
       }
     };
     // 🔒 App 啟動時驗證創始會員裝置
+    // After（最小防白屏：把可能 throw 的點包起來）
     useEffect(() => {
       const verifyFounderDevice = async () => {
-        const subscription = getSubscription();
-
-        // 🟢 新增：如果是審核測試帳號，直接跳過驗證，不准降級！
-        if (subscription.email === 'test@jusmilespace.com') {
-          console.log('✅ 審核測試帳號，跳過裝置驗證');
-          return;
-        }
-
-        // 只驗證創始會員
-        if (subscription.type !== 'founder') {
-          return;
-        }
-
-        // 檢查是否有必要資料
-        if (!subscription.email || !subscription.founderCode) {
-          console.warn('⚠️ 創始會員資料不完整，清除本地狀態');
-          updateSubscription({ type: 'free', aiCredits: 10 });
-          showToast('warning', '創始會員資料異常，已重置為免費版');
-          return;
-        }
-
         try {
-          const deviceFingerprint = generateDeviceFingerprint();
+          const subscription = getSubscription?.();
 
-          console.log('🔍 驗證裝置綁定...', {
-            email: subscription.email,
-            code: subscription.founderCode,
-            deviceFingerprint
-          });
+          // ✅ 防呆：拿不到 subscription 就直接跳過（避免白屏）
+          if (!subscription) {
+            console.warn('⚠️ 無法取得 subscription，跳過裝置驗證');
+            return;
+          }
+
+          // 🟢 審核測試帳號：直接跳過
+          if (subscription.email === 'test@jusmilespace.com') {
+            console.log('✅ 審核測試帳號，跳過裝置驗證');
+            return;
+          }
+
+          // 只驗證創始會員
+          if (subscription.type !== 'founder') return;
+
+          if (!subscription.email || !subscription.founderCode) {
+            console.warn('⚠️ 創始會員資料不完整，跳過裝置驗證（交由 userId quota 決定權限）');
+            return;
+          }
+
+
+          // ✅ 原本的驗證流程（保留）
+          const deviceFingerprint = generateDeviceFingerprint();
 
           const response = await fetch('https://api.jusmilespace.com/verify-device', {
             method: 'POST',
@@ -8755,26 +8784,27 @@ const App: React.FC = () => {
             body: JSON.stringify({
               email: subscription.email,
               code: subscription.founderCode,
-              deviceFingerprint
-            })
+              deviceFingerprint,
+            }),
           });
 
-          const data = await response.json();
+          // ✅ 更穩：避免 response 沒有 JSON 時直接 throw
+          let data: any = null;
+          try {
+            data = await response.json();
+          } catch {
+            data = {};
+          }
 
           if (!response.ok || !data.valid) {
             console.warn('⚠️ 當前裝置未綁定，清除創始會員狀態');
             console.warn('原因:', data.error);
 
-            // 清除創始會員狀態
             localStorage.removeItem('JU_SUBSCRIPTION');
             localStorage.removeItem('JU_EMAIL');
 
-            updateSubscription({
-              type: 'free',
-              aiCredits: 10
-            });
+            updateSubscription({ type: 'free', aiCredits: 10 });
 
-            // 顯示提示
             if (data.needRebind) {
               showToast('warning', '⚠️ 當前裝置未綁定創始會員，請在已綁定的裝置上使用或重新兌換');
             } else {
@@ -8783,16 +8813,15 @@ const App: React.FC = () => {
           } else {
             console.log('✅ 裝置驗證通過');
           }
-
         } catch (error) {
-          console.error('❌ 裝置驗證失敗:', error);
-          // 網路錯誤時不清除狀態，避免誤判
+          // ✅ 任何例外都不要讓 App 掛掉（避免 TestFlight 白屏）
+          console.error('❌ verifyFounderDevice 發生例外（已攔截避免白屏）:', error);
         }
       };
 
-      // 啟動時驗證
       verifyFounderDevice();
-    }, []); // 只在 App 啟動時執行一次
+    }, []);
+
 
     // 🆕 當顯示裝置管理時，自動載入列表
     useEffect(() => {
@@ -9392,7 +9421,7 @@ const App: React.FC = () => {
             {/* 🆕 裝置管理區塊 - 只有創始會員才顯示 */}
             {(() => {
               const subscription = getSubscription();
-              if (subscription.type !== 'founder' || !subscription.founderCode) {
+              if (subscription.type !== 'founder' || !subscription.founderCode || !subscription.email) {
                 return null;
               }
 
@@ -9419,11 +9448,18 @@ const App: React.FC = () => {
                     </h3>
                     <button
                       onClick={() => {
+                        // ✅ 最小 gate：缺 email / founderCode 就不開
+                        if (!subscription.email || !subscription.founderCode) {
+                          showToast('info', '請先完成兌換並綁定 Email 後再管理裝置');
+                          return;
+                        }
+
                         setShowDeviceManagement(!showDeviceManagement);
                         if (!showDeviceManagement) {
                           loadDeviceList();
                         }
                       }}
+
                       style={{
                         padding: '8px 16px',
                         background: 'white',

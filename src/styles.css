@@ -1,4 +1,3 @@
-
 :root {
   --mint: #97d0ba;
   --mint-dark: #5c9c84;
@@ -9,11 +8,16 @@
   --text-sub: #6b7785;
   --border-soft: #dde7e2;
   /* 🆕 字級系統：給有點老花的人也能看得清楚 -> 整體加大一階 */
-  --font-xs: 14px;  /* 最小備註 */
-  --font-sm: 16px;  /* 次要說明、日期 */
-  --font-md: 18px;  /* 一般文字、列表、按鈕 */
-  --font-lg: 22px;  /* 卡片標題、重要數字、類別按鈕 ← 你的基準 */
-  --font-xl: 26px;  /* 頁面主標題 */
+  --font-xs: 14px;
+  /* 最小備註 */
+  --font-sm: 16px;
+  /* 次要說明、日期 */
+  --font-md: 18px;
+  /* 一般文字、列表、按鈕 */
+  --font-lg: 22px;
+  /* 卡片標題、重要數字、類別按鈕 ← 你的基準 */
+  --font-xl: 26px;
+  /* 頁面主標題 */
   /* 🆕 新增：安全區域變數 (處理瀏海與底部橫條) */
   --sat: env(safe-area-inset-top);
   --sab: env(safe-area-inset-bottom);
@@ -30,7 +34,8 @@
 /* 🔒 鎖定 HTML 與 Body，讓它像 App 一樣不會整體滑動 */
 html {
   height: 100%;
-  overflow: hidden; /* 禁止視窗捲動 */
+  overflow: hidden;
+  /* 禁止視窗捲動 */
   -webkit-text-size-adjust: 100%;
 }
 
@@ -39,11 +44,13 @@ body {
   padding: 0;
   height: 100%;
   width: 100%;
-  overflow: hidden; /* 禁止 Body 捲動，只讓中間內容區捲動 */
+  overflow: hidden;
+  /* 禁止 Body 捲動，只讓中間內容區捲動 */
   background-color: var(--bg);
   /* 禁止 iOS 的橡皮筋回彈效果 */
   overscroll-behavior-y: none;
-  -webkit-user-select: none; /* 禁止長按選取文字 (選填，像原生App) */
+  -webkit-user-select: none;
+  /* 禁止長按選取文字 (選填，像原生App) */
   user-select: none;
 }
 
@@ -57,7 +64,8 @@ body {
 
 body {
   -webkit-font-smoothing: antialiased;
-  font-size: var(--font-md); /* 全域 18px */
+  font-size: var(--font-md);
+  /* 全域 18px */
 }
 
 
@@ -162,7 +170,8 @@ button {
   justify-content: center;
   border-radius: 999px;
   border: 1px solid var(--mint);
-  padding: 8px 16px;       /* 標準大小 */
+  padding: 8px 16px;
+  /* 標準大小 */
   background: #ffffff;
   color: var(--mint-dark);
   font-size: 15px;
@@ -199,8 +208,10 @@ button.primary:hover {
 /* 3. 次要按鈕 (Secondary): 空心灰色 (新定義) */
 /* 用於：取消、返回、備份功能 (減少視覺噪音) */
 button.secondary {
-  border-color: var(--border-soft); /* 淺灰邊框 */
-  color: var(--text-sub);           /* 深灰文字 */
+  border-color: var(--border-soft);
+  /* 淺灰邊框 */
+  color: var(--text-sub);
+  /* 深灰文字 */
   background: #fff;
 }
 
@@ -216,16 +227,18 @@ button.secondary:hover {
 button.small {
   font-size: 13px;
   padding: 4px 10px;
-  min-width: auto; /* 移除可能的最小寬度限制 */
+  min-width: auto;
+  /* 移除可能的最小寬度限制 */
 }
 
 /* ⭐ 整合區：Primary + Small */
 /* 當按鈕寫成 className="primary small" 時的微調 */
 /* 實心小按鈕通常需要稍微寬一點點，視覺上才不會覺得太擁擠 */
 button.primary.small {
-  padding: 4px 14px; 
+  padding: 4px 14px;
   font-size: 13px;
-  box-shadow: none; /* 小按鈕通常不需要太強烈的陰影 */
+  box-shadow: none;
+  /* 小按鈕通常不需要太強烈的陰影 */
 }
 
 /* ---- Summary row ---- */
@@ -283,19 +296,24 @@ button.primary.small {
 
 /* 餐點標題旁的「+」按鈕樣式 */
 .meal-add-btn {
-  width: 32px;        
-  height: 32px;       
-  font-size: 20px;    
+  width: 32px;
+  height: 32px;
+  font-size: 20px;
   border-radius: 50%;
-  background: var(--mint); /* 核心目標：改成 #97d0ba */
+  background: var(--mint);
+  /* 核心目標：改成 #97d0ba */
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;  /* 補上：原本有的粗體 */
-  line-height: 1;     /* 補上：原本有的行高 */
-  cursor: pointer;    /* 補上：讓滑鼠游標變手指 */
-  transition: opacity 0.2s; /* 保留：一點點互動效果 */
+  font-weight: bold;
+  /* 補上：原本有的粗體 */
+  line-height: 1;
+  /* 補上：原本有的行高 */
+  cursor: pointer;
+  /* 補上：讓滑鼠游標變手指 */
+  transition: opacity 0.2s;
+  /* 保留：一點點互動效果 */
 }
 
 .meal-add-btn:active {
@@ -321,6 +339,7 @@ button.primary.small {
   font-size: 14px;
   color: var(--text-sub);
 }
+
 .list-item.clickable {
   cursor: pointer;
 }
@@ -352,9 +371,11 @@ button.primary.small {
 
 .subtabs {
   display: flex;
-  justify-content: space-between;  /* 改這裡：讓按鈕分散兩邊 */
+  justify-content: space-between;
+  /* 改這裡：讓按鈕分散兩邊 */
   gap: 8px;
-  padding: 0 8px;  /* 新增：左右各留 8px 間距 */
+  padding: 0 8px;
+  /* 新增：左右各留 8px 間距 */
   margin-bottom: 8px;
 }
 
@@ -379,7 +400,8 @@ button.primary.small {
   cursor: pointer;
   transition: all 0.3s ease;
   font-weight: bold;
-  font-size: var(--font-lg);  /* 使用 22px */
+  font-size: var(--font-lg);
+  /* 使用 22px */
 }
 
 /* ---- Forms ---- */
@@ -458,7 +480,8 @@ button.primary.small {
 }
 
 .import-btn span {
-  pointer-events: none; /* 點擊會落在 input 上 */
+  pointer-events: none;
+  /* 點擊會落在 input 上 */
 }
 
 .import-btn input[type="file"] {
@@ -497,7 +520,8 @@ details summary {
   backdrop-filter: blur(10px);
   border-top: 1px solid #e0ece6;
   box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.03);
-  z-index: 100; /* 🔧 新增：明確設定層級，低於更新提示列 (9999) */
+  z-index: 100;
+  /* 🔧 新增：明確設定層級，低於更新提示列 (9999) */
 }
 
 .bottom-nav button {
@@ -532,7 +556,8 @@ details summary {
 /* ---- Fixed Combo Bar ---- */
 .fixed-combo-bar {
   position: fixed;
-  bottom: 65px; /* 浮動在底部導航列之上 */
+  bottom: 65px;
+  /* 浮動在底部導航列之上 */
   left: 50%;
   transform: translateX(-50%);
   max-width: 480px;
@@ -541,7 +566,8 @@ details summary {
   padding: 10px 16px;
   box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.1);
   border-top: 1px solid var(--border-soft);
-  z-index: 10; /* 確保在所有內容之上 */
+  z-index: 10;
+  /* 確保在所有內容之上 */
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -568,15 +594,21 @@ details summary {
 }
 
 /* UX-01: 防止 iOS 在輸入框聚焦時自動放大畫面 (需 >= 16px) */
-input, select, textarea {
+input,
+select,
+textarea {
   font-size: 16px;
 }
+
 /* ==== 首頁 Hero Dashboard (白底 + 縮小的漸層區塊) ==== */
 .hero-card {
-  background: #fff; /* 最外層改回白色 */
+  background: #fff;
+  /* 最外層改回白色 */
   border-radius: 24px;
-  padding: 16px 0; /* 上下留白，左右不留(由內部控制) */
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); /* 淡淡的陰影 */
+  padding: 16px 0;
+  /* 上下留白，左右不留(由內部控制) */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  /* 淡淡的陰影 */
   border: 1px solid #f0f0f0;
   text-align: center;
   margin-bottom: 12px;
@@ -588,10 +620,12 @@ input, select, textarea {
 .hero-gradient-block {
   background: linear-gradient(135deg, #97d0ba 0%, #5c9c84 100%);
   border-radius: 20px;
-  margin: 0 16px; /* 關鍵：左右留白 16px */
+  margin: 0 16px;
+  /* 關鍵：左右留白 16px */
   padding: 20px;
   color: #fff;
-  box-shadow: 0 8px 16px rgba(92, 156, 132, 0.25); /* 讓綠色塊浮起來 */
+  box-shadow: 0 8px 16px rgba(92, 156, 132, 0.25);
+  /* 讓綠色塊浮起來 */
   position: relative;
   overflow: hidden;
 }
@@ -600,12 +634,17 @@ input, select, textarea {
 .hero-gradient-block::before {
   content: '';
   position: absolute;
-  width: 80px;          /* 200px → 80px */
-  height: 80px;         /* 200px → 80px */
-  background: rgba(255, 255, 255, 0.1);  /* 0.15 → 0.1 */
+  width: 80px;
+  /* 200px → 80px */
+  height: 80px;
+  /* 200px → 80px */
+  background: rgba(255, 255, 255, 0.1);
+  /* 0.15 → 0.1 */
   border-radius: 50%;
-  top: -20px;           /* -80px → -20px */
-  right: -20px;         /* -80px → -20px */
+  top: -20px;
+  /* -80px → -20px */
+  right: -20px;
+  /* -80px → -20px */
   pointer-events: none;
   z-index: 0;
 }
@@ -614,12 +653,17 @@ input, select, textarea {
 .hero-gradient-block::after {
   content: '';
   position: absolute;
-  width: 60px;          /* 180px → 60px */
-  height: 60px;         /* 180px → 60px */
-  background: rgba(255, 255, 255, 0.1);  /* 0.12 → 0.1 */
+  width: 60px;
+  /* 180px → 60px */
+  height: 60px;
+  /* 180px → 60px */
+  background: rgba(255, 255, 255, 0.1);
+  /* 0.12 → 0.1 */
   border-radius: 50%;
-  bottom: -10px;        /* -70px → -10px */
-  left: -10px;          /* -70px → -10px */
+  bottom: -10px;
+  /* -70px → -10px */
+  left: -10px;
+  /* -70px → -10px */
   pointer-events: none;
   z-index: 0;
 }
@@ -632,12 +676,13 @@ input, select, textarea {
 }
 
 .hero-number {
-  font-size: 48px; /*稍微縮小一點以適應內縮 */
+  font-size: 48px;
+  /*稍微縮小一點以適應內縮 */
   font-weight: 800;
   color: #fff;
   line-height: 1;
   margin-bottom: 4px;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .hero-unit {
@@ -662,7 +707,8 @@ input, select, textarea {
 /* 營養素網格：直接在白底上顯示 */
 .macro-grid {
   background: transparent;
-  padding: 16px 20px 0 20px; /* 配合外層留白 */
+  padding: 16px 20px 0 20px;
+  /* 配合外層留白 */
   display: flex;
   justify-content: space-between;
   gap: 12px;
@@ -676,14 +722,16 @@ input, select, textarea {
 
 .macro-label {
   font-size: var(--font-sm);
-  color: #666; /* 深灰字 */
+  color: #666;
+  /* 深灰字 */
   margin-bottom: 4px;
 }
 
 .macro-val {
   font-size: 20px;
   font-weight: 700;
-  color: #1f2937; /* 深黑字 */
+  color: #1f2937;
+  /* 深黑字 */
 }
 
 .macro-limit {
@@ -695,7 +743,8 @@ input, select, textarea {
 
 /* ==== 新增：區塊內的進度條樣式 (給飲水和運動用) ==== */
 .section-progress-wrap {
-  margin: 12px 0 20px 0; /* 與上下內容的距離 */
+  margin: 12px 0 20px 0;
+  /* 與上下內容的距離 */
 }
 
 .section-progress-info {
@@ -730,14 +779,17 @@ input, select, textarea {
   border-radius: 5px;
   transition: width 0.5s ease;
 }
+
 /* ==== 確保進度條有高度與背景 ==== */
 .progress-mini-track {
   height: 6px;
-  background: #f0f0f0; /* 淺灰底 */
+  background: #f0f0f0;
+  /* 淺灰底 */
   border-radius: 3px;
   margin-top: 8px;
   overflow: hidden;
-  width: 100%; /* 確保佔滿寬度 */
+  width: 100%;
+  /* 確保佔滿寬度 */
 }
 
 .progress-mini-bar {
@@ -756,16 +808,19 @@ input, select, textarea {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  overflow: hidden; /* 確保圖片不會超出圓框 */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  /* 確保圖片不會超出圓框 */
 }
 
 /* 新增：限制圖片大小 */
 .analysis-icon img {
-  width: 24px;  /* 控制 icon 圖片大小 */
+  width: 24px;
+  /* 控制 icon 圖片大小 */
   height: 24px;
   object-fit: contain;
 }
+
 /* ---- Quick Add List Optimization ---- */
 
 /* 收合區塊樣式 */
@@ -795,10 +850,13 @@ details.section-details[open] summary {
 
 /* 限制內容高度並允許捲動 */
 .quick-list-scroll {
-  max-height: 200px; /* 超過這個高度就會出現捲軸 */
+  max-height: 200px;
+  /* 超過這個高度就會出現捲軸 */
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch; /* iOS 捲動優化 */
+  -webkit-overflow-scrolling: touch;
+  /* iOS 捲動優化 */
 }
+
 /* 橫向滑動容器 */
 .quick-list-scroll-horizontal {
   display: flex;
@@ -841,12 +899,12 @@ details.section-details[open] summary {
   position: relative;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .quick-item-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
 }
 
 .quick-item-card:active {
@@ -888,16 +946,20 @@ details.section-details[open] summary {
   color: var(--text-sub);
 }
 
-}
+
 
 /* ==== 優化後的快速加入列表樣式 ==== */
 
 /* 1. 限制高度並允許捲動 (解決列表太長問題) */
 .quick-list-scroll {
-  max-height: 220px;       /* 設定最大高度，超過會出現捲軸 */
-  overflow-y: auto;        /* 垂直捲動 */
-  -webkit-overflow-scrolling: touch; /* iOS 滑動優化 */
-  padding-right: 4px;      /* 預留空間給捲軸，避免擋住內容 */
+  max-height: 220px;
+  /* 設定最大高度，超過會出現捲軸 */
+  overflow-y: auto;
+  /* 垂直捲動 */
+  -webkit-overflow-scrolling: touch;
+  /* iOS 滑動優化 */
+  padding-right: 4px;
+  /* 預留空間給捲軸，避免擋住內容 */
 }
 
 /* 2. 圓形加入按鈕 (解決按鈕太大與變形問題) */
@@ -905,10 +967,14 @@ details.section-details[open] summary {
   /* ---- 關鍵修正開始 ---- */
   width: 32px;
   height: 32px;
-  max-width: 32px;   /* 強制最大寬度，防止被撐開 */
-  max-height: 32px;  /* 強制最大高度，防止被拉伸 */
-  align-self: center; /* 關鍵！讓按鈕自己在 Flex 容器中垂直置中，不跟隨高度拉伸 */
-  flex-shrink: 0;    /* 防止空間不足時被壓縮 */
+  max-width: 32px;
+  /* 強制最大寬度，防止被撐開 */
+  max-height: 32px;
+  /* 強制最大高度，防止被拉伸 */
+  align-self: center;
+  /* 關鍵！讓按鈕自己在 Flex 容器中垂直置中，不跟隨高度拉伸 */
+  flex-shrink: 0;
+  /* 防止空間不足時被壓縮 */
   /* ---- 關鍵修正結束 ---- */
 
   border-radius: 50%;
@@ -921,7 +987,7 @@ details.section-details[open] summary {
   font-size: 20px;
   line-height: 1;
   cursor: pointer;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   transition: all 0.2s;
 }
 
@@ -929,6 +995,7 @@ details.section-details[open] summary {
   transform: scale(0.95);
   background: var(--mint-dark, #5c9c84);
 }
+
 /* 3. 列表項目優化 (讓版面更緊湊但資訊完整) */
 .quick-item-compact {
   display: flex;
@@ -1029,7 +1096,8 @@ body {
 
 /* 餐別標題（早餐／午餐／晚餐／點心） */
 .meal-title {
-  font-size: 18px;          /* Level 2 */
+  font-size: 18px;
+  /* Level 2 */
   font-weight: 700;
   color: #111827;
 }
@@ -1043,7 +1111,8 @@ body {
 }
 
 .meal-kcal-number {
-  font-size: 24px;          /* Level 1：最重要 */
+  font-size: 24px;
+  /* Level 1：最重要 */
   font-weight: 800;
   color: var(--mint-dark);
 }
@@ -1056,7 +1125,8 @@ body {
 
 /* P / C / F 小字（但要老花友善） */
 .meal-macros {
-  font-size: 15px;          /* Level 3：次要資訊，但清楚可讀 */
+  font-size: 15px;
+  /* Level 3：次要資訊，但清楚可讀 */
   color: #6b7280;
   line-height: 1.4;
 }
@@ -1065,8 +1135,10 @@ body {
 .macro-legend {
   margin-top: 16px;
   padding: 0 16px 6px;
-  font-size: 14px;        /* 13px → 14px */
-  color: #6b7280;         /* #9ca3af → #6b7280，更深一點 */
+  font-size: 14px;
+  /* 13px → 14px */
+  color: #6b7280;
+  /* #9ca3af → #6b7280，更深一點 */
   text-align: center;
   font-weight: 400;
 }
@@ -1081,10 +1153,10 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  
+
   /* 關鍵修改：加大字體與觸控範圍 */
-  font-size: 18px;  
-  padding: 12px 16px; 
+  font-size: 18px;
+  padding: 12px 16px;
 }
 
 
@@ -1092,7 +1164,7 @@ body {
 .icon-header {
   display: flex;
   align-items: center;
-  margin: 0; 
+  margin: 0;
 }
 
 .icon-header img {
@@ -1108,25 +1180,33 @@ body {
 
 /* 1. 表單區塊標題 (如：餐別) - 置中且加大 */
 .form-section-title {
-  font-size: var(--font-lg);  /* 22px */
-  font-weight: 700;       /* 加粗 */
-  text-align: center;     /* 🟢 關鍵：置中對齊 */
+  font-size: var(--font-lg);
+  /* 22px */
+  font-weight: 700;
+  /* 加粗 */
+  text-align: center;
+  /* 🟢 關鍵：置中對齊 */
   color: #333;
-  margin-bottom: 12px;    /* 與下方選單保持距離 */
+  margin-bottom: 12px;
+  /* 與下方選單保持距離 */
 }
 
 /* 2. 頁籤按鈕 (飲食/運動) - 確保夠大 */
 .tab-btn-large {
-  flex: 0 0 auto;  /* 保持：不自動伸展 */
-  width: 160px;  /* 新增：固定寬度（可調整大小）*/
-  padding: 2px 0;  /* 改回：上下 padding */
+  flex: 0 0 auto;
+  /* 保持：不自動伸展 */
+  width: 160px;
+  /* 新增：固定寬度（可調整大小）*/
+  padding: 2px 0;
+  /* 改回：上下 padding */
   font-size: var(--font-lg);
   background: transparent;
   border: none;
   border-bottom: 3px solid transparent;
   color: #999;
   cursor: pointer;
-  text-align: center;  /* 新增：文字置中 */
+  text-align: center;
+  /* 新增：文字置中 */
 }
 
 .tab-btn-large.active {
@@ -1139,20 +1219,21 @@ body {
 
 /* 1. 份量輸入觸發框 */
 .portion-input-trigger {
-  height: 54px; /* 稍微加高一點以容納大字體 */
+  height: 54px;
+  /* 稍微加高一點以容納大字體 */
   display: flex;
   align-items: center;
   justify-content: center;
   background: #f9fafc;
   border: 1px solid #e5e7eb;
   border-radius: 10px;
-  
+
   /* 🟢 改用變數：最大字級 (26px) */
   font-size: var(--font-xl);
   font-weight: 600;
   color: #1f2937;
   cursor: pointer;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
   transition: all 0.2s;
 }
 
@@ -1167,7 +1248,8 @@ body {
   color: #9ca3af;
   margin-left: 6px;
   font-weight: 400;
-  transform: translateY(2px); /* 微調對齊 */
+  transform: translateY(2px);
+  /* 微調對齊 */
 }
 
 /* 2. P/C/F 營養素輸入卡片 */
@@ -1177,19 +1259,37 @@ body {
   border-radius: 8px;
   text-align: center;
 }
-.macro-input-card.protein { border: 1px solid #bbf7d0; }
-.macro-input-card.carb    { border: 1px solid #fed7aa; }
-.macro-input-card.fat     { border: 1px solid #fecaca; }
+
+.macro-input-card.protein {
+  border: 1px solid #bbf7d0;
+}
+
+.macro-input-card.carb {
+  border: 1px solid #fed7aa;
+}
+
+.macro-input-card.fat {
+  border: 1px solid #fecaca;
+}
 
 .macro-input-label {
   /* 🟢 改用變數：最小備註 (14px) */
-  font-size: var(--font-xs); 
+  font-size: var(--font-xs);
   font-weight: 700;
   margin-bottom: 4px;
 }
-.macro-input-label.protein { color: #16a34a; }
-.macro-input-label.carb    { color: #ea580c; }
-.macro-input-label.fat     { color: #dc2626; }
+
+.macro-input-label.protein {
+  color: #16a34a;
+}
+
+.macro-input-label.carb {
+  color: #ea580c;
+}
+
+.macro-input-label.fat {
+  color: #dc2626;
+}
 
 .macro-input-field {
   width: 100%;
@@ -1198,9 +1298,9 @@ body {
   border-radius: 0;
   padding: 4px 0;
   background: transparent;
-  
+
   /* 🟢 改用變數：最大字級 (26px) */
-  font-size: var(--font-xl); 
+  font-size: var(--font-xl);
   font-weight: 700;
   color: #333;
 }
@@ -1210,9 +1310,17 @@ body {
 }
 
 /* 底部線條 */
-.macro-input-card.protein .macro-input-field { border-bottom: 2px solid #bbf7d0; }
-.macro-input-card.carb    .macro-input-field { border-bottom: 2px solid #fed7aa; }
-.macro-input-card.fat     .macro-input-field { border-bottom: 2px solid #fecaca; }
+.macro-input-card.protein .macro-input-field {
+  border-bottom: 2px solid #bbf7d0;
+}
+
+.macro-input-card.carb .macro-input-field {
+  border-bottom: 2px solid #fed7aa;
+}
+
+.macro-input-card.fat .macro-input-field {
+  border-bottom: 2px solid #fecaca;
+}
 
 .macro-unit-text {
   /* 🟢 改用變數：最小備註 (14px) */
@@ -1230,17 +1338,17 @@ body {
   align-items: center;
   gap: 8px;
   padding: 14px 0;
-  
+
   /* 🟢 改用變數：卡片標題級 (22px) */
-  font-size: var(--font-lg); 
+  font-size: var(--font-lg);
   font-weight: 700;
 }
 
 .btn-submit-badge {
-  background: rgba(255,255,255,0.25);
+  background: rgba(255, 255, 255, 0.25);
   padding: 2px 8px;
   border-radius: 99px;
-  
+
   /* 🟢 改用變數：次要說明 (16px) */
   font-size: var(--font-sm);
   font-weight: 600;
@@ -1250,28 +1358,32 @@ body {
 
 /* 餐別標題 (例如：早餐) */
 .record-group-title {
-  font-size: 16px;  /* 可以在這裡調整標題大小 */
+  font-size: 16px;
+  /* 可以在這裡調整標題大小 */
   font-weight: 700;
   color: #4b5563;
 }
 
 /* 餐別熱量小計 (例如：400 kcal) */
 .record-group-subtotal {
-  font-size: 13px;  /* 可以在這裡調整小計大小 */
+  font-size: 13px;
+  /* 可以在這裡調整小計大小 */
   font-weight: 500;
   color: #9ca3af;
 }
 
 /* 食物名稱 */
 .record-item-name {
-  font-size: 15px;  /* 可以在這裡調整食物名稱大小 */
+  font-size: 15px;
+  /* 可以在這裡調整食物名稱大小 */
   font-weight: 600;
   color: #374151;
 }
 
 /* 食物詳細資訊 (份量、熱量) */
 .record-item-detail {
-  font-size: 13px;  /* 可以在這裡調整詳細資訊大小 */
+  font-size: 13px;
+  /* 可以在這裡調整詳細資訊大小 */
   color: #6b7280;
   display: flex;
   flex-wrap: wrap;
@@ -1282,28 +1394,33 @@ body {
 
 /* 編輯/刪除按鈕通用樣式 */
 .record-item-btn {
-  font-size: 13px; /* 手機上字稍微大一點點更好按 */
+  font-size: 13px;
+  /* 手機上字稍微大一點點更好按 */
   padding: 6px 10px;
   border: none;
-  border-radius: 8px; /* 圓角稍微大一點，更像 App 風格 */
+  border-radius: 8px;
+  /* 圓角稍微大一點，更像 App 風格 */
   cursor: pointer;
-  font-weight: 600; /* 加粗一點增加可讀性 */
+  font-weight: 600;
+  /* 加粗一點增加可讀性 */
   transition: opacity 0.2s;
 }
 
 .record-item-btn:active {
-  opacity: 0.7; /* 按下時的效果 */
+  opacity: 0.7;
+  /* 按下時的效果 */
 }
 
 /* 🟢 編輯：淺薄荷綠底 + 深薄荷綠字 */
 .btn-edit {
-  background: #f0fdf9; 
-  color: #5c9c84; /* 使用比 #97d0ba 更深一點的綠，確保閱讀清晰 */
+  background: #f0fdf9;
+  color: #5c9c84;
+  /* 使用比 #97d0ba 更深一點的綠，確保閱讀清晰 */
 }
 
 /* 🔴 刪除：淺紅底 + 深紅字 (維持不變，作為防呆警示) */
 .btn-delete {
-  background: #fef2f2; 
+  background: #fef2f2;
   color: #ef4444;
 }
 
@@ -1316,16 +1433,16 @@ body {
   background: #fff;
   border-radius: 16px;
   padding: 20px 0;
-  
+
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 2px;
-  
+
   min-height: 160px;
   border: 1px solid var(--border-soft);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
   margin-bottom: 16px;
   transition: all 0.2s;
   cursor: pointer;
@@ -1345,9 +1462,12 @@ body {
 
 /* 體重數字外層容器 */
 .weight-input-wrapper {
-  display: flex;             /* 使用 Flexbox */
-  justify-content: center;   /* 讓內容置中 */
-  align-items: baseline;     /* 🟢 關鍵：這是讓大小字體「底部基準線對齊」的唯一正解 */
+  display: flex;
+  /* 使用 Flexbox */
+  justify-content: center;
+  /* 讓內容置中 */
+  align-items: baseline;
+  /* 🟢 關鍵：這是讓大小字體「底部基準線對齊」的唯一正解 */
   width: 100%;
   margin: 8px 0;
 }
@@ -1355,7 +1475,8 @@ body {
 .weight-val-huge {
   font-size: 42px;
   font-weight: 700;
-  color: var(--mint-dark);   /* 綠色 */
+  color: var(--mint-dark);
+  /* 綠色 */
   line-height: 1;
   /* 這裡不需額外設定，讓它自然撐開 */
 }
@@ -1366,12 +1487,16 @@ body {
   font-weight: 400;
 
   /* 🟢 魔術技巧：讓它在 Flex 排版中「不佔空間」 */
-  width: 0;            /* 設定寬度為 0，這樣 Flex 置中計算時只會算到數字的寬度 */
-  white-space: nowrap; /* 防止文字換行 */
-  
-  position: relative;  /* 開啟相對定位 */
-  left: 8px;           /* 視覺上往右推 8px，製造間距 */
-  
+  width: 0;
+  /* 設定寬度為 0，這樣 Flex 置中計算時只會算到數字的寬度 */
+  white-space: nowrap;
+  /* 防止文字換行 */
+
+  position: relative;
+  /* 開啟相對定位 */
+  left: 8px;
+  /* 視覺上往右推 8px，製造間距 */
+
   /* 這裡不需要 position: absolute，因為要保留 baseline 對齊特性 */
 }
 
@@ -1425,7 +1550,7 @@ body {
   font-size: 18px;
   font-weight: 700;
   color: var(--text-main);
-} 
+}
 
 /* 🆕 強度卡片容器 */
 .intensity-grid {
@@ -1453,7 +1578,10 @@ body {
 /* --- 顏色主題定義 --- */
 
 /* 低強度 (綠) */
-.intensity-card.low { color: #10b981; } 
+.intensity-card.low {
+  color: #10b981;
+}
+
 .intensity-card.low.active {
   border-color: #10b981;
   background-color: #ecfdf5;
@@ -1462,7 +1590,10 @@ body {
 }
 
 /* 中強度 (橘) */
-.intensity-card.medium { color: #f59e0b; }
+.intensity-card.medium {
+  color: #f59e0b;
+}
+
 .intensity-card.medium.active {
   border-color: #f59e0b;
   background-color: #fffbeb;
@@ -1471,7 +1602,10 @@ body {
 }
 
 /* 高強度 (紅) */
-.intensity-card.high { color: #ef4444; }
+.intensity-card.high {
+  color: #ef4444;
+}
+
 .intensity-card.high.active {
   border-color: #ef4444;
   background-color: #fef2f2;
@@ -1485,15 +1619,18 @@ body {
   margin-bottom: 8px;
   filter: grayscale(0.2);
 }
+
 .intensity-card.active .intensity-icon {
   filter: grayscale(0);
   transform: scale(1.1);
 }
+
 .intensity-label {
   font-size: 16px;
   font-weight: 700;
   line-height: 1.2;
 }
+
 .intensity-met {
   font-size: 12px;
   opacity: 0.8;
@@ -1511,12 +1648,14 @@ body {
   display: flex;
   flex-direction: column;
 }
+
 .input-group label {
   font-size: 14px;
   color: var(--text-sub);
   margin-bottom: 4px;
   font-weight: 500;
 }
+
 .styled-num-input {
   width: 100%;
   border: none;
@@ -1528,6 +1667,7 @@ body {
   padding: 4px 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
+
 .styled-num-input::placeholder {
   color: #ccc;
   font-weight: 400;
@@ -1540,9 +1680,11 @@ body {
   font-weight: 600;
   color: var(--text-main);
   padding: 4px 0;
-  border-bottom: 1px solid transparent; /* 預留位置 */
+  border-bottom: 1px solid transparent;
+  /* 預留位置 */
   cursor: pointer;
-  min-height: 30px; /* 確保有高度好點擊 */
+  min-height: 30px;
+  /* 確保有高度好點擊 */
   display: flex;
   align-items: center;
 }
@@ -1583,7 +1725,7 @@ body {
   border-radius: 12px;
   background: #fff;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 }
 
 .search-result-item {
@@ -1601,14 +1743,16 @@ body {
 }
 
 .search-result-item.active {
-  background: #f0fdf9; /* Mint 淺色底 */
+  background: #f0fdf9;
+  /* Mint 淺色底 */
 }
 
 /* 🆕 記錄模式切換器 (膠囊樣式) */
 .mode-switch {
   display: flex;
   background: #f0f2f5;
-  border-radius: 999px; /* 膠囊圓角 */
+  border-radius: 999px;
+  /* 膠囊圓角 */
   padding: 4px;
   margin-bottom: 16px;
   margin-top: 12px;
@@ -1617,8 +1761,10 @@ body {
 .mode-btn {
   flex: 1;
   border: none;
-  border-radius: 999px; /* 按鈕也是圓的 */
-  padding: 8px 0;       /* 統一高度 */
+  border-radius: 999px;
+  /* 按鈕也是圓的 */
+  padding: 8px 0;
+  /* 統一高度 */
   font-size: var(--font-md);
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
@@ -1632,7 +1778,7 @@ body {
   background: #fff;
   color: var(--mint-dark, #5c9c84);
   font-weight: 600;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
 /* 由下往上滑入動畫 */
@@ -1640,6 +1786,7 @@ body {
   from {
     transform: translateY(100%);
   }
+
   to {
     transform: translateY(0);
   }
@@ -1675,8 +1822,9 @@ body {
 .settings-list-card {
   background: #fff;
   border-radius: 16px;
-  overflow: hidden; /* 讓內部的子元素不會凸出圓角 */
-  box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+  overflow: hidden;
+  /* 讓內部的子元素不會凸出圓角 */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
   margin-bottom: 20px;
   border: 1px solid #f0f0f0;
 }
@@ -1716,7 +1864,8 @@ body {
 .settings-value {
   font-size: 16px;
   font-weight: 600;
-  color: var(--mint-dark); /* 使用品牌深綠色強調數值 */
+  color: var(--mint-dark);
+  /* 使用品牌深綠色強調數值 */
   text-align: right;
   display: flex;
   align-items: center;
@@ -1758,14 +1907,17 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 2px; /* 標題跟建議稍微拉開一點 */
-  flex: 1;  /* 佔據剩餘空間，避免被右邊數值擠壓 */
+  gap: 2px;
+  /* 標題跟建議稍微拉開一點 */
+  flex: 1;
+  /* 佔據剩餘空間，避免被右邊數值擠壓 */
 }
 
 /* 🆕 新增：建議文字的樣式 */
 .settings-hint {
   font-size: 13px;
-  color: #9ca3af; /* 淺灰色，不搶眼 */
+  color: #9ca3af;
+  /* 淺灰色，不搶眼 */
   font-weight: 400;
   line-height: 1.4;
 }
@@ -1782,30 +1934,30 @@ body {
 
 /* === 基礎 iPad 優化 (768px 以上) === */
 @media screen and (min-width: 768px) {
-  
+
   /* 1. 全域字體放大 */
   body {
     font-size: 18px;
     line-height: 1.6;
   }
-  
+
   /* 2. 標題字體放大 */
   h1 {
     font-size: 28px;
   }
-  
+
   h2 {
     font-size: 24px;
   }
-  
+
   h3 {
     font-size: 22px;
   }
-  
+
   h4 {
     font-size: 19px;
   }
-  
+
   /* 3. 容器寬度控制 - 避免內容過度拉伸 */
   .container,
   .tab-content,
@@ -1815,19 +1967,19 @@ body {
     padding-left: 40px;
     padding-right: 40px;
   }
-  
+
   /* 4. 按鈕放大 */
   button {
     font-size: 18px !important;
     padding: 14px 24px !important;
     min-height: 48px;
   }
-  
+
   button.primary {
     font-size: 19px !important;
     padding: 16px 32px !important;
   }
-  
+
   /* 5. 輸入框放大 */
   input,
   select,
@@ -1836,11 +1988,11 @@ body {
     padding: 12px 16px !important;
     min-height: 48px;
   }
-  
+
   input::placeholder {
     font-size: 17px;
   }
-  
+
   /* 6. 營養素數字放大 */
   .nutrient-value,
   .progress-text,
@@ -1848,7 +2000,7 @@ body {
     font-size: 22px !important;
     font-weight: 600;
   }
-  
+
   /* 7. 卡片內容放大 */
   .card,
   .meal-card,
@@ -1857,14 +2009,14 @@ body {
     font-size: 17px;
     padding: 18px;
   }
-  
+
   /* 8. 小文字（說明文字）也要稍微放大 */
   small,
   .small-text,
   .hint-text {
     font-size: 15px !important;
   }
-  
+
   /* 9. 餐次區塊 - 改成兩欄網格 */
   .meal-sections {
     display: grid;
@@ -1872,30 +2024,30 @@ body {
     gap: 20px;
     margin-top: 20px;
   }
-  
+
   /* 10. 營養素進度條區域 */
   .nutrient-bars-container {
     padding: 24px;
   }
-  
+
   /* 11. Modal 在 iPad 上更大更清楚 */
   .modal {
     max-width: 700px !important;
     padding: 32px 28px !important;
     font-size: 18px;
   }
-  
+
   .modal h2,
   .modal h3 {
     font-size: 24px;
   }
-  
+
   .modal p,
   .modal li {
     font-size: 17px;
     line-height: 1.7;
   }
-  
+
   /* 12. 手掌估算按鈕放大 */
   .portion-button,
   .category-button {
@@ -1903,30 +2055,30 @@ body {
     font-size: 19px;
     padding: 16px;
   }
-  
+
   /* 13. 日期選擇器放大 */
   .date-picker,
   .calendar-day {
     font-size: 18px;
   }
-  
+
   /* 14. Tab 標籤放大 */
   .tab-button {
     font-size: 18px !important;
     padding: 14px 20px !important;
   }
-  
+
   /* 15. 圖表區域 */
   .chart-container {
     padding: 24px;
   }
-  
+
   /* 16. 食物列表項目間距 */
   .food-list-item {
     padding: 16px;
     margin-bottom: 12px;
   }
-  
+
   /* 17. 增減按鈕 (+/-) */
   .increment-button,
   .decrement-button {
@@ -1938,31 +2090,32 @@ body {
 
 /* === iPad Pro 大螢幕優化 (1024px 以上) === */
 @media screen and (min-width: 1024px) {
-  
+
   /* 更大的字體 */
   body {
     font-size: 19px;
   }
-  
-  h2, h3 {
+
+  h2,
+  h3 {
     font-size: 26px;
   }
-  
+
   button {
     font-size: 19px !important;
   }
-  
+
   /* 容器可以再寬一點 */
   .container,
   .tab-content {
     max-width: 1000px;
   }
-  
+
   /* Modal 可以更大 */
   .modal {
     max-width: 800px !important;
   }
-  
+
   /* 營養素數字更大 */
   .nutrient-value,
   .progress-text {
@@ -1972,102 +2125,102 @@ body {
 
 /* === 特定元素的 iPad 優化 === */
 @media screen and (min-width: 768px) {
-  
+
   /* Today 頁面 - 今日攝取卡片 */
   .today-summary-card {
     padding: 28px;
     border-radius: 16px;
   }
-  
+
   .today-summary-card .big-number {
     font-size: 56px !important;
   }
-  
+
   .today-summary-card .unit {
     font-size: 20px;
   }
-  
+
   /* 水分攝取區塊 */
   .water-section h3 {
     font-size: 22px;
   }
-  
+
   .water-amount {
     font-size: 32px !important;
   }
-  
+
   .water-quick-add button {
     font-size: 18px;
     padding: 12px 24px;
   }
-  
+
   /* 手掌估算介面 */
   .visual-portion-picker {
     padding: 24px;
   }
-  
+
   .portion-reference-text {
     font-size: 16px;
   }
-  
+
   .nutrition-summary-card {
     padding: 20px;
   }
-  
+
   .nutrition-summary-card .value {
     font-size: 28px !important;
   }
-  
+
   /* AI 辨識、條碼掃描按鈕 */
   .feature-button {
     min-height: 100px;
     font-size: 19px;
   }
-  
+
   /* 搜尋框 */
   .search-input {
     font-size: 19px !important;
     padding: 14px 20px !important;
     height: 56px;
   }
-  
+
   /* 運動強度選擇卡片 */
   .intensity-card {
     padding: 24px;
     min-height: 140px;
   }
-  
+
   .intensity-card .title {
     font-size: 20px;
   }
-  
+
   .intensity-card .met-value {
     font-size: 17px;
   }
-  
+
   /* Records 頁面的統計卡片 */
   .stat-card {
     padding: 20px;
   }
-  
+
   .stat-card .label {
     font-size: 16px;
   }
-  
+
   .stat-card .value {
     font-size: 32px;
   }
-  
+
   /* Settings 頁面 */
   .settings-item {
     padding: 18px 20px;
     font-size: 18px;
   }
-  
+
   .settings-item label {
     font-size: 18px;
   }
-  
+
   .settings-item input {
     font-size: 18px;
   }
@@ -2075,20 +2228,20 @@ body {
 
 /* === 特殊調整：確保某些元素不會過大 === */
 @media screen and (min-width: 768px) {
-  
+
   /* 圖示不要放大 */
   .icon,
   .emoji-icon,
   img.icon {
     /* 保持原始大小 */
   }
-  
+
   /* 底部 Tab Bar 保持適中 */
   .tab-bar {
     max-width: 900px;
     margin: 0 auto;
   }
-  
+
   .tab-bar button {
     font-size: 14px !important;
     padding: 8px 12px !important;
@@ -2097,13 +2250,13 @@ body {
 
 /* === 橫向模式優化 === */
 @media screen and (min-width: 768px) and (orientation: landscape) {
-  
+
   /* 橫向時容器可以更寬 */
   .container,
   .tab-content {
     max-width: 1200px;
   }
-  
+
   /* 餐次可以排成 4 欄 */
   .meal-sections {
     grid-template-columns: repeat(4, 1fr);
@@ -2112,19 +2265,22 @@ body {
 
 .update-toast {
   position: fixed !important;
-  top: 0 !important;  /* 🔧 強制在頂部 */
-  bottom: auto !important;  /* 🔧 明確取消 bottom */
+  top: 0 !important;
+  /* 🔧 強制在頂部 */
+  bottom: auto !important;
+  /* 🔧 明確取消 bottom */
   left: 0;
   right: 0;
   background: linear-gradient(135deg, var(--mint-dark) 0%, var(--mint) 100%);
   color: #fff;
   padding: 12px 16px;
   padding-top: calc(12px + var(--sat));
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  z-index: 9999 !important;  /* 🔧 確保在最上層 */
+  z-index: 9999 !important;
+  /* 🔧 確保在最上層 */
   font-size: 14px;
   animation: slideDown 0.4s ease-out;
 }
@@ -2141,24 +2297,26 @@ body {
   font-size: 13px;
   cursor: pointer;
   margin-left: 10px;
-  flex-shrink: 0;  /* 防止按鈕被壓縮 */
+  flex-shrink: 0;
+  /* 防止按鈕被壓縮 */
 }
 
 @keyframes slideDown {
-  from { 
-    transform: translateY(-100%); 
-    opacity: 0; 
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
   }
-  to { 
-    transform: translateY(0); 
-    opacity: 1; 
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
   }
 }
 
 .install-prompt-toast {
   position: fixed;
   /* 距離底部：導航列高度(約60-70px) + 安全區域 + 間距 */
-  bottom: calc(70px + var(--sab)); 
+  bottom: calc(70px + var(--sab));
   left: 16px;
   right: 16px;
   background-color: #fff;
@@ -2167,9 +2325,10 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   border: 1px solid var(--mint);
-  z-index: 9999; /* 確保在最上層 */
+  z-index: 9999;
+  /* 確保在最上層 */
   /* 增加一個滑入動畫讓體驗更好 */
   animation: slideUp 0.3s ease-out;
 }
@@ -2225,6 +2384,13 @@ body {
 }
 
 @keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }

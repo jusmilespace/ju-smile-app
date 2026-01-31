@@ -1,6 +1,6 @@
 // src/services/foodApi.ts
 
-export interface ScannedFood {
+export type ScannedFood = {
   name: string;
   brand?: string;
   kcal: number;      // per 100g
@@ -12,7 +12,7 @@ export interface ScannedFood {
 
 // 台灣條碼通常是 EAN-13
 // 🆕 新增「每份」資料結構
-export interface ServingBasedFood {
+export type ServingBasedFood = {
   name: string;
   brand?: string;
   servingSize: number;  // 每份重量(g)
@@ -37,7 +37,7 @@ export const fetchProductByBarcode = async (barcode: string): Promise<ServingBas
 
       // 🆕 優先嘗試取得「每份」資料
       const servingSize = parseFloat(p.serving_size) || null;
-      const hasServingData = servingSize && 
+      const hasServingData = servingSize &&
         (n['energy-kcal_serving'] || n['proteins_serving'] || n['carbohydrates_serving'] || n['fat_serving']);
 
       if (hasServingData) {
