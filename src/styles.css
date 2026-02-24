@@ -1,3 +1,13 @@
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  /* 預防外層出現捲軸導致底部空白 */
+}
+
 :root {
   --mint: #97d0ba;
   --mint-dark: #5c9c84;
@@ -508,34 +518,42 @@ details summary {
 
 .bottom-nav {
   position: fixed;
-  left: 50%;
+  left: 0;
+  right: 0;
   bottom: 0;
-  transform: translateX(-50%);
-  max-width: 480px;
   width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+
   display: flex;
-  gap: 6px;
-  padding: 6px 10px 10px;
+  align-items: center;
+  justify-content: space-around;
+
+  /* 🟢 修改：移除 calc 和 env，改用固定數值 */
+  /* 20px 是一個在有瀏海 iPhone 上看起來很舒適，在舊 iPhone 上也還合理的數字 */
+  padding-top: 10px;
+  padding-bottom: 20px;
+
+  /* 🟢 確保沒有被 height 撐開 */
+  height: auto !important;
+
   background: #ffffffcc;
   backdrop-filter: blur(10px);
   border-top: 1px solid #e0ece6;
-  box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.03);
-  z-index: 100;
-  /* 🔧 新增：明確設定層級，低於更新提示列 (9999) */
+  z-index: 1000;
 }
 
 .bottom-nav button {
   flex: 1;
-  border-radius: 999px;
-  border: 1px solid transparent;
-  background: transparent;
-  padding: 7px 0;
-  font-size: 13px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  height: 50px;
+  /* 🟢 按鈕本體高度固定，下方空白交給 nav 的 padding */
+  background: none;
+  border: none;
+  cursor: pointer;
 }
 
 .bottom-nav button.active {
@@ -545,7 +563,8 @@ details summary {
 }
 
 .nav-icon {
-  font-size: 18px;
+  font-size: 16px;
+  /* 🆕 從 18px 改成 16px */
   line-height: 1;
 }
 
@@ -2328,6 +2347,8 @@ body {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   border: 1px solid var(--mint);
   z-index: 9999;
+  pointer-events: auto;
+  /* 確保這個提示本身可以點 */
   /* 確保在最上層 */
   /* 增加一個滑入動畫讓體驗更好 */
   animation: slideUp 0.3s ease-out;

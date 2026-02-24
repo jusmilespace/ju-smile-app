@@ -9,8 +9,8 @@ import { Share } from '@capacitor/share';
 
 // 🟢 新增：引入掃描器元件與型別
 import BarcodeScanner from './components/BarcodeScanner';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';  // 🆕 加這行
 import type { ScannedFood } from './services/foodApi';
-import { analyzeImage } from './services/aiService';
 
 import femalePng from './assets/female.png';
 import malePng from './assets/male.png';
@@ -22,7 +22,7 @@ import logoV1 from './assets/logo_v1.png';
 import palmImg from './assets/palm.png';
 import fistImg from './assets/fist.png';
 import thumbImg from './assets/thumb.png';
-import milkImg from './assets/milk.png';
+
 
 
 // 🖐️ 手掌法圖示（與 VisualPortionPicker 共用的 6 張 img）
@@ -68,9 +68,24 @@ function generateUserId(): string {
 function getSubscription(): UserSubscription {
   const savedSub = localStorage.getItem('JU_SUBSCRIPTION');
 
-  // ✅ 這裡永遠用 localStorage 固定的 JU_USER_ID（同裝置同瀏覽器固定）
+  // 🔧 先嘗試讀取現有的 userId，如果沒有才生成新的
+  let userId = '';
+  if (savedSub) {
+    try {
+      const parsed = JSON.parse(savedSub);
+      userId = parsed.userId || '';
+    } catch (e) {
+      console.error('解析 subscription 失敗:', e);
+    }
+  }
+
+  // 只有在沒有 userId 時才生成新的
+  if (!userId) {
+    userId = generateUserId();
+  }
+
   const base: UserSubscription = {
-    userId: generateUserId(),
+    userId: userId,  // ✅ 使用固定的 userId
     type: 'free',
     aiCredits: 10,
     aiCreditsResetDate: undefined,
@@ -115,13 +130,45 @@ function getSubscription(): UserSubscription {
   }
 }
 
+// 🆕 初始化新用戶（首次使用贈送 10 次試用）
+function initializeNewUser() {
+  const hasInitialized = localStorage.getItem('hasInitialized');
+
+  if (!hasInitialized) {
+    console.log('🎉 偵測到新用戶，初始化中...');
+
+    const userId = generateUserId();
+    const isTestAccount = userId === 'user_1770028291556_wey4lcsdp';
+
+    if (isTestAccount) {
+      console.log('🛡️ 測試帳號，跳過初始化');
+      localStorage.setItem('hasInitialized', 'true');
+      return;
+    }
+
+    localStorage.setItem('hasInitialized', 'true');
+    console.log('✅ 新用戶初始化完成，贈送 10 次 AI 試用額度');
+
+    // ✅ 設定一個 flag，讓 TodayPage 顯示歡迎訊息
+    localStorage.setItem('showWelcomeMessage', 'true');
+  }
+}
 
 
 // 更新訂閱狀態
 function updateSubscription(updates: Partial<UserSubscription>) {
-  const current = getSubscription();
+  // 🔧 直接從 localStorage 讀取，避免 getSubscription 的潛在問題
+  const stored = localStorage.getItem('JU_SUBSCRIPTION');
+  const current = stored ? JSON.parse(stored) : {
+    userId: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    type: 'free',
+    aiCredits: 10,
+    aiCreditsResetDate: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString()
+  };
   const updated = { ...current, ...updates };
   localStorage.setItem('JU_SUBSCRIPTION', JSON.stringify(updated));
+
+  console.log('🔧 updateSubscription 儲存:', updated); // 加入 log
 }
 
 // 🆕 生成裝置指紋（全域函數）- 改良版，避免碰撞
@@ -181,6 +228,7 @@ function getDeviceInfo() {
 }
 
 // 呼叫 Worker API
+// 呼叫 Worker API
 async function callWorkerAPI(
   imageBase64: string,
   mode: 'nutrition' | 'label' = 'nutrition'
@@ -188,44 +236,88 @@ async function callWorkerAPI(
   const subscription = getSubscription();
   const userId = generateUserId(); // ✅ 固定用本機 userId
 
-
-
   const WORKER_URL = 'https://api.jusmilespace.com';
 
   try {
-    const response = await fetch(WORKER_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        imageBase64: imageBase64.replace(/^data:image\/\w+;base64,/, ''),
-        userId, // ✅ 改這裡
-        subscriptionType: subscription.type,
-        mode,
-      }),
+    // 🆕 創建 timeout Promise
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('⏱️ 連線逾時，請檢查網路後重試'));
+      }, 30000); // 30 秒 timeout
     });
 
-    const data = await response.json();
+    // 🆕 使用 Promise.race 實作 timeout
+    const response = await Promise.race([
+      fetch(WORKER_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          imageBase64: imageBase64.replace(/^data:image\/\w+;base64,/, ''),
+          userId,
+          subscriptionType: subscription.type,
+          mode,
+        }),
+      }),
+      timeoutPromise
+    ]) as Response;
 
+    // 🆕 先檢查 response 狀態，再解析 JSON
     if (!response.ok) {
-      // 額度用完
-      if (response.status === 429) {
+      // 🆕 嘗試解析錯誤訊息
+      let errorData: any = {};
+      try {
+        errorData = await response.json();
+      } catch (parseError) {
+        // JSON 解析失敗，使用預設錯誤訊息
+        console.warn('❌ 無法解析錯誤回應:', parseError);
+      }
+
+      // 處理 Gemini API 額度用完
+      if (response.status === 500 && errorData.message?.includes('429')) {
         return {
-          error: 'quota_exceeded',
-          message: data.error || '額度已用完',
+          error: 'api_quota_exceeded',
+          message: 'Gemini API 每日額度已用完，請明天再試或升級付費版',
           remaining: 0,
         };
       }
 
-      throw new Error(data.error || 'API 呼叫失敗');
+      // 額度用完
+      if (response.status === 429) {
+        return {
+          error: 'quota_exceeded',
+          message: errorData.error || errorData.message || '額度已用完',
+          remaining: 0,
+        };
+      }
+
+      // 🆕 顯示詳細錯誤訊息
+      const errorMessage = errorData.message || errorData.error || `API 錯誤 (HTTP ${response.status})`;
+      throw new Error(errorMessage);
     }
 
-    // 更新本地訂閱狀態（同步剩餘額度）
-    updateSubscription({
-      aiCredits: data.remaining,
-      aiCreditsResetDate: data.resetDate,
-    });
+    // 🆕 成功的回應才解析 JSON
+    const data = await response.json();
+
+    // 🟢 更新本地訂閱狀態（同步剩餘額度）
+    // 免費用戶：手動扣除 1 次（因為 Worker 的 remaining 是每日額度）
+    // 付費用戶：使用 Worker 返回的 remaining
+    const currentSub = getSubscription();
+    if (currentSub.type === 'free') {
+      // 免費用戶：手動扣除
+      const newCredits = Math.max(0, (currentSub.aiCredits || 0) - 1);
+      console.log(`🔄 免費用戶額度更新：${currentSub.aiCredits} → ${newCredits}`);
+      updateSubscription({
+        aiCredits: newCredits,
+      });
+    } else {
+      // 付費用戶：使用 Worker 返回的額度
+      updateSubscription({
+        aiCredits: data.remaining,
+        aiCreditsResetDate: data.resetDate,
+      });
+    }
 
     return {
       success: true,
@@ -235,7 +327,17 @@ async function callWorkerAPI(
 
   } catch (error) {
     console.error('❌ Worker API Error:', error);
-    throw error;
+    // 🆕 確保錯誤有清楚的訊息
+    if (error instanceof Error) {
+      throw error;
+    } else if (error && typeof error === 'object') {
+      // 如果是物件，嘗試提取有用的資訊
+      const errObj = error as any;
+      const msg = errObj.message || errObj.error || errObj.name || JSON.stringify(error);
+      throw new Error(msg !== '{}' ? msg : '連線發生未預期錯誤');
+    } else {
+      throw new Error(String(error) || '連線發生未預期錯誤');
+    }
   }
 }
 
@@ -1105,15 +1207,7 @@ const AboutPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         <div className="form-section" style={{ lineHeight: 1.6 }}>
           <h2>❓ 常見問題</h2>
 
-          <div style={{ marginBottom: 16 }}>
-            <p style={{ fontWeight: 'bold', marginBottom: 8, color: '#1f2937' }}>
-              Q: 如何購買創始會員？
-            </p>
-            <p style={{ marginBottom: 0, paddingLeft: 16, color: '#6b7280' }}>
-              A: 請前往官網 <strong style={{ color: '#5c9c84' }}>jusmilespace.com</strong> 查看方案，
-              購買後將收到兌換碼 Email，即可在 App 內「我的」→「訂閱與升級」中輸入兌換碼完成升級。
-            </p>
-          </div>
+
 
           <div style={{ marginBottom: 16 }}>
             <p style={{ fontWeight: 'bold', marginBottom: 8, color: '#1f2937' }}>
@@ -1139,16 +1233,16 @@ const AboutPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               border: '1px solid #4caf50'
             }}>
               <p style={{ margin: 0, color: '#2e7d32', fontSize: '14px', fontWeight: 'bold' }}>
-                ✨ 新功能：自動兌換！
+                ✨ 新功能：自動驗證！
               </p>
               <p style={{ margin: '4px 0 0 0', color: '#2e7d32', fontSize: '13px' }}>
-                只需輸入購買時使用的 Email，系統會自動為您完成兌換。
+                只需輸入註冊時使用的 Email，系統會自動為您完成驗證。
               </p>
             </div>
             <ol style={{ paddingLeft: 32, marginBottom: 12, color: '#6b7280', fontSize: '14px' }}>
               <li>進入「🦋 我的」頁面</li>
               <li>找到「💎 訂閱與升級」區塊</li>
-              <li>在「<strong>購買時使用的 Email</strong>」欄位輸入您的 Email</li>
+              <li>在「<strong>註冊時使用的 Email</strong>」欄位輸入您的 Email</li>
               <li>點擊「兌換」按鈕，系統會自動識別並完成升級 🎉</li>
             </ol>
             <p style={{
@@ -1171,7 +1265,7 @@ const AboutPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             目前版本：<b>Ju Smile App v{APP_VERSION}</b>
           </p>
           <ul style={{ paddingLeft: 20, marginBottom: 0, fontSize: 'var(--font-xs)' }}>
-            <li>v1.0.4：新增自動兌換功能，只需輸入購買 Email 即可自動升級創始會員。</li>
+            <li>v1.0.4：新增自動兌換功能，只需輸入註冊 Email 即可自動升級創始會員。</li>
             <li>v1.0.3：修正更新提示被導航列擋住的問題，提升介面穩定性。</li>
             <li>v1.0.2：修正上架語言設定為繁中。</li>
             <li>v1.0.1：初始版本，提供體重 / 飲食 / 運動紀錄與 JSON 匯出 / 匯入功能。</li>
@@ -1207,7 +1301,7 @@ const ToastContainer: React.FC<{
     <div
       style={{
         position: 'fixed',
-        top: 20,
+        top: 'max(env(safe-area-inset-top, 20px) + 20px, 60px)',  // ✅ 避開瀏海
         right: 20,
         zIndex: 9999,
         display: 'flex',
@@ -1514,31 +1608,155 @@ const RecordsPage: React.FC<RecordsPageProps> = ({
     fatPerServing: number;
     servingSize: number;
   } | null>(null);
+  // 🆕 AI 辨識 - 拍照
+  const handleAiCamera = async () => {
+    try {
+      const image = await Camera.getPhoto({
+        quality: 90,
+        allowEditing: false,
+        resultType: CameraResultType.DataUrl,
+        source: CameraSource.Camera
+      });
+      if (image.dataUrl) {
+        await handleAiImageSelect(image.dataUrl);
+      }
+    } catch (error: any) {
+      console.error('相機錯誤:', error);
+      if (error.message !== 'User cancelled photos app') {
+        showToast('error', '無法開啟相機');
+      }
+    }
+  };
+
+  // 🆕 AI 辨識 - 相簿
+  const handleAiGallery = async () => {
+    try {
+      const image = await Camera.getPhoto({
+        quality: 90,
+        allowEditing: false,
+        resultType: CameraResultType.DataUrl,
+        source: CameraSource.Photos
+      });
+      if (image.dataUrl) {
+        await handleAiImageSelect(image.dataUrl);
+      }
+    } catch (error: any) {
+      console.error('相簿錯誤:', error);
+      if (error.message !== 'User cancelled photos app') {
+        showToast('error', '無法開啟相簿');
+      }
+    }
+  };
+
+  // 🆕 營養標示 - 拍照
+  const handleLabelCamera = async () => {
+    try {
+      const image = await Camera.getPhoto({
+        quality: 90,
+        allowEditing: false,
+        resultType: CameraResultType.DataUrl,
+        source: CameraSource.Camera
+      });
+      if (image.dataUrl) {
+        await handleLabelImageSelect(image.dataUrl);
+      }
+    } catch (error: any) {
+      console.error('相機錯誤:', error);
+      if (error.message !== 'User cancelled photos app') {
+        showToast('error', '無法開啟相機');
+      }
+    }
+  };
+
+  // 🆕 營養標示 - 相簿
+  const handleLabelGallery = async () => {
+    try {
+      const image = await Camera.getPhoto({
+        quality: 90,
+        allowEditing: false,
+        resultType: CameraResultType.DataUrl,
+        source: CameraSource.Photos
+      });
+      if (image.dataUrl) {
+        await handleLabelImageSelect(image.dataUrl);
+      }
+    } catch (error: any) {
+      console.error('相簿錯誤:', error);
+      if (error.message !== 'User cancelled photos app') {
+        showToast('error', '無法開啟相簿');
+      }
+    }
+  };
 
   // 🟢 新增：處理圖片選擇與 AI 分析
-  const handleAiImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleAiImageSelect = async (dataUrl: string) => {
+    // 🆕 強制重置 viewport
+    window.scrollTo(0, 0);
 
-
-
+    // 🆕 檢查免費用戶額度
+    const subscription = getSubscription();
+    if (subscription.type === 'free') {
+      const credits = subscription.aiCredits ?? 0;
+      if (credits <= 0) {
+        showToast('error', '❌ 試用額度已用完\n\n請點擊底部「我的」頁面升級創始會員享 3600 次 AI 辨識！');
+        return;
+      }
+    }
     try {
       setIsAiAnalyzing(true);
       showToast('info', '🤖 AI 正在分析食物圖片...');
 
-      const base64 = await fileToDataURL(file);
-
       // 🟢 改用 Worker API
-      const apiResult = await callWorkerAPI(base64, 'nutrition');
+      const apiResult = await callWorkerAPI(dataUrl, 'nutrition');
 
       // 🟢 檢查額度
       if (apiResult.error === 'quota_exceeded') {
-        showToast('warning', apiResult.message);
-        showUpgradeModal(); // 顯示升級提示
+        showToast('warning', apiResult.message || '額度已用完');
+        setIsAiAnalyzing(false);
         return;
       }
 
-      const result = apiResult.result;
+      let result = apiResult.result;
+
+      // 🆕 如果 result 有 raw 欄位，表示需要解析
+      console.log('🔍 原始 result:', result);
+      console.log('🔍 result.raw 類型:', typeof result.raw);
+      console.log('🔍 result.raw 長度:', result.raw?.length);
+
+      if (result && result.raw && typeof result.raw === 'string') {
+        try {
+          // 🆕 先檢查是否完整
+          if (!result.raw.includes('```')) {
+            console.error('❌ raw 內容不完整，缺少結尾');
+            showToast('error', 'AI 回應不完整，請重試');
+            setIsAiAnalyzing(false);
+            return;
+          }
+
+          // 🆕 檢查 JSON 結構是否完整
+          if (!result.raw.includes('}')) {
+            console.error('❌ JSON 結構不完整');
+            showToast('error', 'AI 回應格式錯誤，請重試');
+            setIsAiAnalyzing(false);
+            return;
+          }
+
+          console.log('🔍 原始 raw 內容（前200字）:', result.raw.substring(0, 200));
+          const jsonStr = result.raw.replace(/```json\n?|\n?```/g, '').trim();
+          console.log('🔍 清理後的 JSON（前200字）:', jsonStr.substring(0, 200));
+          const parsed = JSON.parse(jsonStr);
+          console.log('🔍 解析成功:', parsed);
+          result = parsed;
+        } catch (parseError) {
+          console.error('❌ JSON 解析失敗:', parseError);
+          console.error('❌ raw 長度:', result.raw?.length);
+          console.error('❌ raw 前100字:', result.raw?.substring(0, 100));
+          console.error('❌ raw 後100字:', result.raw?.substring(result.raw.length - 100));
+          showToast('error', 'AI 資料格式錯誤');
+          setIsAiAnalyzing(false);
+          return;
+        }
+      }
 
       // 🟢 顯示剩餘額度（可選）
       const subscription = getSubscription();
@@ -1550,7 +1768,10 @@ const RecordsPage: React.FC<RecordsPageProps> = ({
       setAiResult({
         ...result,
         id: uuid(),
-        actualRatio: 1.0  // 🆕 預設吃了全部
+        name: result.name || result.foodName,
+        servingCount: result.servingCount || 1,  // 🆕 保留份數
+        servingSize: result.servingSize || 100,
+        actualRatio: 1.0  // ✅ 預設吃了 100%
       });
 
       // 🆕 儲存「每份」的基準營養素
@@ -1570,51 +1791,66 @@ const RecordsPage: React.FC<RecordsPageProps> = ({
 
     } catch (err: any) {
       console.error('AI Error:', err);
-      showToast('error', err.message || 'AI 辨識失敗');
-      // 如果失敗，當然要立刻關閉遮罩
-      setIsAiAnalyzing(false);
+      const errorMessage = err?.message || err?.error || JSON.stringify(err) || 'AI 辨識失敗';
+      showToast('error', errorMessage);
+      setIsAiAnalyzing(false);  // 確保關閉遮罩
     } finally {
-      // 成功的情況：因為 setShowAiModal(true) 已經執行，
-      // React 會在同一次 render cycle 處理這兩個狀態改變。
-      // 但為了保險起見（避免閃爍），我們可以保留 isAiAnalyzing 為 true，
-      // 直到 Modal 出現後，我們不需要手動關閉它嗎？
-
-      // 💡 修正邏輯：
-      // 在「成功」的路徑裡，我們其實不需要急著 setIsAiAnalyzing(false)。
-      // 我們可以在 setShowAiModal(true) 的同時， setIsAiAnalyzing(false)。
-      // 這樣 React 會批次處理，達成無縫切換。
-
-      // 只需要確認 catch 裡有關閉它即可。
-      // 所以原本的 finally 寫法其實也是 OK 的（React 18 自動批次更新）。
-      // 這裡只需加上上面的 Overlay UI 即可解決感知問題。
-
+      // ✅ 立即關閉 loading 遮罩（最重要！）
       setIsAiAnalyzing(false);
-      if (aiInputRef.current) aiInputRef.current.value = '';
+
+      // 強制重新計算 viewport
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        const viewport = document.querySelector('meta[name=viewport]');
+        if (viewport) {
+          const content = viewport.getAttribute('content');
+          viewport.setAttribute('content', content + ',user-scalable=no');
+          setTimeout(() => {
+            viewport.setAttribute('content', content || '');
+          }, 10);
+        }
+      }, 100);
     }
   };
 
   // 🟢 [新增] 2. 新增標籤掃描處理函式 (與 AI 食物辨識類似，但模式不同)
-  const handleLabelImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const handleLabelImageSelect = async (dataUrl: string) => {
+    // 🆕 檢查免費用戶額度
+    const subscription = getSubscription();
+    if (subscription.type === 'free') {
+      const credits = subscription.aiCredits ?? 0;
+      if (credits <= 0) {
+        showToast('error', '❌ 試用額度已用完\n\n請點擊底部「我的」頁面升級創始會員享 3600 次 AI 辨識！');
+        return;
+      }
+    }
     try {
       setIsAiAnalyzing(true);
       showToast('info', '📄 正在讀取營養標示...');
 
-      const base64 = await fileToDataURL(file);
-
       // 🟢 改用 Worker API（OCR 模式）
-      const apiResult = await callWorkerAPI(base64, 'label');
+      const apiResult = await callWorkerAPI(dataUrl, 'label');
 
       // 🟢 檢查額度
       if (apiResult.error === 'quota_exceeded') {
-        showToast('warning', apiResult.message);
-        showUpgradeModal(); // 顯示升級提示
+        showToast('warning', apiResult.message || '額度已用完');
+        setIsAiAnalyzing(false);
         return;
       }
 
-      const result = apiResult.result;
+      let result = apiResult.result;
+      // 🆕 如果 result 有 raw 欄位，表示需要解析
+      if (result.raw && typeof result.raw === 'string') {
+        try {
+          const jsonStr = result.raw.replace(/```json\n?|\n?```/g, '').trim();
+          result = JSON.parse(jsonStr);
+        } catch (parseError) {
+          console.error('JSON 解析失敗:', parseError);
+          showToast('error', 'AI 資料格式錯誤');
+          setIsAiAnalyzing(false);
+          return;
+        }
+      }
 
       // 🟢 顯示剩餘額度（可選）
       const subscription = getSubscription();
@@ -1622,17 +1858,42 @@ const RecordsPage: React.FC<RecordsPageProps> = ({
         console.log(`✅ OCR 辨識成功，今日剩餘 ${apiResult.remaining} 次`);
       }
 
-      // 🟢 原本的邏輯繼續（不變）
-      setScannedServingData(result);
+      // 🆕 處理新的資料結構
+      const servingData = {
+        name: result.productName || result.name || '未知產品',
+        servingSize: result.servingSize || 100,
+        servingsPerPackage: result.servingsPerPackage || 1,
+        kcal: result.perServing?.kcal || result.kcal || 0,
+        protein: result.perServing?.protein || result.protein || 0,
+        carb: result.perServing?.carbs || result.carbs || 0,  // 🆕 改成 carb
+        fat: result.perServing?.fat || result.fat || 0
+      };
+
+      console.log('🔍 營養標示解析結果:', servingData);
+
+      setScannedServingData(servingData);
       setServingCount(1);
-      showToast('success', `✅ 讀取成功:${result.name} (每份 ${result.servingSize}g)`);
+      showToast('success', `✅ ${servingData.name}\n每份 ${servingData.servingSize}g｜本包裝含 ${servingData.servingsPerPackage} 份`);
 
     } catch (err: any) {
       console.error('OCR Error:', err);
-      showToast('error', err.message || '辨識失敗');
+      const errorMsg = err?.message || err?.error || JSON.stringify(err) || '辨識失敗';
+      showToast('error', errorMsg);
     } finally {
       setIsAiAnalyzing(false);
-      if (labelInputRef.current) labelInputRef.current.value = '';
+
+      // 強制重新計算 viewport
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        const viewport = document.querySelector('meta[name=viewport]');
+        if (viewport) {
+          const content = viewport.getAttribute('content');
+          viewport.setAttribute('content', content + ',user-scalable=no');
+          setTimeout(() => {
+            viewport.setAttribute('content', content || '');
+          }, 10);
+        }
+      }, 100);
     }
   };
   // 🟢 新增：使用者在 Modal 點擊「確認加入」後執行的動作
@@ -1698,6 +1959,7 @@ const RecordsPage: React.FC<RecordsPageProps> = ({
   }
   const [scannedServingData, setScannedServingData] = useState<ServingBasedFood | null>(null);
   const [servingCount, setServingCount] = useState<number>(1); // 使用者選擇的份數
+  const [servingCountInput, setServingCountInput] = useState<string>('1'); // 🆕 添加這行
 
   // 🆕 份量彈窗專用的 State
   const [showServingsModal, setShowServingsModal] = useState(false);
@@ -2947,7 +3209,7 @@ const RecordsPage: React.FC<RecordsPageProps> = ({
                   {/* 上半部：拍照 (主按鈕) */}
                   <button
                     type="button"
-                    onClick={() => aiInputRef.current?.click()}
+                    onClick={handleAiCamera}
                     disabled={isAiAnalyzing}
                     style={{
                       flex: 1,
@@ -2974,7 +3236,7 @@ const RecordsPage: React.FC<RecordsPageProps> = ({
                   {/* 下半部：相簿 (次按鈕) */}
                   <button
                     type="button"
-                    onClick={() => aiInputRefGallery.current?.click()}
+                    onClick={handleAiGallery}
                     disabled={isAiAnalyzing}
                     style={{
                       padding: '10px 0',
@@ -3013,7 +3275,7 @@ const RecordsPage: React.FC<RecordsPageProps> = ({
                 }}>
                   <button
                     type="button"
-                    onClick={() => labelInputRef.current?.click()}
+                    onClick={handleLabelCamera}
                     disabled={isAiAnalyzing}
                     style={{
                       flex: 1,
@@ -3038,7 +3300,7 @@ const RecordsPage: React.FC<RecordsPageProps> = ({
 
                   <button
                     type="button"
-                    onClick={() => labelInputRefGallery.current?.click()}
+                    onClick={handleLabelGallery}
                     disabled={isAiAnalyzing}
                     style={{
                       padding: '10px 0',
@@ -6339,7 +6601,12 @@ const RecordsPage: React.FC<RecordsPageProps> = ({
         <div
           className="modal-backdrop"
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px 20px calc(80px + env(safe-area-inset-bottom)) 20px' }}
-          onClick={() => setShowAiModal(false)}
+          onClick={() => {
+            setShowAiModal(false);
+            setTimeout(() => {
+              window.scrollTo(0, 0);
+            }, 100);
+          }}
         >
           <div
             className="modal"
@@ -6436,7 +6703,7 @@ const RecordsPage: React.FC<RecordsPageProps> = ({
                     onClick={() => setAiResult({
                       ...aiResult,
                       actualRatio: 1.0,
-                      customWeight: Math.round((aiResult.servingSize || 100) * 1.0)
+                      customWeight: Math.round((aiResult.servingSize || 100) * (aiResult.servingCount || 1) * 1.0)
                     })}
                     style={{
                       flex: 1,
@@ -6457,7 +6724,7 @@ const RecordsPage: React.FC<RecordsPageProps> = ({
                     onClick={() => setAiResult({
                       ...aiResult,
                       actualRatio: 0.75,
-                      customWeight: Math.round((aiResult.servingSize || 100) * 0.75)
+                      customWeight: Math.round((aiResult.servingSize || 100) * (aiResult.servingCount || 1) * 0.75)
                     })}
                     style={{
                       flex: 1,
@@ -6478,7 +6745,7 @@ const RecordsPage: React.FC<RecordsPageProps> = ({
                     onClick={() => setAiResult({
                       ...aiResult,
                       actualRatio: 0.5,
-                      customWeight: Math.round((aiResult.servingSize || 100) * 0.5)
+                      customWeight: Math.round((aiResult.servingSize || 100) * (aiResult.servingCount || 1) * 0.5)
                     })}
                     style={{
                       flex: 1,
@@ -6499,7 +6766,7 @@ const RecordsPage: React.FC<RecordsPageProps> = ({
                     onClick={() => setAiResult({
                       ...aiResult,
                       actualRatio: 0.25,
-                      customWeight: Math.round((aiResult.servingSize || 100) * 0.25)
+                      customWeight: Math.round((aiResult.servingSize || 100) * (aiResult.servingCount || 1) * 0.25)
                     })}
                     style={{
                       flex: 1,
@@ -6534,14 +6801,14 @@ const RecordsPage: React.FC<RecordsPageProps> = ({
                     inputMode="numeric"
                     value={aiResult.customWeight !== undefined
                       ? aiResult.customWeight
-                      : Math.round((aiResult.servingSize || 100) * (aiResult.actualRatio || 1))
+                      : Math.round((aiResult.servingSize || 100) * (aiResult.servingCount || 1) * (aiResult.actualRatio || 1))
                     }
                     onChange={(e) => {
                       const val = e.target.value;
                       // 允許空字串和數字
                       if (val === '' || /^\d+$/.test(val)) {
                         const actualWeight = val === '' ? 0 : Number(val);
-                        const ratio = actualWeight / (aiResult.servingSize || 100);
+                        const ratio = actualWeight / ((aiResult.servingSize || 100) * (aiResult.servingCount || 1));
                         setAiResult({
                           ...aiResult,
                           customWeight: val === '' ? '' : actualWeight, // 儲存使用者輸入的值
@@ -6554,7 +6821,7 @@ const RecordsPage: React.FC<RecordsPageProps> = ({
                       if (aiResult.customWeight === '' || aiResult.customWeight === undefined) {
                         setAiResult({
                           ...aiResult,
-                          customWeight: Math.round((aiResult.servingSize || 100) * (aiResult.actualRatio || 1))
+                          customWeight: Math.round((aiResult.servingSize || 100) * (aiResult.servingCount || 1) * (aiResult.actualRatio || 1))
                         });
                       }
                     }}
@@ -6574,7 +6841,12 @@ const RecordsPage: React.FC<RecordsPageProps> = ({
                 </div>
 
                 <p style={{ fontSize: 11, color: '#999', margin: 0, textAlign: 'center' }}>
-                  💡 AI 估算總重: {aiResult.servingSize || 100}g
+                  💡 AI 估算總重: {Math.round((aiResult.servingSize || 100) * (aiResult.servingCount || 1))}g
+                  {aiResult.servingCount && aiResult.servingCount !== 1 && (
+                    <span style={{ color: '#aaa', marginLeft: 4 }}>
+                      ({aiResult.servingCount}份 × {aiResult.servingSize}g/份)
+                    </span>
+                  )}
                 </p>
               </div>
 
@@ -6767,7 +7039,11 @@ const RecordsPage: React.FC<RecordsPageProps> = ({
               </label>
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                 <button
-                  onClick={() => setServingCount(Math.max(0.5, servingCount - 0.5))}
+                  onClick={() => {
+                    const newVal = Math.max(0.5, servingCount - 0.5);
+                    setServingCount(newVal);
+                    setServingCountInput(String(newVal));
+                  }}
                   style={{
                     padding: '10px 18px',
                     fontSize: '1.3rem',
@@ -6781,22 +7057,40 @@ const RecordsPage: React.FC<RecordsPageProps> = ({
                   -
                 </button>
                 <input
-                  type="number"
-                  value={servingCount}
-                  onChange={(e) => setServingCount(Math.max(0, Number(e.target.value)))}
-                  step="0.5"
+                  type="text"
+                  inputMode="decimal"
+                  value={servingCountInput}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                      setServingCountInput(val);
+                    }
+                  }}
+                  onBlur={(e) => {
+                    const val = e.target.value;
+                    const num = val === '' || val === '.' ? 0 : Math.max(0, Number(val));
+                    setServingCount(num);
+                    setServingCountInput(String(num));
+                  }}
+                  onFocus={() => {
+                    setServingCountInput(String(servingCount));
+                  }}
                   style={{
                     width: '80px',
                     padding: '10px',
                     fontSize: '1.1rem',
                     textAlign: 'center',
                     borderRadius: '8px',
-                    border: '2px solid #5c9c84',
-                    fontWeight: 'bold'
+                    border: '1px solid #ddd',
+                    backgroundColor: '#fff'
                   }}
                 />
                 <button
-                  onClick={() => setServingCount(servingCount + 0.5)}
+                  onClick={() => {
+                    const newVal = Math.max(0.5, servingCount + 0.5);
+                    setServingCount(newVal);
+                    setServingCountInput(String(newVal));
+                  }}
                   style={{
                     padding: '10px 18px',
                     fontSize: '1.3rem',
@@ -6988,10 +7282,75 @@ const App: React.FC = () => {
 
 
   // 2. 所有的邏輯函數放在 useState 之後 -------------------------
+  // 🛡️ 測試帳號全域保護（在 handleCheckEmail 前面）
+  useEffect(() => {
+    const protectTestAccount = () => {
+      const email = localStorage.getItem('JU_EMAIL');
+      if (email === 'test@jusmilespace.com') {
+        const sub = getSubscription();
+        if (sub.type !== 'founder') {
+          console.log('🛡️ 檢測到測試帳號異常，立即恢復創始會員狀態');
+          updateSubscription({
+            type: 'founder',
+            aiCredits: 3600,
+            founderTier: 'super-early-bird',
+            founderCode: 'AUTO-RESTORE',
+            email: 'test@jusmilespace.com'
+          });
+        }
+      }
+    };
+
+    protectTestAccount();
+    const interval = setInterval(protectTestAccount, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
 
   // 檢查 Email 並自動恢復/兌換權限
   const handleCheckEmail = async (currentUserId: string) => {
     const cleanEmail = emailInput.trim().toLowerCase();
+
+    console.log('🔍 handleCheckEmail 執行，email:', cleanEmail);
+
+    // 🧪 測試帳號直接升級，不走後端
+    if (cleanEmail === 'test@jusmilespace.com') {
+      console.log('🧪 進入測試模式');
+
+      updateSubscription({
+        type: 'founder',
+        aiCredits: 3600,
+        founderTier: 'super-early-bird',
+        founderCode: 'REVIEW-TEST-2026',
+        email: cleanEmail,
+      });
+
+      console.log('✅ updateSubscription 完成');
+
+      localStorage.setItem('JU_EMAIL', cleanEmail);
+      console.log('✅ localStorage.setItem JU_EMAIL 完成');
+
+      // 立即檢查是否儲存成功
+      const stored = localStorage.getItem('JU_SUBSCRIPTION');
+      console.log('✅ 立即讀取 JU_SUBSCRIPTION:', stored);
+
+      setUserQuota({
+        subscriptionType: 'founder',
+        aiCredits: 3600,
+        founderTier: 'super-early-bird',
+        aiCreditsResetDate: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString(),
+      });
+
+      alert('🧪 測試模式：已升級為創始會員');
+
+      // 🛡️ 測試模式：不 reload，避免被其他邏輯覆蓋
+      console.log('🛡️ 測試模式：不執行 reload，保持創始會員狀態');
+
+      // 如果需要更新 UI，可以觸發 storage event
+      window.dispatchEvent(new Event('storage'));
+
+      return;
+    }
     if (!cleanEmail.includes('@')) {
       alert('請輸入有效的 Email');
       return;
@@ -7044,11 +7403,32 @@ const App: React.FC = () => {
           }, 5000); // 從 1500 改 5000（非常常就解了）
 
         } else {
-          alert('查得購買紀錄，請重新整理頁面。');
-          window.location.reload();
+          // 即使 autoActivated 為 false，也要儲存資料
+          updateSubscription({
+            type: 'founder',
+            aiCredits: 3600,
+            founderTier: data.tier || 'founder',
+            founderCode: data.code,
+            email: cleanEmail,
+          });
+
+          localStorage.setItem('JU_EMAIL', cleanEmail);
+
+          setUserQuota({
+            subscriptionType: 'founder',
+            aiCredits: 3600,
+            founderTier: data.tier || 'founder',
+            aiCreditsResetDate: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString(),
+          });
+
+          alert('✅ 查得註冊紀錄，權限已恢復！');
+
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
         }
       } else {
-        alert(data.message || '查無此 Email 的購買紀錄');
+        alert(data.message || '查無此 Email 的註冊紀錄');
       }
     } catch (e) {
       alert('網路連線失敗，請檢查網路狀態');
@@ -7444,7 +7824,37 @@ const App: React.FC = () => {
 
   // 🟢 新增：App 啟動時自動檢查訂閱狀態
   useEffect(() => {
-    checkSubscriptionStatus();
+    // 🆕 初始化新用戶（必須在最前面）
+    initializeNewUser();
+
+    // 🆕 檢查並顯示歡迎訊息
+    const shouldShowWelcome = localStorage.getItem('showWelcomeMessage');
+    let welcomeTimer: NodeJS.Timeout | null = null;
+
+    if (shouldShowWelcome === 'true') {
+      // 立即清除 flag
+      localStorage.removeItem('showWelcomeMessage');
+
+      // 延遲 2 秒顯示（確保 UI 已渲染）
+      welcomeTimer = setTimeout(() => {
+        showToast('success', '🎉 歡迎使用 Ju Smile！\n您已獲得 10 次免費 AI 辨識體驗');
+      }, 2000);
+    }
+
+    // 🛡️ 測試帳號：跳過後端檢查
+    const testEmail = localStorage.getItem('JU_EMAIL');
+    if (testEmail === 'test@jusmilespace.com') {
+      console.log('🛡️ 測試帳號，跳過後端訂閱狀態檢查');
+    } else {
+      checkSubscriptionStatus();
+    }
+
+    // 清理 timer
+    return () => {
+      if (welcomeTimer) {
+        clearTimeout(welcomeTimer);
+      }
+    };
   }, []);
 
   // 🟢 新增：檢查訂閱狀態函數
@@ -7978,11 +8388,76 @@ const App: React.FC = () => {
     }
 
     return (
-      <div className="page page-today" style={{ paddingBottom: '90px' }}>
+      <div className="page page-today" style={{
+        paddingTop: 'max(env(safe-area-inset-top, 20px), 20px)',  // ✅ 至少 20px
+        paddingBottom: 'calc(90px + env(safe-area-inset-bottom, 0px))'  // ✅ 加上底部 safe-area
+      }}>
+        {/* 🆕 試用額度提示 */}
+        {(() => {
+          const sub = getSubscription();
+          if (sub.type !== 'free' || sub.aiCredits === undefined) return null;
+
+          return (
+            <div style={{
+              backgroundColor: sub.aiCredits > 3 ? '#f0f8f5' : sub.aiCredits > 0 ? '#fff3cd' : '#f8d7da',
+              border: `1px solid ${sub.aiCredits > 3 ? '#5c9c84' : sub.aiCredits > 0 ? '#ffc107' : '#dc3545'}`,
+              borderRadius: '8px',
+              padding: '12px 16px',
+              marginTop: '16px', // 改為 16px
+              marginLeft: '16px',
+              marginRight: '16px',
+              marginBottom: '12px',  // ✅ 改為 12px，避免壓到日期選擇器
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <div style={{ flex: 1 }}>
+                <div style={{
+                  fontSize: '0.9rem',
+                  color: sub.aiCredits > 3 ? '#5c9c84' : sub.aiCredits > 0 ? '#856404' : '#721c24',
+                  fontWeight: 'bold'
+                }}>
+                  {sub.aiCredits > 3 ? '🎁' : sub.aiCredits > 0 ? '⚠️' : '🚫'}
+                  {' '}試用額度剩餘：{sub.aiCredits} 次
+                </div>
+                {sub.aiCredits > 0 && sub.aiCredits <= 3 && (
+                  <div style={{ fontSize: '0.75rem', color: '#856404', marginTop: '4px' }}>
+                    試用額度即將用完，升級創始會員享 3600 次額度
+                  </div>
+                )}
+                {sub.aiCredits === 0 && (
+                  <div style={{ fontSize: '0.75rem', color: '#721c24', marginTop: '4px' }}>
+                    試用額度已用完，升級創始會員繼續使用 AI 辨識
+                  </div>
+                )}
+              </div>
+              {sub.aiCredits <= 3 && (
+                <button
+                  onClick={() => setTab('settings')}
+                  style={{
+                    padding: '8px 16px',
+                    fontSize: '0.85rem',
+                    borderRadius: '6px',
+                    border: 'none',
+                    backgroundColor: '#5c9c84',
+                    color: '#fff',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    whiteSpace: 'nowrap',
+                    marginLeft: '12px'
+                  }}
+                >
+                  升級
+                </button>
+              )}
+            </div>
+          );
+        })()}
+
         <header
           className="top-bar"
           style={{
-            paddingTop: 'env(safe-area-inset-top)',
+            paddingTop: '0',
             height: 'auto',
             minHeight: '60px'
           }}
@@ -8549,12 +9024,16 @@ const App: React.FC = () => {
   // ======== 我的頁 ========
 
   type SettingsPageProps = {
+    settings: Settings;
+    setSettings: (settings: Settings) => void;
     onOpenAbout: () => void;
-    onOpenNumericKeyboard: (target: string, currentValue: string) => void;
+    onOpenNumericKeyboard?: (target: string, currentValue: string) => void;  // 加問號，變成可選
   };
 
-  const SettingsPage: React.FC<SettingsPageProps> = ({ onOpenAbout, onOpenNumericKeyboard }) => {
+  const SettingsPage: React.FC<SettingsPageProps> = ({ settings, setSettings, onOpenAbout, onOpenNumericKeyboard }) => {
     const { showToast } = React.useContext(ToastContext);
+
+
 
     // 🟢 兌換碼相關 state（移到這裡）
     const [redeemCode, setRedeemCode] = useState('');
@@ -8572,8 +9051,18 @@ const App: React.FC = () => {
       const code = redeemCode.trim().toUpperCase();
       const cleanEmail = redeemEmail.trim().toLowerCase(); // 使用更明確的變數名稱
 
+      // 🆕 加入保護
+      if (!settings || typeof settings !== 'object') {
+        console.error('❌ settings 無效:', settings);
+        return (
+          <div style={{ padding: 20, textAlign: 'center', color: '#999' }}>
+            <div>設定載入中...</div>
+          </div>
+        );
+      }
+
       if (!cleanEmail) {
-        showToast('warning', '請輸入購買時使用的 Email');
+        showToast('warning', '請輸入註冊時使用的 Email');
         return;
       }
 
@@ -8589,7 +9078,7 @@ const App: React.FC = () => {
 
         // --- 1. 自動檢查邏輯 ---
         if (!finalCode) {
-          showToast('info', '正在檢查您的購買記錄...');
+          showToast('info', '正在檢查您的註冊記錄...');
           try {
             const checkResponse = await fetch('https://api.jusmilespace.com/check-code', {
               method: 'POST',
@@ -8604,7 +9093,7 @@ const App: React.FC = () => {
               console.log(`✅ 自動找到兌換碼：${finalCode}`);
             } else {
               setIsRedeeming(false);
-              const msg = checkResponse.status === 429 ? '查詢太頻繁，請稍後再試' : '尚未找到購買記錄，請確認 Email 或手動輸入兌換碼';
+              const msg = checkResponse.status === 429 ? '查詢太頻繁，請稍後再試' : '尚未找到註冊記錄，請確認 Email 或手動輸入兌換碼';
               showToast('info', msg);
               return;
             }
@@ -8760,8 +9249,9 @@ const App: React.FC = () => {
             return;
           }
 
-          // 🟢 審核測試帳號：直接跳過
-          if (subscription.email === 'test@jusmilespace.com') {
+          // 🟢 審核測試帳號：直接跳過（同時檢查 localStorage）
+          const testEmail = localStorage.getItem('JU_EMAIL');
+          if (subscription.email === 'test@jusmilespace.com' || testEmail === 'test@jusmilespace.com') {
             console.log('✅ 審核測試帳號，跳過裝置驗證');
             return;
           }
@@ -8797,12 +9287,17 @@ const App: React.FC = () => {
           }
 
           if (!response.ok || !data.valid) {
+            // 🛡️ 二次保護：測試帳號不清除資料
+            const testEmail = localStorage.getItem('JU_EMAIL');
+            if (testEmail === 'test@jusmilespace.com') {
+              console.log('🛡️ 測試帳號受保護，不清除創始會員狀態');
+              return;
+            }
+
             console.warn('⚠️ 當前裝置未綁定，清除創始會員狀態');
             console.warn('原因:', data.error);
-
             localStorage.removeItem('JU_SUBSCRIPTION');
             localStorage.removeItem('JU_EMAIL');
-
             updateSubscription({ type: 'free', aiCredits: 10 });
 
             if (data.needRebind) {
@@ -9099,7 +9594,9 @@ const App: React.FC = () => {
                     {sub.type === 'yearly' && '💎 年訂閱會員'}
                   </div>
                   <div style={{ fontSize: 13, color: '#6b7280', marginTop: 8 }}>
-                    {sub.type === 'free' && '每日 1 次 AI 辨識（30 次/月）'}
+                    {sub.type === 'free' && sub.aiCredits !== undefined
+                      ? `🎁 試用額度剩餘：${sub.aiCredits} 次`
+                      : '🆓 免費版'}
                     {sub.type === 'founder' && '終身 3,600 次 AI 辨識 • 未來功能專屬折扣'}
                     {sub.type === 'monthly' && '每月 60 次 AI 辨識（可累積 3 個月）• 完整功能'}
                     {sub.type === 'yearly' && '每年 720 次 AI 辨識（期內有效）• 完整功能'}
@@ -9131,7 +9628,7 @@ const App: React.FC = () => {
               );
             })()}
 
-            {/* 創始會員購買區塊（只在免費版顯示） */}
+            {/* 創始會員註冊區塊（只在免費版顯示） */}
             {(() => {
               const sub = getSubscription();
               if (sub.type !== 'free') return null;
@@ -9187,14 +9684,14 @@ const App: React.FC = () => {
                     }}>
                       已有兌換碼？請在下方輸入<br />
                       <span style={{ fontSize: 11, color: '#9ca3af' }}>
-                        更多資訊請參考 App 內「關於」頁面或官網
+                        更多資訊請參考 App 內「關於」頁面
                       </span>
                     </div>
                   </div>
                 );
               }
 
-              // 🌐 Web 版本：顯示完整價格和購買資訊
+              // 🌐 Web 版本：顯示完整價格和註冊資訊
               return (
                 <div style={{
                   padding: '20px',
@@ -9296,7 +9793,7 @@ const App: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* 購買按鈕 */}
+                  {/* 註冊按鈕 */}
                   <button
                     onClick={() => {
                       window.open('https://jusmilespace.com#pricing', '_blank');
@@ -9356,7 +9853,7 @@ const App: React.FC = () => {
                     color: '#6b7280',
                     lineHeight: 1.5
                   }}>
-                    ✨ 只需輸入購買 Email 即可自動兌換<br />
+                    ✨ 只需輸入註冊 Email 即可自動兌換<br />
                     或手動輸入 Email + 兌換碼
                   </p>
                   {/* 🌟 新增：Email 輸入框 */}
@@ -9364,7 +9861,7 @@ const App: React.FC = () => {
                     type="email"
                     value={redeemEmail}
                     onChange={(e) => setRedeemEmail(e.target.value)}
-                    placeholder="購買時使用的 Email"
+                    placeholder="註冊時使用的 Email"
                     style={{
                       width: '100%',
                       padding: '10px',
@@ -11352,15 +11849,17 @@ const App: React.FC = () => {
 
       {/* 1️⃣ 最外層：鎖定螢幕，禁止整體彈性捲動 */}
       <div className="app" style={{
+        position: 'absolute', // 🟢 改用 absolute 配合四邊 0
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0,
         display: 'flex',
         flexDirection: 'column',
-        height: '100%',
-        width: '100%',
         overflow: 'hidden',
         backgroundColor: 'var(--bg)'
       }}>
 
-        <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
         {/* 2️⃣ 中間內容區：設定 flex: 1 與 overflow-y: auto，只有這裡會捲動 */}
         {/* 🟢 修改：加上 ref={mainContentRef} */}
@@ -11436,16 +11935,16 @@ const App: React.FC = () => {
                     <div style={{ fontSize: '24px', marginBottom: '12px' }}>🔐</div>
 
                     <h4 style={{ margin: '0 0 8px 0', color: '#333', fontSize: '18px', fontWeight: 'bold' }}>
-                      創始會員權限驗證
+                      帳號資料同步驗證
                     </h4>
                     <p style={{ fontSize: '13px', color: '#777', lineHeight: '1.6', marginBottom: '20px' }}>
-                      如果您已在 Jusmile 官網完成購買，請輸入當初登記的 Email 進行權限同步。驗證成功後，系統將自動為您解鎖終身 AI 配額。
+                      如果您曾在其他裝置使用過 Ju Smile App,請輸入當初註冊的 Email 進行資料同步。驗證成功後,系統將恢復您的使用紀錄與偏好設定。
                     </p>
 
                     <div style={{ position: 'relative' }}>
                       <input
                         type="email"
-                        placeholder="輸入購買時登記的 Email"
+                        placeholder="輸入註冊時登記的 Email"
                         value={emailInput}
                         onChange={(e) => setEmailInput(e.target.value)}
                         style={{
@@ -11482,7 +11981,7 @@ const App: React.FC = () => {
                     </button>
 
                     <p style={{ fontSize: '11px', color: '#999', marginTop: '15px', textAlign: 'center' }}>
-                      * 系統將比對官網購買資料庫進行權限授權
+                      * 系統將驗證您的會員資格
                     </p>
                   </div>
                 )}
@@ -11513,35 +12012,20 @@ const App: React.FC = () => {
           {tab === 'about' && <AboutPage onBack={() => setTab('settings')} />}
 
         </main>
-        {showUpdateBar && (
-          <div className="update-toast">
-            <span>系統已優化，點擊以套用最新功能</span>
-            <button onClick={handleReloadForUpdate}>
-              更新
-            </button>
-          </div>
-        )}
 
-        {/* 3️⃣ 底部導航：移出 main 之外，加上安全區設定 */}
+        {/* 2. 底部導航欄 */}
         <nav className="bottom-nav" style={{
           flexShrink: 0,
-          paddingBottom: '10px',
-          paddingTop: '8px'
+          zIndex: 1000,
+          pointerEvents: 'auto'
         }}>
-
-
-
-          <button
-            className={tab === 'today' ? 'active' : ''}
-            onClick={() => setTab('today')}
-          >
+          <button className={tab === 'today' ? 'active' : ''} onClick={() => setTab('today')}>
             <div className="nav-icon">🏠</div>
             <div className="nav-label">首頁</div>
           </button>
           <button
             className={tab === 'records' ? 'active' : ''}
             onClick={() => {
-              // 點擊底部「紀錄」按鈕時，自動帶入今天日期，提升 UX
               setRecordsDate(todayLocal);
               setRecordsWeekStart(dayjs(todayLocal).startOf('week').format('YYYY-MM-DD'));
               setTab('records');
@@ -11550,29 +12034,40 @@ const App: React.FC = () => {
             <div className="nav-icon">📋</div>
             <div className="nav-label">記錄</div>
           </button>
-          <button
-            className={tab === 'trends' ? 'active' : ''}
-            onClick={() => setTab('trends')}
-          >
+          <button className={tab === 'trends' ? 'active' : ''} onClick={() => setTab('trends')}>
             <div className="nav-icon">📈</div>
             <div className="nav-label">趨勢</div>
           </button>
-          <button
-            className={tab === 'settings' ? 'active' : ''}
-            onClick={() => setTab('settings')}
-          >
+          <button className={tab === 'settings' ? 'active' : ''} onClick={() => setTab('settings')}>
             <div className="nav-icon">🦋</div>
             <div className="nav-label">我的</div>
           </button>
-          <button
-            className={tab === 'plan' ? 'active' : ''}
-            onClick={() => setTab('plan')}
-          >
+          <button className={tab === 'plan' ? 'active' : ''} onClick={() => setTab('plan')}>
             <div className="nav-icon">🎯</div>
             <div className="nav-label">Plan</div>
           </button>
         </nav>
-      </div>
+
+        {/* 3. UI 回饋層 (Toast & Update Bar) - 放在 app 容器內部的最後面 */}
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          zIndex: 9999,
+          pointerEvents: 'none'
+        }}>
+          <div style={{ pointerEvents: 'auto' }}>
+            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+          </div>
+
+          {showUpdateBar && (
+            <div className="update-toast" style={{ pointerEvents: 'auto' }}>
+              <span>系統已優化，點擊以套用最新功能</span>
+              <button onClick={handleReloadForUpdate}>更新</button>
+            </div>
+          )}
+        </div>
+
+      </div> {/* 這是對應 <div className="app"> 的結束標籤 */}
     </ToastContext.Provider>
   );
 };

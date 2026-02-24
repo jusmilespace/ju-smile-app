@@ -1,6 +1,6 @@
 // public/service-worker.js
 
-const CACHE_NAME = 'ju-smile-app-cache-v2';
+const CACHE_NAME = 'ju-smile-app-cache-v3';
 
 // 安裝時直接啟用新的 SW
 self.addEventListener('install', (event) => {
@@ -31,6 +31,11 @@ self.addEventListener('fetch', (event) => {
 
   // 只處理 GET
   if (request.method !== 'GET') return;
+  // 🆕 CSV 資料檔直接走網路，不快取，確保永遠拿到最新資料
+  if (event.request.url.includes('.csv')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
 
   const url = new URL(request.url);
 

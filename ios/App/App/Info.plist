@@ -2,6 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <key>NSCameraUsageDescription</key>
+    <string>Ju Smile 需要使用相機來辨識食物照片與掃描營養標示，幫助您快速記錄飲食。</string>
+
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Ju Smile 需要存取您的相簿以選擇食物照片進行 AI 辨識，所有照片僅用於即時分析，不會儲存。</string>
+
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>Ju Smile 需要儲存照片權限以便您保存飲食記錄。</string>
 	<key>CAPACITOR_DEBUG</key>
 	<string>$(CAPACITOR_DEBUG)</string>
 	<key>CFBundleDevelopmentRegion</key>
