@@ -12,9 +12,9 @@ export default defineConfig(({ command, mode }) => {
         registerType: 'prompt',
         injectRegister: 'auto',
         workbox: {
-          cleanupOutdatedCaches: true,
-          skipWaiting: false,
-          clientsClaim: false,
+          cleanupOutdatedCaches: true, // 自動清理舊快取
+          skipWaiting: true,           // 強制新版本直接就緒
+          clientsClaim: true,          // 讓新版本立即接管頁面
           globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],
         },
         manifest: {
