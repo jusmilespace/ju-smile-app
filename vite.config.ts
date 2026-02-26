@@ -5,7 +5,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 export default defineConfig(({ command, mode }) => {
   return {
     // 為了相容 GitHub Pages 與 Capacitor，生產環境統一使用相對路徑 './'
-    base: command === 'serve' ? '/' : './',
+    base: command === 'serve' ? '/' : '/ju-smile-app/',
     plugins: [
       react(),
       VitePWA({
