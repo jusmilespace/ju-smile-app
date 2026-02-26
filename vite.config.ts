@@ -1,46 +1,48 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc'
-import { VitePWA } from 'vite-plugin-pwa'
+// 暫時註解掉 PWA 引用，排除路徑與快取干擾
+// import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig(({ command, mode }) => {
   return {
-    // 為了相容 GitHub Pages 與 Capacitor，生產環境統一使用相對路徑 './'
+    // 為了相容 GitHub Pages 子目錄，生產環境使用 '/ju-smile-app/'
     base: command === 'serve' ? '/' : '/ju-smile-app/',
     plugins: [
       react(),
+      /* 暫時移除 PWA 功能測試
       VitePWA({
         registerType: 'prompt',
         injectRegister: 'auto',
         workbox: {
-          cleanupOutdatedCaches: true, // 自動清理舊快取
-          skipWaiting: true,           // 強制新版本直接就緒
-          clientsClaim: true,          // 讓新版本立即接管頁面
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],
+          cleanupOutdatedCaches: true,
+          skipWaiting: true,
+          clientsClaim: true,
+          globPatterns: ['**/*.{ js, css, html, ico, png, svg, webp, woff, woff2 }'],
         },
-        manifest: {
-          name: 'Ju Smile App',
-          short_name: 'Ju Smile',
-          description: '飲食與運動記錄 App',
+    manifest: {
+    name: 'Ju Smile App',
+      short_name: 'Ju Smile',
+        description: '飲食與運動記錄 App',
           theme_color: '#5c9c84',
-          background_color: '#ffffff',
-          display: 'standalone',
-          // 確保在原生環境下 start_url 是相對的
-          start_url: './index.html',
-          scope: './',
-          icons: [
-            {
-              src: 'icons/ju-smile-icon-192x192.png',
-              sizes: '192x192',
-              type: 'image/png',
-            },
-            {
-              src: 'icons/ju-smile-icon-512x512.png',
-              sizes: '512x512',
-              type: 'image/png',
-            },
-          ],
+            background_color: '#ffffff',
+              display: 'standalone',
+                start_url: './index.html',
+                  scope: './',
+                    icons: [
+                      {
+                        src: 'icons/ju-smile-icon-192x192.png',
+                        sizes: '192x192',
+                        type: 'image/png',
+                      },
+                      {
+                        src: 'icons/ju-smile-icon-512x512.png',
+                        sizes: '512x512',
+                        type: 'image/png',
+                      },
+                    ],
         },
-      }),
+}),
+      */
     ],
-  }; // 這裡修正了結尾括號
+  };
 });
