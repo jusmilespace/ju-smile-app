@@ -4,7 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig(({ command }) => {
   return {
-    base: '/',
+    base: command === 'serve' ? '/' : './',
     plugins: [
       react(),
       VitePWA({
@@ -23,8 +23,8 @@ export default defineConfig(({ command }) => {
           theme_color: '#5c9c84',
           background_color: '#ffffff',
           display: 'standalone',
-          start_url: '/',
-          scope: '/',
+          start_url: '/ju-smile-app/',
+          scope: '/ju-smile-app/',
           icons: [
             {
               src: 'icons/ju-smile-icon-192x192.png',
