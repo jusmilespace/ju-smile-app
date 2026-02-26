@@ -4,7 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig(({ command }) => {
   return {
-    base: command === 'serve' ? '/' : '/ju-smile-app/',
+    base: command === 'serve' ? '/' : './',
     plugins: [
       react(),
       VitePWA({
