@@ -5,8 +5,8 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { VisualPortionPicker } from './VisualPortionPicker';
 import { generateShareImage } from './services/generateShareImage';
 import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
-
 // 🟢 新增：引入掃描器元件與型別
 import BarcodeScanner from './components/BarcodeScanner';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';  // 🆕 加這行
@@ -801,14 +801,14 @@ const STORAGE_KEYS = {
 } as const;
 
 const CSV_DEFAULT_URLS = {
-  TYPE_TABLE: 'data/Type_Table.csv',
-  UNIT_MAP: 'data/Unit_Map.csv',
-  FOOD_DB: 'data/Food_DB.csv',
-  EXERCISE_MET: 'data/Exercise_Met.csv',
+  TYPE_TABLE: 'https://raw.githubusercontent.com/jusmilespace/ju-smile-app/main/public/data/Type_Table.csv',
+  UNIT_MAP: 'https://raw.githubusercontent.com/jusmilespace/ju-smile-app/main/public/data/Unit_Map.csv',
+  FOOD_DB: 'https://raw.githubusercontent.com/jusmilespace/ju-smile-app/main/public/data/Food_DB.csv',
+  EXERCISE_MET: 'https://raw.githubusercontent.com/jusmilespace/ju-smile-app/main/public/data/Exercise_Met.csv',
 } as const;
 
 // 🔹 App 版本（之後要改版本號可以只改這裡）
-const APP_VERSION = '1.0.4';
+const APP_VERSION = '1.0.5';
 
 function loadJSON<T>(key: string, fallback: T): T {
   try {
@@ -871,11 +871,13 @@ async function fetchCsv<T = any>(url: string): Promise<T[]> {
 
   try {
     const res = await fetch(cacheBusterUrl, {
-      cache: 'no-store', // 強制不存快取
-      headers: {
-        'Pragma': 'no-cache',
-        'Cache-Control': 'no-cache'
-      }
+      cache: 'no-store',
+      ...(isNative ? {} : {
+        headers: {
+          'Pragma': 'no-cache',
+          'Cache-Control': 'no-cache'
+        }
+      })
     });
 
     if (!res.ok) {
@@ -9468,25 +9470,46 @@ const App: React.FC = () => {
     }
 
 
-    function handleExportJson() {
+    async function handleExportJson() {
       const data = {
         settings,
         days,
         meals,
         exercises,
-        combos, // 匯出常用組合
+        combos,
       };
-      const blob = new Blob([JSON.stringify(data, null, 2)], {
-        type: 'application/json',
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `ju-smile-app-backup-${dayjs().format(
-        'YYYYMMDD-HHmmss'
-      )}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const jsonString = JSON.stringify(data, null, 2);
+      const fileName = `ju-smile-app-backup-${dayjs().format('YYYYMMDD-HHmmss')}.json`;
+
+      if (isNative) {
+        try {
+          // 寫入暫存檔案
+          const result = await Filesystem.writeFile({
+            path: fileName,
+            data: jsonString,
+            directory: Directory.Cache,
+            encoding: Encoding.UTF8,
+          });
+          // 跳出 iOS 原生分享選單
+          await Share.share({
+            title: 'Ju Smile 備份',
+            url: result.uri,
+            dialogTitle: '選擇儲存位置',
+          });
+        } catch (err) {
+          console.error('匯出失敗', err);
+          showToast('error', '匯出失敗，請稍後再試');
+        }
+      } else {
+        // 網頁版維持原本方式
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
     }
 
     function handleImportClick() {
@@ -9513,19 +9536,9 @@ const App: React.FC = () => {
       reader.readAsText(file);
     }
 
-    function handleBackupToDrive() {
-      // 先匯出 JSON（觸發下載）
-      handleExportJson();
-
-      // 為了相容手機瀏覽器，延遲一點再開啟 Google Drive，
-      // 避免只執行最後一個 window.open，看起來像「還沒下載就直接跳走」。
-      setTimeout(() => {
-        try {
-          window.open('https://drive.google.com/drive/my-drive', '_blank');
-        } catch {
-          // ignore popup block
-        }
-      }, 800);
+    async function handleBackupToDrive() {
+      // iOS App 直接用分享選單，不需要另外開 Google Drive
+      await handleExportJson();
     }
 
 
@@ -10301,10 +10314,10 @@ const App: React.FC = () => {
             <details style={{ fontSize: 13, color: '#666' }}>
               <summary style={{ cursor: 'pointer', outline: 'none' }}>進階：編輯 CSV 來源連結</summary>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
-                <input className="settings-input-clean" value={srcType} onChange={e => setSrcType(e.target.value)} placeholder="Type Table URL" style={{ background: '#f3f4f6', padding: 8, borderRadius: 6, width: '100%', boxSizing: 'border-box' }} />
-                <input className="settings-input-clean" value={srcUnit} onChange={e => setSrcUnit(e.target.value)} placeholder="Unit Map URL" style={{ background: '#f3f4f6', padding: 8, borderRadius: 6, width: '100%', boxSizing: 'border-box' }} />
-                <input className="settings-input-clean" value={srcFood} onChange={e => setSrcFood(e.target.value)} placeholder="Food DB URL" style={{ background: '#f3f4f6', padding: 8, borderRadius: 6, width: '100%', boxSizing: 'border-box' }} />
-                <input className="settings-input-clean" value={srcMet} onChange={e => setSrcMet(e.target.value)} placeholder="Exercise Met URL" style={{ background: '#f3f4f6', padding: 8, borderRadius: 6, width: '100%', boxSizing: 'border-box' }} />
+                <input className="settings-input-clean" defaultValue={srcType} onBlur={e => setSrcType(e.target.value)} placeholder="Type Table URL" style={{ background: '#f3f4f6', padding: 8, borderRadius: 6, width: '100%', boxSizing: 'border-box' }} />
+                <input className="settings-input-clean" defaultValue={srcUnit} onBlur={e => setSrcUnit(e.target.value)} placeholder="Unit Map URL" style={{ background: '#f3f4f6', padding: 8, borderRadius: 6, width: '100%', boxSizing: 'border-box' }} />
+                <input className="settings-input-clean" defaultValue={srcFood} onBlur={e => setSrcFood(e.target.value)} placeholder="Food DB URL" style={{ background: '#f3f4f6', padding: 8, borderRadius: 6, width: '100%', boxSizing: 'border-box' }} />
+                <input className="settings-input-clean" defaultValue={srcMet} onBlur={e => setSrcMet(e.target.value)} placeholder="Exercise Met URL" style={{ background: '#f3f4f6', padding: 8, borderRadius: 6, width: '100%', boxSizing: 'border-box' }} />
               </div>
             </details>
           </div>
