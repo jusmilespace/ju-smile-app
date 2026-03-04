@@ -1589,6 +1589,11 @@ const RecordsPage: React.FC<RecordsPageProps> = ({
     }
   };
 
+  const [aiModalSearchResults, setAiModalSearchResults] = useState<{
+    unitMatches: UnitMapRow[];
+    foodMatches: FoodDbRow[];
+  }>({ unitMatches: [], foodMatches: [] });
+
   // 🟢 新增：AI 掃描相關狀態
   const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
   const aiInputRef = useRef<HTMLInputElement>(null);
@@ -6688,9 +6693,113 @@ const RecordsPage: React.FC<RecordsPageProps> = ({
               <input
                 type="text"
                 value={aiResult.name}
-                onChange={(e) => setAiResult({ ...aiResult, name: e.target.value })}
-                style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #ddd', marginBottom: 16, fontSize: 16 }}
+                onChange={(e) => {
+                  const newName = e.target.value;
+                  setAiResult({ ...aiResult, name: newName });
+
+                  // 即時搜尋資料庫
+                  const kw = newName.trim().toLowerCase();
+                  if (kw.length >= 1) {
+                    const uMatches = unitMap.filter(u =>
+                      (u.Food ?? '').toLowerCase().includes(kw)
+                    ).slice(0, 3);
+                    const fMatches = foodDb.filter(f =>
+                      (f.food ?? '').toLowerCase().includes(kw)
+                    ).slice(0, 3);
+                    setAiModalSearchResults({ unitMatches: uMatches, foodMatches: fMatches });
+                  } else {
+                    setAiModalSearchResults({ unitMatches: [], foodMatches: [] });
+                  }
+                }}
+                style={{ width: '100%', padding: '10px', borderRadius: 8, border: '1px solid #ddd', marginBottom: 8, fontSize: 16 }}
               />
+
+              {/* 資料庫搜尋結果 */}
+              {(aiModalSearchResults.unitMatches.length > 0 || aiModalSearchResults.foodMatches.length > 0) && (
+                <div style={{ marginBottom: 16, border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden' }}>
+                  <div style={{ fontSize: 11, color: '#9ca3af', padding: '6px 10px', background: '#f9fafb' }}>
+                    🔍 找到資料庫結果，點擊套用正確營養素
+                  </div>
+
+                  {/* Unit_Map 結果 */}
+                  {aiModalSearchResults.unitMatches.map((u, i) => (
+                    <div
+                      key={`u-${i}`}
+                      onClick={() => {
+                        setAiResult({ ...aiResult, name: u.Food ?? aiResult.name });
+                        setAiBaseNutrition({
+                          kcalPerServing: Number(u.Kcal_per_serv) || 0,
+                          proteinPerServing: Number(u['Prot_per_serv (g)']) || 0,
+                          carbsPerServing: Number(u['Carb_per_serv (g)']) || 0,
+                          fatPerServing: Number(u['Fat_per_serv (g)']) || 0,
+                          servingSize: Number(u['Weight per serving (g)']) || 100
+                        });
+                        setAiModalSearchResults({ unitMatches: [], foodMatches: [] });
+                      }}
+                      style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        padding: '10px 12px', borderTop: '1px solid #f3f4f6',
+                        cursor: 'pointer', background: '#fff'
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: '#1f2937' }}>{u.Food}</div>
+                        <div style={{ fontSize: 11, color: '#9ca3af' }}>{u.Notes || u.Type}</div>
+                      </div>
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#97d0ba' }}>
+                          {Math.round(Number(u.Kcal_per_serv))} kcal/份
+                        </div>
+                        {u['Weight per serving (g)'] && (
+                          <div style={{ fontSize: 11, color: '#b0b8c1' }}>
+                            {Math.round(Number(u['Weight per serving (g)']))}g / 份
+                          </div>
+                        )}
+                        <div style={{ fontSize: 10, color: '#9ca3af' }}>套用 →</div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Food_DB 結果 */}
+                  {aiModalSearchResults.foodMatches.map((f, i) => (
+                    <div
+                      key={`f-${i}`}
+                      onClick={() => {
+                        setAiResult({ ...aiResult, name: f.food ?? aiResult.name });
+                        const per100 = Number(f.kcal) || 0;
+                        const servingSize = aiResult.servingSize || 100;
+                        setAiBaseNutrition({
+                          kcalPerServing: per100 * servingSize / 100,
+                          proteinPerServing: (Number(f['protein (g)']) || 0) * servingSize / 100,
+                          carbsPerServing: (Number(f['carb (g)']) || 0) * servingSize / 100,
+                          fatPerServing: (Number(f['fat (g)']) || 0) * servingSize / 100,
+                          servingSize
+                        });
+                        setAiModalSearchResults({ unitMatches: [], foodMatches: [] });
+                      }}
+                      style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        padding: '10px 12px', borderTop: '1px solid #f3f4f6',
+                        cursor: 'pointer', background: '#fff'
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: '#1f2937' }}>{f.food}</div>
+                        <div style={{ fontSize: 11, color: '#9ca3af' }}>精準資料庫 / 100g</div>
+                      </div>
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#97d0ba' }}>
+                          {Math.round(Number(f.kcal))} kcal/100g
+                        </div>
+                        <div style={{ fontSize: 11, color: '#b0b8c1' }}>
+                          套用後以 {aiResult.servingSize || 100}g 計算
+                        </div>
+                        <div style={{ fontSize: 10, color: '#9ca3af' }}>套用 →</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* 🆕 份量參考圖示 */}
               {aiResult.portionReference && aiResult.portionReference !== 'none' && (
