@@ -4503,6 +4503,20 @@ const RecordsPage: React.FC<RecordsPageProps> = ({
                                     {u.Type && <span style={{ opacity: 0.8 }}> · {u.Type}</span>}
                                     {/* 這裡加入 Notes 顯示，並用深一點的顏色強調 */}
                                     {u.Notes && <span style={{ color: '#d97706', fontWeight: 500 }}> · {u.Notes}</span>}
+                                    {u.Source && (
+                                      <span style={{
+                                        display: 'inline-block',
+                                        marginLeft: 6,
+                                        padding: '1px 6px',
+                                        fontSize: 11,
+                                        borderRadius: 4,
+                                        background: u.Source === 'Ju Smile' ? '#e6f7f3' : '#f3f4f6',
+                                        color: u.Source === 'Ju Smile' ? '#97d0ba' : '#9ca3af',
+                                        fontWeight: u.Source === 'Ju Smile' ? 600 : 400
+                                      }}>
+                                        {u.Source}
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
 
@@ -4512,10 +4526,16 @@ const RecordsPage: React.FC<RecordsPageProps> = ({
                                     <div style={{ color: '#97d0ba', fontWeight: 700, fontSize: 15, lineHeight: 1 }}>
                                       {u.Kcal_per_serv ? Math.round(Number(u.Kcal_per_serv)) : '?'}
                                     </div>
-                                    <div style={{ fontSize: 14, color: '#9ca3af', marginTop: 2 }}>
+                                    <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>
                                       kcal / 份
                                     </div>
+                                    {u['Weight per serving (g)'] && (
+                                      <div style={{ fontSize: 11, color: '#b0b8c1', marginTop: 3 }}>
+                                        {Math.round(Number(u['Weight per serving (g)']))}g / 份
+                                      </div>
+                                    )}
                                   </div>
+
 
                                   <div style={{
                                     width: 28,
@@ -4579,6 +4599,20 @@ const RecordsPage: React.FC<RecordsPageProps> = ({
                                   </div>
                                   <div style={{ fontSize: 15, color: '#6b7280' }}>
                                     精準秤重估算
+                                    {f.source && (
+                                      <span style={{
+                                        display: 'inline-block',
+                                        marginLeft: 6,
+                                        padding: '1px 6px',
+                                        fontSize: 11,
+                                        borderRadius: 4,
+                                        background: '#f3f4f6',
+                                        color: '#9ca3af',
+                                        fontWeight: 400
+                                      }}>
+                                        {f.source}
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
 
