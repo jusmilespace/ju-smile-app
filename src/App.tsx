@@ -808,7 +808,7 @@ const CSV_DEFAULT_URLS = {
 } as const;
 
 // 🔹 App 版本（之後要改版本號可以只改這裡）
-const APP_VERSION = '1.0.5';
+const APP_VERSION = '1.0.6';
 
 function loadJSON<T>(key: string, fallback: T): T {
   try {
