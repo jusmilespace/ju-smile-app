@@ -11429,11 +11429,22 @@ const App: React.FC = () => {
 
         // 檢查是否為原生 App
         if (Capacitor.isNativePlatform()) {
-          // 原生 App：使用 Capacitor Share API
+          // 把 base64 data URL 去掉前綴，只留純 base64 字串
+          const base64Data = imageData.replace(/^data:image\/png;base64,/, '');
+
+          // 寫入暫存檔
+          const fileName = `ju_smile_share_${Date.now()}.png`;
+          const result = await Filesystem.writeFile({
+            path: fileName,
+            data: base64Data,
+            directory: Directory.Cache,
+          });
+
+          // 用檔案路徑分享
           await Share.share({
             title: 'Ju Smile 數據分析',
             text: `我的${getPeriodLabel(period)}${getMetricLabel(metric)}趨勢`,
-            url: imageData,
+            url: result.uri,
             dialogTitle: '分享到...',
           });
         } else {
